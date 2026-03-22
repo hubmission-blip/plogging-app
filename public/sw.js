@@ -32,15 +32,16 @@ self.addEventListener("activate", (event) => {
 
 // Fetch: 네트워크 우선, 실패 시 캐시
 self.addEventListener("fetch", (event) => {
-  // Firebase / Kakao API는 캐시 제외
+  // POST 요청, Firebase, Kakao API는 캐시 제외
   if (
+    event.request.method !== "GET" ||  // ← 이 줄 추가
     event.request.url.includes("firestore") ||
     event.request.url.includes("firebase") ||
     event.request.url.includes("kakao")
   ) {
     return;
   }
-
+  
   event.respondWith(
     fetch(event.request)
       .then((response) => {

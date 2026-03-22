@@ -20,37 +20,31 @@ export default function KakaoCallbackPage() {
 
   const handleKakaoLogin = async (code) => {
     try {
-      // 카카오 토큰 요청
-      const tokenRes = await fetch("https://kauth.kakao.com/oauth/token", {
+      // 서버 API 라우트를 통해 토큰 교환
+      const res = await fetch("/api/kakao-token", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-body: new URLSearchParams({
-  grant_type: "authorization_code",
-  client_id: process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY, // ← 여기 변경
-  redirect_uri: `${window.location.origin}/auth/kakao`,
-  code,
-}),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          redirectUri: `${window.location.origin}/auth/kakao`,
+        }),
       });
-      const tokenData = await tokenRes.json();
+      const kakaoUser = await res.json();
 
-      // 카카오 사용자 정보 요청
-      const userRes = await fetch("https://kapi.kakao.com/v2/user/me", {
-        headers: { Authorization: `Bearer ${tokenData.access_token}` },
-      });
-      const kakaoUser = await userRes.json();
+      if (kakaoUser.error) {
+        console.error("카카오 오류:", kakaoUser.error);
+        router.push("/login");
+        return;
+      }
 
-      const uid = `kakao_${kakaoUser.id}`;
-      const nickname = kakaoUser.kakao_account?.profile?.nickname || "카카오유저";
-      const email = kakaoUser.kakao_account?.email || `${kakaoUser.id}@kakao.com`;
-
-      // Firestore에 유저 정보 저장 (없으면 신규 생성)
-      const userRef = doc(db, "users", uid);
+      // Firestore에 유저 정보 저장
+      const userRef = doc(db, "kakaoUsers", kakaoUser.uid);
       const userSnap = await getDoc(userRef);
       if (!userSnap.exists()) {
         await setDoc(userRef, {
-          uid,
-          email,
-          nickname,
+          uid: kakaoUser.uid,
+          email: kakaoUser.email,
+          nickname: kakaoUser.nickname,
           provider: "kakao",
           totalPoints: 0,
           totalDistance: 0,
@@ -59,8 +53,15 @@ body: new URLSearchParams({
         });
       }
 
-      // 로컬스토리지에 임시 세션 저장
-      localStorage.setItem("kakaoUser", JSON.stringify({ uid, email, nickname }));
+      // 세션 저장
+      localStorage.setItem(
+        "kakaoUser",
+        JSON.stringify({
+          uid: kakaoUser.uid,
+          email: kakaoUser.email,
+          nickname: kakaoUser.nickname,
+        })
+      );
       router.push("/");
     } catch (e) {
       console.error("카카오 로그인 실패:", e);
@@ -76,4 +77,37 @@ body: new URLSearchParams({
       </div>
     </div>
   );
+}
+```
+
+---
+
+## 🔧 수정 3: Firestore 보안규칙 업데이트
+
+**[console.firebase.google.com](https://console.firebase.google.com)** →
+```
+Firestore → 규칙
+```
+
+아래로 교체 후 **게시**:
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 일반 유저 (Firebase Auth)
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    // 카카오 유저 (별도 컬렉션)
+    match /kakaoUsers/{userId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    // 플로깅 동선
+    match /routes/{routeId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
 }
