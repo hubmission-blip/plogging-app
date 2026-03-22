@@ -3,10 +3,11 @@
 import { Map, Polyline, MapMarker } from "react-kakao-maps-sdk";
 import { useState, useEffect } from "react";
 
-export default function MapView({ pastRoutes = [], currentPath = [] }) {
+// 💡 수정됨: pastRoutes -> routes 로 변경
+export default function MapView({ routes = [], currentPath = [] }) {
   const [center, setCenter] = useState({ lat: 37.5665, lng: 126.9780 });
   const [myPos, setMyPos] = useState(null);
-  const [mapReady, setMapReady] = useState(false); // ✅ 추가
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -18,11 +19,11 @@ export default function MapView({ pastRoutes = [], currentPath = [] }) {
         },
         (err) => {
           console.warn("위치 정보 없음:", err.message);
-          // 기본 위치(서울) 사용
+          // 권한 거부 시 기본 위치(서울) 유지
         }
       );
     }
-    setMapReady(true); // ✅ 추가
+    setMapReady(true);
   }, []);
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export default function MapView({ pastRoutes = [], currentPath = [] }) {
     }
   }, [currentPath]);
 
-  if (!mapReady) return null; // ✅ SDK 준비 전 렌더 방지
+  if (!mapReady) return null;
 
   return (
     <Map
@@ -41,10 +42,10 @@ export default function MapView({ pastRoutes = [], currentPath = [] }) {
       style={{ width: "100%", height: "100vh" }}
       level={3}
     >
-      {/* 과거 동선 (주차별 색상) */}
-      {pastRoutes.map((route, index) => (
+      {/* 💡 수정됨: pastRoutes.map -> routes.map 으로 변경 */}
+      {routes.map((route, index) => (
         <Polyline
-          key={route.id ?? `past-route-${index}`} // ✅ id 없으면 index 사용
+          key={route.id ?? `past-route-${index}`}
           path={route.coords}
           strokeWeight={4}
           strokeColor={route.color}
