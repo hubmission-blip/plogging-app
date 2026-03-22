@@ -6,18 +6,25 @@ import { useState, useEffect } from "react";
 export default function MapView({ pastRoutes = [], currentPath = [] }) {
   const [center, setCenter] = useState({ lat: 37.5665, lng: 126.9780 });
   const [myPos, setMyPos] = useState(null);
+  const [mapReady, setMapReady] = useState(false); // ✅ 추가
 
   useEffect(() => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((pos) => {
-        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setCenter(loc);
-        setMyPos(loc);
-      });
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setCenter(loc);
+          setMyPos(loc);
+        },
+        (err) => {
+          console.warn("위치 정보 없음:", err.message);
+          // 기본 위치(서울) 사용
+        }
+      );
     }
+    setMapReady(true); // ✅ 추가
   }, []);
 
-  // 현재 추적 중이면 마지막 좌표로 중심 이동
   useEffect(() => {
     if (currentPath.length > 0) {
       const last = currentPath[currentPath.length - 1];
@@ -26,6 +33,8 @@ export default function MapView({ pastRoutes = [], currentPath = [] }) {
     }
   }, [currentPath]);
 
+  if (!mapReady) return null; // ✅ SDK 준비 전 렌더 방지
+
   return (
     <Map
       center={center}
@@ -33,9 +42,9 @@ export default function MapView({ pastRoutes = [], currentPath = [] }) {
       level={3}
     >
       {/* 과거 동선 (주차별 색상) */}
-      {pastRoutes.map((route) => (
+      {pastRoutes.map((route, index) => (
         <Polyline
-          key={route.id}
+          key={route.id ?? `past-route-${index}`} // ✅ id 없으면 index 사용
           path={route.coords}
           strokeWeight={4}
           strokeColor={route.color}

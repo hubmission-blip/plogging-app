@@ -38,22 +38,41 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-title" content="오백원의 행복" />
       </head>
       <body className="min-h-screen bg-gray-50">
-        <Script id="sw-register" strategy="afterInteractive">
-          {`
-            if ('serviceWorker' in navigator) {
-              window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js')
-                  .then(reg => console.log('SW 등록:', reg.scope))
-                  .catch(err => console.log('SW 실패:', err));
-              });
-            }
-          `}
-        </Script>
-<AuthProvider>
-  <PushNotification />  {/* ← 추가 */}
-  {children}
-  <BottomNav />
-</AuthProvider>
+
+        {/* ✅ Script 태그: 순수 JS만 사용 (useEffect 금지) */}
+        <Script
+          id="sw-register"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ("serviceWorker" in navigator) {
+                navigator.serviceWorker.register("/sw.js").then(function(registration) {
+                  console.log("✅ SW 등록:", registration.scope);
+
+                  registration.addEventListener("updatefound", function() {
+                    var newWorker = registration.installing;
+                    newWorker.addEventListener("statechange", function() {
+                      if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                        console.log("🔄 새 버전 감지 - 자동 업데이트");
+                        newWorker.postMessage({ type: "SKIP_WAITING" });
+                        window.location.reload();
+                      }
+                    });
+                  });
+                }).catch(function(err) {
+                  console.error("❌ SW 등록 실패:", err);
+                });
+              }
+            `,
+          }}
+        />
+
+        <AuthProvider>
+          <PushNotification />
+          {children}
+          <BottomNav />
+        </AuthProvider>
+
       </body>
     </html>
   );

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
 import Onboarding from "@/components/Onboarding";
-import { getPointGrade } from "@/lib/pointCalc";
 
 const QUICK_MENUS = [
   { href: "/map",     icon: "🗺️", label: "플로깅\n시작",  color: "bg-green-50 text-green-700" },
@@ -26,28 +25,34 @@ export default function HomePage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    // 첫 방문 시 온보딩 표시
     const onboarded = localStorage.getItem("onboarded");
     if (!onboarded) setShowOnboarding(true);
   }, []);
 
+  // ✅ try/catch로 공유 취소·클립보드 오류 처리
   const handleShare = async () => {
     const shareData = {
       title: "오백원의 행복",
       text: "🌿 플로깅으로 환경도 지키고 포인트도 받아요! 함께해요 😊",
       url: "https://plogging-app-rose.vercel.app",
     };
-    if (navigator.share) {
-      await navigator.share(shareData);
-    } else {
-      await navigator.clipboard.writeText(shareData.url);
-      alert("링크가 복사됐습니다! 📋");
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareData.url);
+        alert("링크가 복사됐습니다! 📋");
+      }
+    } catch (err) {
+      // 사용자가 공유 취소 시 조용히 무시 (AbortError)
+      if (err.name !== "AbortError") {
+        console.error("공유 오류:", err);
+      }
     }
   };
 
   return (
     <>
-      {/* 온보딩 */}
       {showOnboarding && (
         <Onboarding onComplete={() => setShowOnboarding(false)} />
       )}
@@ -61,7 +66,6 @@ export default function HomePage() {
               <h1 className="text-2xl font-bold">오백원의 행복 🌿</h1>
             </div>
             <div className="flex items-center gap-2">
-              {/* 공유 버튼 */}
               <button
                 onClick={handleShare}
                 className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-lg"
@@ -89,7 +93,6 @@ export default function HomePage() {
         </div>
 
         <div className="px-4 -mt-2 space-y-5">
-          {/* 배너 슬라이더 */}
           <BannerSlider />
 
           {/* 빠른 메뉴 */}
@@ -117,10 +120,12 @@ export default function HomePage() {
                 <p className="font-bold text-lg mt-0.5">2km 플로깅 완주하기</p>
                 <p className="text-green-100 text-sm mt-1">완주 시 +200P 보너스!</p>
               </div>
-              <Link href="/map">
-                <button className="bg-white text-green-600 px-4 py-2 rounded-xl font-bold text-sm shadow">
-                  시작 →
-                </button>
+              {/* ✅ Link 안에 button 제거 → Link 자체를 버튼처럼 스타일링 */}
+              <Link
+                href="/map"
+                className="bg-white text-green-600 px-4 py-2 rounded-xl font-bold text-sm shadow"
+              >
+                시작 →
               </Link>
             </div>
           </div>

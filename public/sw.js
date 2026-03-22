@@ -1,60 +1,49 @@
-const CACHE_NAME = "plogging-v1";
-const STATIC_ASSETS = [
-  "/",
-  "/map",
-  "/ranking",
-  "/profile",
-];
+const CACHE_NAME = "plogging-v3";
 
-// 설치: 정적 파일 캐시
+const urlsToCache = ["/", "/manifest.json"];
+
+// 설치 시 즉시 활성화
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
-  );
   self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
+  );
 });
 
-// 활성화: 오래된 캐시 삭제
+// 이전 캐시 전부 삭제 + 즉시 모든 클라이언트 제어
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
+    caches
+      .keys()
+      .then((cacheNames) =>
+        Promise.all(
+          cacheNames
+            .filter((name) => name !== CACHE_NAME)
+            .map((name) => {
+              console.log("🗑️ 이전 캐시 삭제:", name);
+              return caches.delete(name);
+            })
+        )
       )
-    )
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch: 네트워크 우선, 실패 시 캐시
+// GET 요청만 캐시 (POST 등 제외)
 self.addEventListener("fetch", (event) => {
-  // POST 요청, Firebase, Kakao API는 캐시 제외
-  if (
-    event.request.method !== "GET" ||  // ← 이 줄 추가
-    event.request.url.includes("firestore") ||
-    event.request.url.includes("firebase") ||
-    event.request.url.includes("kakao")
-  ) {
-    return;
-  }
-  
+  if (event.request.method !== "GET") return;
+  if (event.request.url.includes("/api/")) return; // API 요청 캐시 제외
+
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // 성공 응답은 캐시에 저장
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, clone);
-        });
-        return response;
-      })
-      .catch(() => {
-        // 오프라인이면 캐시에서 응답
-        return caches.match(event.request);
-      })
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
+    })
   );
+});
+
+// SKIP_WAITING 메시지 수신
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });

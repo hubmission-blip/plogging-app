@@ -10,64 +10,75 @@ export default function KakaoCallbackPage() {
 
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get("code");
-    if (code) {
-      handleKakaoLogin(code);
-    } else {
+
+    if (!code) {
       router.push("/login");
+      return;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
-  const handleKakaoLogin = async (code) => {
-    try {
-      // 서버 API 라우트를 통해 토큰 교환
-      const res = await fetch("/api/kakao-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code,
-          redirectUri: `${window.location.origin}/auth/kakao`,
-        }),
-      });
-      const kakaoUser = await res.json();
-
-      if (kakaoUser.error) {
-        console.error("카카오 오류:", kakaoUser.error);
-        router.push("/login");
-        return;
-      }
-
-      // Firestore에 유저 정보 저장
-      const userRef = doc(db, "kakaoUsers", kakaoUser.uid);
-      const userSnap = await getDoc(userRef);
-      if (!userSnap.exists()) {
-        await setDoc(userRef, {
-          uid: kakaoUser.uid,
-          email: kakaoUser.email,
-          nickname: kakaoUser.nickname,
-          provider: "kakao",
-          totalPoints: 0,
-          totalDistance: 0,
-          ploggingCount: 0,
-          createdAt: serverTimestamp(),
+    // ✅ 함수를 useEffect 안으로 이동 → eslint-disable 불필요
+    const handleKakaoLogin = async () => {
+      try {
+        const res = await fetch("/api/kakao-token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code,
+            redirectUri: `${window.location.origin}/auth/kakao`,
+          }),
         });
-      }
 
-      // 세션 저장
-      localStorage.setItem(
-        "kakaoUser",
-        JSON.stringify({
-          uid: kakaoUser.uid,
-          email: kakaoUser.email,
-          nickname: kakaoUser.nickname,
-        })
-      );
-      router.push("/");
-    } catch (e) {
-      console.error("카카오 로그인 실패:", e);
-      router.push("/login");
-    }
-  };
+        // ✅ HTTP 오류 체크 추가
+        if (!res.ok) {
+          throw new Error(`서버 오류: ${res.status}`);
+        }
+
+        const kakaoUser = await res.json();
+
+        if (kakaoUser.error) {
+          console.error("카카오 오류:", kakaoUser.error);
+          router.push("/login");
+          return;
+        }
+
+        // ✅ uid를 String()으로 변환 (카카오 uid는 숫자형)
+        const uid = String(kakaoUser.uid);
+
+        // Firestore에 유저 정보 저장
+        const userRef = doc(db, "kakaoUsers", uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            uid,
+            email: kakaoUser.email || "",           // ✅ null 방어
+            nickname: kakaoUser.nickname || "카카오유저", // ✅ null 방어
+            provider: "kakao",
+            totalPoints: 0,
+            totalDistance: 0,
+            ploggingCount: 0,
+            createdAt: serverTimestamp(),
+          });
+        }
+
+        // 세션 저장
+        localStorage.setItem(
+          "kakaoUser",
+          JSON.stringify({
+            uid,
+            email: kakaoUser.email || "",
+            nickname: kakaoUser.nickname || "카카오유저",
+          })
+        );
+
+        router.push("/");
+      } catch (e) {
+        console.error("카카오 로그인 실패:", e);
+        router.push("/login");
+      }
+    };
+
+    handleKakaoLogin();
+  }, [router]); // ✅ router를 deps에 정상 추가
 
   return (
     <div className="flex items-center justify-center h-screen">
@@ -77,37 +88,4 @@ export default function KakaoCallbackPage() {
       </div>
     </div>
   );
-}
-```
-
----
-
-## 🔧 수정 3: Firestore 보안규칙 업데이트
-
-**[console.firebase.google.com](https://console.firebase.google.com)** →
-```
-Firestore → 규칙
-```
-
-아래로 교체 후 **게시**:
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // 일반 유저 (Firebase Auth)
-    match /users/{userId} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-    // 카카오 유저 (별도 컬렉션)
-    match /kakaoUsers/{userId} {
-      allow read: if true;
-      allow write: if true;
-    }
-    // 플로깅 동선
-    match /routes/{routeId} {
-      allow read: if true;
-      allow write: if true;
-    }
-  }
 }
