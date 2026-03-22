@@ -8,6 +8,7 @@ import { updateProfile } from "firebase/auth";
 import { signOut } from "firebase/auth";
 import { getPointGrade } from "@/lib/pointCalc";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -153,6 +154,38 @@ export default function ProfilePage() {
           </div>
         ))}
       </div>
+
+{/* 바로가기 메뉴 */}
+<div className="mx-4 bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
+  <p className="font-bold text-gray-700 px-4 pt-4 pb-2">📌 바로가기</p>
+  {[
+    { href: "/history", icon: "📋", label: "플로깅 기록", desc: `총 ${userData?.ploggingCount || 0}회` },
+    { href: "/rewards", icon: "🎁", label: "포인트 교환", desc: `${totalPoints.toLocaleString()}P 보유` },
+    { href: "/group",   icon: "👥", label: "그룹 플로깅", desc: "그룹 관리" },
+  ].map((item) => (
+    <Link key={item.href} href={item.href}>
+      <div className="flex items-center px-4 py-3 border-t hover:bg-gray-50 transition-colors">
+        <span className="text-xl mr-3">{item.icon}</span>
+        <div className="flex-1">
+          <p className="font-medium text-sm text-gray-800">{item.label}</p>
+          <p className="text-xs text-gray-400">{item.desc}</p>
+        </div>
+        <span className="text-gray-300">›</span>
+      </div>
+    </Link>
+  ))}
+</div>
+
+{/* 관리자 메뉴 (관리자만 표시) */}
+{user?.email === "hubmission@gmail.com" && (
+  <div className="mx-4 mb-4">
+    <Link href="/admin">
+      <button className="w-full bg-gray-800 text-white py-3 rounded-xl font-medium text-sm">
+        ⚙️ 관리자 페이지
+      </button>
+    </Link>
+  </div>
+)}
 
       {/* 로그아웃 */}
       <div className="mx-4">
