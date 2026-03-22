@@ -6,16 +6,22 @@ export async function POST(request) {
       return Response.json({ error: "code 또는 redirectUri 누락" }, { status: 400 });
     }
 
-    // ✅ 서버에서 카카오 토큰 교환 (CORS 없음)
+    const params = new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: process.env.KAKAO_REST_API_KEY,
+      redirect_uri: redirectUri,
+      code,
+    });
+
+    // ✅ 클라이언트 시크릿이 있으면 추가
+    if (process.env.KAKAO_CLIENT_SECRET) {
+      params.append("client_secret", process.env.KAKAO_CLIENT_SECRET);
+    }
+
     const tokenRes = await fetch("https://kauth.kakao.com/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded;charset=utf-8" },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        client_id: process.env.KAKAO_REST_API_KEY, // 서버 환경변수 (NEXT_PUBLIC 아님)
-        redirect_uri: redirectUri,
-        code,
-      }),
+      body: params,
     });
 
     const tokenData = await tokenRes.json();
@@ -28,7 +34,6 @@ export async function POST(request) {
       );
     }
 
-    // ✅ 액세스 토큰으로 유저 정보 조회
     const userRes = await fetch("https://kapi.kakao.com/v2/user/me", {
       headers: {
         Authorization: `Bearer ${tokenData.access_token}`,
@@ -50,8 +55,9 @@ export async function POST(request) {
         userData.properties?.nickname ||
         "카카오유저",
     });
+
   } catch (e) {
     console.error("카카오 토큰 API 오류:", e);
-    return Response.json({ error: "서버 오류" }, { status: 500 });
+    return Response.json({ error: "서버 오류: " + e.message }, { status: 500 });
   }
 }
