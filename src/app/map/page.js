@@ -13,22 +13,27 @@ import {
 } from "firebase/firestore";
 import { calculatePoints } from "@/lib/pointCalc";
 import { getWeekNumber, getExpiresAt, isExpired, getRouteColor } from "@/lib/routeUtils";
+import { useSearchParams } from "next/navigation";
 
 export default function MapPage() {
   const [loading, error] = useKakaoLoader({
     appkey: process.env.NEXT_PUBLIC_KAKAO_MAP_KEY,
   });
-
+const searchParams = useSearchParams();
+const groupId = searchParams.get("groupId");
+const groupSize = parseInt(searchParams.get("groupSize") || "1");
   const { path, distance, isTracking, startTracking, stopTracking } = useLocation();
   const { user } = useAuth();
   const [result, setResult] = useState(null);
   const [pastRoutes, setPastRoutes] = useState([]); // 과거 동선
 
   // 과거 동선 불러오기 (로그인 시)
-  useEffect(() => {
-    if (!user || loading) return;
-    fetchPastRoutes();
-  }, [user, loading]);
+// 수정 - eslint-disable 주석 추가
+// eslint-disable-next-line react-hooks/exhaustive-deps
+useEffect(() => {
+  if (!user || loading) return;
+  fetchPastRoutes();
+}, [user, loading]);
 
   const fetchPastRoutes = async () => {
     try {
@@ -70,7 +75,10 @@ export default function MapPage() {
     stopTracking();
     if (path.length < 2) return;
 
-    const { total, breakdown } = calculatePoints({ distanceKm: distance });
+    const { total, breakdown } = calculatePoints({
+  distanceKm: distance,
+  groupSize: groupSize,
+});
     const weekNumber = getWeekNumber();
     const expiresAt = getExpiresAt();
 
@@ -140,6 +148,15 @@ export default function MapPage() {
           )}
         </div>
       </div>
+
+      {/* 그룹 플로깅 표시 */}
+{groupId && (
+  <div className="absolute top-16 left-0 right-0 flex justify-center z-10">
+    <div className="bg-purple-500 text-white rounded-full px-4 py-1 text-xs font-bold shadow">
+      👥 그룹 플로깅 중 · {groupSize}명 · +{groupSize * 5}P 보너스
+    </div>
+  </div>
+)}
 
       {/* 주차별 색상 범례 */}
       {pastRoutes.length > 0 && !isTracking && (

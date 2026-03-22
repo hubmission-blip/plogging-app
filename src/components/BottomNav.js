@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { href: "/",        icon: "🏠", label: "홈" },
-  { href: "/map",     icon: "🗺️", label: "지도" },
-  { href: "/ranking", icon: "🏆", label: "랭킹" },
-  { href: "/history", icon: "📋", label: "기록" },
-  { href: "/rewards", icon: "🎁", label: "리워드" },
+  { href: "/",       icon: "🏠", label: "홈" },
+  { href: "/map",    icon: "🗺️", label: "지도" },
+  { href: "/group",  icon: "👥", label: "그룹" },
+  { href: "/ranking",icon: "🏆", label: "랭킹" },
+  { href: "/rewards",icon: "🎁", label: "리워드" },
 ];
 
 export default function BottomNav() {
