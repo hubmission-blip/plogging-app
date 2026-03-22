@@ -24,12 +24,12 @@ export default function KakaoCallbackPage() {
       const tokenRes = await fetch("https://kauth.kakao.com/oauth/token", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          grant_type: "authorization_code",
-          client_id: process.env.NEXT_PUBLIC_KAKAO_MAP_KEY,
-          redirect_uri: `${window.location.origin}/auth/kakao`,
-          code,
-        }),
+body: new URLSearchParams({
+  grant_type: "authorization_code",
+  client_id: process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY, // ← 여기 변경
+  redirect_uri: `${window.location.origin}/auth/kakao`,
+  code,
+}),
       });
       const tokenData = await tokenRes.json();
 

@@ -164,10 +164,10 @@ export default function LoginPage() {
           {/* 카카오 로그인 버튼 */}
           <button
             type="button"
-            onClick={() => {
-              const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&redirect_uri=${window.location.origin}/auth/kakao&response_type=code`;
-              window.location.href = kakaoAuthUrl;
-            }}
+onClick={() => {
+  const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${window.location.origin}/auth/kakao&response_type=code`;
+  window.location.href = kakaoAuthUrl;
+}}
             className="w-full bg-yellow-400 text-gray-900 py-3 rounded-xl font-bold text-base flex items-center justify-center gap-2 hover:bg-yellow-500 transition-colors"
           >
             <span className="text-xl">💬</span>
