@@ -1,17 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword 
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [nickname, setNickname] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -25,13 +28,29 @@ export default function LoginPage() {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        // 회원가입
+        const { user } = await createUserWithEmailAndPassword(auth, email, password);
+
+        // 닉네임 Firebase Auth 프로필에 저장
+        await updateProfile(user, { displayName: nickname });
+
+        // Firestore users 컬렉션에도 저장
+        await setDoc(doc(db, "users", user.uid), {
+          uid: user.uid,
+          email: user.email,
+          nickname: nickname,
+          totalPoints: 0,
+          totalDistance: 0,
+          ploggingCount: 0,
+          createdAt: serverTimestamp(),
+        });
       }
-      router.push("/map"); // 로그인 성공 → 지도 페이지로
+      router.push("/");
     } catch (err) {
       const messages = {
         "auth/user-not-found": "등록되지 않은 이메일입니다",
         "auth/wrong-password": "비밀번호가 틀렸습니다",
+        "auth/invalid-credential": "이메일 또는 비밀번호가 틀렸습니다",
         "auth/email-already-in-use": "이미 사용 중인 이메일입니다",
         "auth/weak-password": "비밀번호는 6자 이상이어야 합니다",
         "auth/invalid-email": "올바른 이메일 형식이 아닙니다",
@@ -72,8 +91,26 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {/* 폼 */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* 닉네임 (회원가입만) */}
+          {!isLogin && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                닉네임
+              </label>
+              <input
+                type="text"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                placeholder="사용할 닉네임 입력 (2~10자)"
+                required={!isLogin}
+                minLength={2}
+                maxLength={10}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400"
+              />
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               이메일
@@ -87,6 +124,7 @@ export default function LoginPage() {
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400"
             />
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               비밀번호
@@ -101,14 +139,12 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* 오류 메시지 */}
           {error && (
             <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl">
               ⚠️ {error}
             </div>
           )}
 
-          {/* 제출 버튼 */}
           <button
             type="submit"
             disabled={loading}
@@ -118,7 +154,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* GYEA 로고 */}
         <p className="text-center text-xs text-gray-400 mt-8">
           사단법인 국제청년환경연합회 (GYEA)
         </p>

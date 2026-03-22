@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db, auth } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { updateProfile } from "firebase/auth";
 import { signOut } from "firebase/auth";
 import { getPointGrade } from "@/lib/pointCalc";
 import { useRouter } from "next/navigation";
@@ -11,20 +12,39 @@ import { useRouter } from "next/navigation";
 export default function ProfilePage() {
   const { user } = useAuth();
   const [userData, setUserData] = useState(null);
+  const [editingNick, setEditingNick] = useState(false);
+  const [newNick, setNewNick] = useState("");
+  const [saving, setSaving] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    if (!user) {
-      router.push("/login");
-      return;
-    }
+    if (!user) { router.push("/login"); return; }
     const fetchUser = async () => {
       const ref = doc(db, "users", user.uid);
       const snap = await getDoc(ref);
-      if (snap.exists()) setUserData(snap.data());
+      if (snap.exists()) {
+        setUserData(snap.data());
+        setNewNick(snap.data().nickname || user.displayName || "");
+      }
     };
     fetchUser();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  const handleSaveNick = async () => {
+    if (!newNick.trim() || newNick.length < 2) return;
+    setSaving(true);
+    try {
+      await updateProfile(user, { displayName: newNick });
+      await updateDoc(doc(db, "users", user.uid), { nickname: newNick });
+      setUserData((prev) => ({ ...prev, nickname: newNick }));
+      setEditingNick(false);
+    } catch (e) {
+      alert("저장 실패: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -35,6 +55,7 @@ export default function ProfilePage() {
 
   const totalPoints = userData?.totalPoints || 0;
   const { grade, color } = getPointGrade(totalPoints);
+  const displayName = userData?.nickname || user.displayName || user.email?.split("@")[0];
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -44,9 +65,44 @@ export default function ProfilePage() {
           <div className="w-16 h-16 bg-white/30 rounded-full flex items-center justify-center text-3xl">
             🌿
           </div>
-          <div>
-            <p className="font-bold text-lg">{user.email}</p>
-            <p className="text-green-100 text-sm" style={{ color }}>
+          <div className="flex-1">
+            {editingNick ? (
+              <div className="flex items-center gap-2">
+                <input
+                  value={newNick}
+                  onChange={(e) => setNewNick(e.target.value)}
+                  maxLength={10}
+                  className="bg-white/20 text-white placeholder-white/60 rounded-lg px-3 py-1 text-sm w-32 focus:outline-none"
+                  placeholder="닉네임 입력"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSaveNick}
+                  disabled={saving}
+                  className="bg-white text-green-600 text-xs px-3 py-1.5 rounded-lg font-bold"
+                >
+                  {saving ? "..." : "저장"}
+                </button>
+                <button
+                  onClick={() => setEditingNick(false)}
+                  className="text-white/70 text-xs"
+                >
+                  취소
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <p className="font-bold text-lg">{displayName}</p>
+                <button
+                  onClick={() => setEditingNick(true)}
+                  className="text-white/70 text-xs bg-white/20 px-2 py-0.5 rounded-full"
+                >
+                  ✏️ 수정
+                </button>
+              </div>
+            )}
+            <p className="text-green-100 text-sm mt-0.5">{user.email}</p>
+            <p className="text-sm font-medium mt-0.5" style={{ color }}>
               {grade}
             </p>
           </div>
@@ -57,15 +113,21 @@ export default function ProfilePage() {
       <div className="mx-4 -mt-4 bg-white rounded-2xl shadow-lg p-6 mb-4">
         <p className="text-sm text-gray-500 mb-1">총 보유 포인트</p>
         <p className="text-4xl font-bold text-green-600">{totalPoints.toLocaleString()} P</p>
-        <p className="text-xs text-gray-400 mt-1">500P 도달 시 실버 등급 🥈</p>
+        <div className="mt-3 bg-gray-100 rounded-full h-2">
+          <div
+            className="bg-green-400 h-2 rounded-full transition-all"
+            style={{ width: `${Math.min(100, (totalPoints / 500) * 100)}%` }}
+          />
+        </div>
+        <p className="text-xs text-gray-400 mt-1">
+          실버까지 {Math.max(0, 500 - totalPoints)}P 남음
+        </p>
       </div>
 
       {/* 통계 */}
       <div className="mx-4 grid grid-cols-2 gap-3 mb-4">
         <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-          <p className="text-2xl font-bold text-green-600">
-            {userData?.ploggingCount || 0}
-          </p>
+          <p className="text-2xl font-bold text-green-600">{userData?.ploggingCount || 0}</p>
           <p className="text-xs text-gray-500 mt-1">총 플로깅 횟수</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm text-center">
@@ -80,10 +142,10 @@ export default function ProfilePage() {
       <div className="mx-4 bg-white rounded-2xl shadow-sm p-4 mb-4">
         <p className="font-bold text-gray-700 mb-3">🏅 등급 안내</p>
         {[
-          { grade: "브론즈 🥉", range: "0 ~ 499P", color: "#CD7F32" },
-          { grade: "실버 🥈", range: "500 ~ 1,999P", color: "#9E9E9E" },
-          { grade: "골드 🥇", range: "2,000 ~ 4,999P", color: "#FFC107" },
-          { grade: "플래티넘 🏆", range: "5,000P~", color: "#00BCD4" },
+          { grade: "브론즈 🥉", range: "0 ~ 499P",      color: "#CD7F32" },
+          { grade: "실버 🥈",  range: "500 ~ 1,999P",  color: "#9E9E9E" },
+          { grade: "골드 🥇",  range: "2,000 ~ 4,999P",color: "#FFC107" },
+          { grade: "플래티넘 🏆", range: "5,000P~",    color: "#00BCD4" },
         ].map((g) => (
           <div key={g.grade} className="flex justify-between items-center py-2 border-b last:border-0">
             <span className="font-medium" style={{ color: g.color }}>{g.grade}</span>
