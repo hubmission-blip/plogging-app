@@ -6,10 +6,10 @@ import BannerSlider from "@/components/BannerSlider";
 import { getPointGrade } from "@/lib/pointCalc";
 
 const QUICK_MENUS = [
-  { href: "/map",     icon: "🗺️", label: "플로깅\n시작",   color: "bg-green-50 text-green-700" },
-  { href: "/profile", icon: "🏆", label: "내\n포인트",    color: "bg-yellow-50 text-yellow-700" },
-  { href: "/ranking", icon: "📊", label: "지역\n랭킹",    color: "bg-blue-50 text-blue-700" },
-  { href: "/login",   icon: "👥", label: "그룹\n플로깅",  color: "bg-purple-50 text-purple-700" },
+  { href: "/map",     icon: "🗺️", label: "플로깅\n시작",  color: "bg-green-50 text-green-700" },
+  { href: "/rewards", icon: "🎁", label: "리워드\n교환",  color: "bg-yellow-50 text-yellow-700" },
+  { href: "/ranking", icon: "🏆", label: "지역\n랭킹",   color: "bg-blue-50 text-blue-700" },
+  { href: "/history", icon: "📋", label: "내\n기록",     color: "bg-purple-50 text-purple-700" },
 ];
 
 const HOW_TO = [

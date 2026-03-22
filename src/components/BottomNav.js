@@ -8,7 +8,7 @@ const navItems = [
   { href: "/map",     icon: "🗺️", label: "지도" },
   { href: "/ranking", icon: "🏆", label: "랭킹" },
   { href: "/history", icon: "📋", label: "기록" },
-  { href: "/profile", icon: "👤", label: "내정보" },
+  { href: "/rewards", icon: "🎁", label: "리워드" },
 ];
 
 export default function BottomNav() {

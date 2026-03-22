@@ -162,6 +162,11 @@ export default function LoginPage() {
           </div>
 
           {/* 카카오 로그인 버튼 */}
+          {/* 카카오 로그인 - 추후 구현
+<div className="flex items-center gap-3 my-2">
+  ...
+</div>
+*/}
           <button
             type="button"
 onClick={() => {
