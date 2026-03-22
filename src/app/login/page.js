@@ -154,6 +154,26 @@ export default function LoginPage() {
           </button>
         </form>
 
+        {/* 구분선 */}
+          <div className="flex items-center gap-3 my-2">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400">또는</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          {/* 카카오 로그인 버튼 */}
+          <button
+            type="button"
+            onClick={() => {
+              const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&redirect_uri=${window.location.origin}/auth/kakao&response_type=code`;
+              window.location.href = kakaoAuthUrl;
+            }}
+            className="w-full bg-yellow-400 text-gray-900 py-3 rounded-xl font-bold text-base flex items-center justify-center gap-2 hover:bg-yellow-500 transition-colors"
+          >
+            <span className="text-xl">💬</span>
+            카카오로 시작하기
+          </button>
+
         <p className="text-center text-xs text-gray-400 mt-8">
           사단법인 국제청년환경연합회 (GYEA)
         </p>
