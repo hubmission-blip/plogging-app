@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useKakaoLoader } from "react-kakao-maps-sdk";
 import MapView from "@/components/MapView";
@@ -26,6 +27,21 @@ const groupSize = parseInt(searchParams.get("groupSize") || "1");
   const { user } = useAuth();
   const [result, setResult] = useState(null);
   const [pastRoutes, setPastRoutes] = useState([]); // 과거 동선
+
+
+  // 비로그인 시 안내
+if (!user) return (
+  <div className="flex flex-col items-center justify-center h-screen gap-4 p-6 text-center">
+    <div className="text-6xl">🔑</div>
+    <h2 className="text-xl font-bold text-gray-700">로그인이 필요해요</h2>
+    <p className="text-gray-400 text-sm">플로깅 기록과 포인트 적립을 위해 로그인해주세요</p>
+    <Link href="/login">
+      <button className="bg-green-500 text-white px-8 py-3 rounded-full font-bold">
+        로그인하기
+      </button>
+    </Link>
+  </div>
+);
 
   // 과거 동선 불러오기 (로그인 시)
 // 수정 - eslint-disable 주석 추가
