@@ -1,3 +1,4 @@
+import PushNotification from "@/components/PushNotification";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
@@ -48,10 +49,11 @@ export default function RootLayout({ children }) {
             }
           `}
         </Script>
-        <AuthProvider>
-          {children}
-          <BottomNav />
-        </AuthProvider>
+<AuthProvider>
+  <PushNotification />  {/* ← 추가 */}
+  {children}
+  <BottomNav />
+</AuthProvider>
       </body>
     </html>
   );

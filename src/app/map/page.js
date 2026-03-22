@@ -1,5 +1,6 @@
 "use client";
 
+import { notifyPloggingComplete } from "@/lib/notify";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useKakaoLoader } from "react-kakao-maps-sdk";
@@ -129,6 +130,8 @@ useEffect(() => {
         });
       }
 
+      // 플로깅 완료 푸시 알림
+notifyPloggingComplete(distance, total);
       setResult({ distance, total, breakdown });
       fetchPastRoutes(); // 새 동선 반영
     } catch (e) {
