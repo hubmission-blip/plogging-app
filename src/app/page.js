@@ -57,7 +57,7 @@ export default function HomePage() {
         <Onboarding onComplete={() => setShowOnboarding(false)} />
       )}
 
-      <div className="min-h-screen bg-gray-50 pb-32">
+      <div className="min-h-screen bg-gray-50 pb-40">
         {/* 헤더 */}
         <div className="bg-gradient-to-b from-green-600 to-green-500 px-4 pt-12 pb-6 text-white">
           <div className="flex items-center justify-between mb-1">
