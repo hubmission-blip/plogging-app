@@ -6,28 +6,22 @@ export async function POST(request) {
       return Response.json({ error: "code 또는 redirectUri 누락" }, { status: 400 });
     }
 
-    const params = new URLSearchParams({
-      grant_type: "authorization_code",
-      client_id: process.env.KAKAO_REST_API_KEY,
-      redirect_uri: redirectUri,
-      code,
-    });
-
-    // ✅ 클라이언트 시크릿이 있으면 추가
-    if (process.env.KAKAO_CLIENT_SECRET) {
-      params.append("client_secret", process.env.KAKAO_CLIENT_SECRET);
-    }
-
+    // ✅ 클라이언트 시크릿 없이 토큰 교환
     const tokenRes = await fetch("https://kauth.kakao.com/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded;charset=utf-8" },
-      body: params,
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: process.env.KAKAO_REST_API_KEY,
+        redirect_uri: redirectUri,
+        code,
+      }),
     });
 
     const tokenData = await tokenRes.json();
+    console.log("토큰 응답:", tokenData);
 
     if (tokenData.error) {
-      console.error("카카오 토큰 오류:", tokenData);
       return Response.json(
         { error: tokenData.error_description || tokenData.error },
         { status: 400 }
@@ -37,7 +31,6 @@ export async function POST(request) {
     const userRes = await fetch("https://kapi.kakao.com/v2/user/me", {
       headers: {
         Authorization: `Bearer ${tokenData.access_token}`,
-        "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
       },
     });
 
