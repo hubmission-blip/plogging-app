@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { useSearchParams } from "next/navigation";
 import RankingMap from "@/components/RankingMap";
 
 const TABS      = [
@@ -35,10 +36,13 @@ function getPeriodStart(period) {
   return null;
 }
 
-export default function RankingPage() {
-  const { user } = useAuth();
+function RankingPageInner() {
+  const { user }       = useAuth();
+  const searchParams   = useSearchParams();
+  // ?view=map 파라미터로 지역 랭킹 탭 바로 열기
+  const initView       = searchParams.get("view") === "map" ? "map" : "list";
 
-  const [view, setView]       = useState("list");   // list | map
+  const [view, setView]       = useState(initView);   // list | map
   const [tab, setTab]         = useState("points");
   const [period, setPeriod]   = useState("weekly");
   const [rankList, setRankList] = useState([]);
@@ -250,5 +254,18 @@ export default function RankingPage() {
         {view === "map" && <RankingMap />}
       </div>
     </div>
+  );
+}
+
+// ── Suspense 래핑 (useSearchParams 필수) ─────────────────
+export default function RankingPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen">
+        <p className="animate-pulse text-lg">🏆 랭킹 로딩 중...</p>
+      </div>
+    }>
+      <RankingPageInner />
+    </Suspense>
   );
 }

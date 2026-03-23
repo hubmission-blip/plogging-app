@@ -4,147 +4,183 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
-import Onboarding from "@/components/Onboarding";
-
-const QUICK_MENUS = [
-  { href: "/map",     icon: "🗺️", label: "플로깅\n시작",  color: "bg-green-50 text-green-700" },
-  { href: "/rewards", icon: "🎁", label: "리워드\n교환",  color: "bg-yellow-50 text-yellow-700" },
-  { href: "/ranking", icon: "🏆", label: "지역\n랭킹",   color: "bg-blue-50 text-blue-700" },
-  { href: "/group",   icon: "👥", label: "그룹\n플로깅", color: "bg-purple-50 text-purple-700" },
-];
+import CharacterGuide from "@/components/CharacterGuide";
 
 const HOW_TO = [
-  { step: "01", icon: "📱", title: "앱 열기",    desc: "오백원의 행복 실행" },
-  { step: "02", icon: "🚶", title: "플로깅 시작", desc: "지도에서 시작 버튼" },
-  { step: "03", icon: "🗑️", title: "쓰레기 줍기", desc: "걸으며 환경 지키기" },
-  { step: "04", icon: "🎁", title: "포인트 적립", desc: "거리만큼 포인트 획득" },
+  { step: 1, icon: "📍", title: "위치 허용",   desc: "앱 첫 실행 시 위치 권한을 허용해주세요" },
+  { step: 2, icon: "🚶", title: "플로깅 시작", desc: "지도 페이지에서 시작 버튼을 누르세요" },
+  { step: 3, icon: "🏁", title: "플로깅 종료", desc: "종료 후 거리·포인트가 자동 계산돼요" },
+  { step: 4, icon: "🎁", title: "리워드 교환", desc: "모은 포인트로 리워드를 받아보세요" },
 ];
+
+// localStorage 키 (첫 방문 가이드)
+const GUIDE_KEY = "plogging_guide_shown";
 
 export default function HomePage() {
   const { user } = useAuth();
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
+  // 첫 방문 시에만 캐릭터 가이드 표시
   useEffect(() => {
-    const onboarded = localStorage.getItem("onboarded");
-    if (!onboarded) setShowOnboarding(true);
+    try {
+      const shown = localStorage.getItem(GUIDE_KEY);
+      if (!shown) setShowGuide(true);
+    } catch {
+      // localStorage 미지원 환경 무시
+    }
   }, []);
 
-  // ✅ try/catch로 공유 취소·클립보드 오류 처리
+  const handleGuideComplete = () => {
+    try { localStorage.setItem(GUIDE_KEY, "1"); } catch {}
+    setShowGuide(false);
+  };
+
   const handleShare = async () => {
-    const shareData = {
-      title: "오백원의 행복",
-      text: "🌿 플로깅으로 환경도 지키고 포인트도 받아요! 함께해요 😊",
-      url: "https://plogging-app-rose.vercel.app",
-    };
     try {
       if (navigator.share) {
-        await navigator.share(shareData);
+        await navigator.share({
+          title: "오백원의 행복",
+          text: "🌿 플로깅으로 지구를 지키고 포인트도 받아요!",
+          url: window.location.href,
+        });
       } else {
-        await navigator.clipboard.writeText(shareData.url);
-        alert("링크가 복사됐습니다! 📋");
+        await navigator.clipboard.writeText(window.location.href);
+        alert("링크가 복사됐어요! 📋");
       }
-    } catch (err) {
-      // 사용자가 공유 취소 시 조용히 무시 (AbortError)
-      if (err.name !== "AbortError") {
-        console.error("공유 오류:", err);
-      }
+    } catch (e) {
+      console.log("공유 취소");
     }
   };
 
   return (
     <>
-      {showOnboarding && (
-        <Onboarding onComplete={() => setShowOnboarding(false)} />
-      )}
+      {/* ── 캐릭터 가이드 (첫 방문) ── */}
+      {showGuide && <CharacterGuide onComplete={handleGuideComplete} />}
 
-      <div className="min-h-screen bg-gray-50 pb-safe">
-        {/* 헤더 */}
-        <div className="bg-gradient-to-b from-green-600 to-green-500 px-4 pt-12 pb-6 text-white">
-          <div className="flex items-center justify-between mb-1">
+      <div
+        className="min-h-screen bg-gray-50 overflow-y-auto"
+        style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
+      >
+        {/* ── 상단 헤더 ── */}
+        <div className="bg-gradient-to-b from-green-600 to-green-500 text-white px-4 pt-12 pb-8">
+          <div className="flex justify-between items-start mb-2">
             <div>
-              <p className="text-green-100 text-sm">사단법인 국제청년환경연합회</p>
-              <h1 className="text-2xl font-bold">오백원의 행복 🌿</h1>
+              <h1 className="text-2xl font-black">🌿 오백원의 행복</h1>
+              <p className="text-green-200 text-sm mt-0.5">즐거운 플로깅, 깨끗한 지구</p>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleShare}
-                className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-lg"
-              >
-                📤
-              </button>
-              <Link href={user ? "/profile" : "/login"}>
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-lg">
-                  {user ? "👤" : "🔑"}
+            {user && (
+              <Link href="/profile">
+                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-lg">
+                  {user.photoURL
+                    ? <img src={user.photoURL} alt="" className="w-full h-full rounded-full object-cover" />
+                    : "👤"
+                  }
                 </div>
               </Link>
-            </div>
+            )}
           </div>
+
+          {/* 로그인 여부별 */}
           {user ? (
-            <p className="text-green-100 text-xs mt-2">
-              환영해요, {user.displayName || user.email?.split("@")[0]}님! 🎉
-            </p>
+            <div className="mt-3 bg-white/15 rounded-2xl px-4 py-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-green-200">반갑습니다!</p>
+                <p className="font-bold text-sm">{user.displayName || user.email?.split("@")[0]}</p>
+              </div>
+              <Link
+                href="/map"
+                className="bg-white text-green-600 px-4 py-2 rounded-full text-sm font-black shadow"
+              >
+                🚶 지금 시작
+              </Link>
+            </div>
           ) : (
-            <Link href="/login">
-              <p className="text-green-100 text-xs mt-2 underline">
-                로그인하고 포인트 적립하기 →
-              </p>
-            </Link>
+            <div className="mt-3 flex gap-2">
+              <Link
+                href="/login"
+                className="flex-1 bg-white text-green-600 py-3 rounded-2xl font-bold text-center text-sm shadow"
+              >
+                로그인
+              </Link>
+              <Link
+                href="/register"
+                className="flex-1 bg-green-400 text-white py-3 rounded-2xl font-bold text-center text-sm"
+              >
+                회원가입
+              </Link>
+            </div>
           )}
         </div>
 
-        <div className="px-4 -mt-2 space-y-5">
+        <div className="px-4 mt-4 space-y-4">
+          {/* ── 광고 배너 슬라이더 ── */}
           <BannerSlider />
 
-          {/* 빠른 메뉴 */}
-          <div>
-            <h2 className="font-bold text-gray-700 mb-3">빠른 메뉴</h2>
-            <div className="grid grid-cols-4 gap-3">
-              {QUICK_MENUS.map((menu) => (
-                <Link key={menu.href} href={menu.href}>
-                  <div className={`${menu.color} rounded-2xl p-3 text-center aspect-square flex flex-col items-center justify-center gap-1`}>
-                    <span className="text-2xl">{menu.icon}</span>
-                    <span className="text-xs font-medium leading-tight whitespace-pre-line">
-                      {menu.label}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* 오늘의 미션 */}
-          <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl p-4 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100 text-xs font-medium">오늘의 미션</p>
-                <p className="font-bold text-lg mt-0.5">2km 플로깅 완주하기</p>
-                <p className="text-green-100 text-sm mt-1">완주 시 +200P 보너스!</p>
-              </div>
-              {/* ✅ Link 안에 button 제거 → Link 자체를 버튼처럼 스타일링 */}
+          {/* ── 빠른 메뉴 ── */}
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { href: "/map",     icon: "🗺️",  label: "지도" },
+              { href: "/ranking", icon: "🏆",  label: "랭킹" },
+              { href: "/group",   icon: "👥",  label: "그룹" },
+              { href: "/reward",  icon: "🎁",  label: "리워드" },
+            ].map((item) => (
               <Link
-                href="/map"
-                className="bg-white text-green-600 px-4 py-2 rounded-xl font-bold text-sm shadow"
+                key={item.href}
+                href={item.href}
+                className="bg-white rounded-2xl py-3 flex flex-col items-center gap-1 shadow-sm active:scale-95 transition-transform"
               >
-                시작 →
+                <span className="text-2xl">{item.icon}</span>
+                <span className="text-xs text-gray-600 font-medium">{item.label}</span>
               </Link>
-            </div>
+            ))}
           </div>
 
-          {/* 앱 공유 배너 */}
+          {/* ── 이번 주 내 현황 (로그인 시) ── */}
+          {user && (
+            <Link href="/profile" className="block">
+              <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-4 text-white shadow">
+                <p className="text-xs text-green-100 mb-2">내 프로필 보기 →</p>
+                <div className="flex gap-4">
+                  <div className="text-center">
+                    <p className="text-xl font-black">📊</p>
+                    <p className="text-xs text-green-100 mt-0.5">통계 확인</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-black">🏅</p>
+                    <p className="text-xs text-green-100 mt-0.5">뱃지 수집</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-black">⭐</p>
+                    <p className="text-xs text-green-100 mt-0.5">레벨업</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {/* ── 친구 초대 ── */}
           <button
             onClick={handleShare}
-            className="w-full bg-white rounded-2xl shadow-sm p-4 flex items-center justify-between"
+            className="w-full bg-white rounded-2xl p-4 shadow-sm flex items-center gap-3 active:scale-98 transition-transform"
           >
-            <div className="text-left">
+            <div className="flex-1 text-left">
               <p className="font-bold text-gray-700">친구에게 앱 소개하기 📤</p>
               <p className="text-xs text-gray-400 mt-0.5">함께 플로깅하면 그룹 보너스!</p>
             </div>
             <span className="text-3xl">🌍</span>
           </button>
 
-          {/* 이용 방법 */}
+          {/* ── 이용 방법 ── */}
           <div>
-            <h2 className="font-bold text-gray-700 mb-3">이용 방법</h2>
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="font-bold text-gray-700">이용 방법</h2>
+              <button
+                onClick={() => setShowGuide(true)}
+                className="text-xs text-green-500 font-medium border border-green-200 px-2 py-1 rounded-full"
+              >
+                가이드 다시 보기
+              </button>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               {HOW_TO.map((item) => (
                 <div key={item.step} className="bg-white rounded-2xl p-4 shadow-sm">
@@ -157,14 +193,15 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* 포인트 안내 */}
+          {/* ── 포인트 안내 ── */}
           <div className="bg-white rounded-2xl p-4 shadow-sm">
             <h2 className="font-bold text-gray-700 mb-3">💰 포인트 적립 기준</h2>
             <div className="space-y-2">
               {[
-                { label: "거리 1km 달성", point: "+50P" },
-                { label: "2km 이상 완주", point: "+100P 보너스" },
+                { label: "거리 1km 달성",      point: "+50P" },
+                { label: "2km 이상 완주",       point: "+100P 보너스" },
                 { label: "그룹 참여 (인원 × 5)", point: "+αP" },
+                { label: "신규 가입 환영 포인트", point: "+100P" },
               ].map((item) => (
                 <div key={item.label} className="flex justify-between items-center py-1.5 border-b last:border-0">
                   <span className="text-sm text-gray-600">{item.label}</span>
@@ -174,7 +211,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* 푸터 */}
+          {/* ── 푸터 ── */}
           <div className="text-center py-2">
             <p className="text-xs text-gray-400">사단법인 국제청년환경연합회 (GYEA)</p>
             <p className="text-xs text-gray-300 mt-0.5">hubmission@gmail.com</p>
