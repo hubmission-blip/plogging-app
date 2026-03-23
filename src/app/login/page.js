@@ -6,9 +6,11 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
+  signInWithPopup,        // ✅ 추가
+  GoogleAuthProvider,     // ✅ 추가
 } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,23 +21,54 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ✅ 카카오 로그인 - 올바른 REST API 키 + Redirect URI 사용
+  // ✅ 구글 로그인
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Firestore에 유저 정보 없으면 생성
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || "구글유저",
+          provider: "google",
+          totalPoints: 0,
+          totalDistance: 0,
+          ploggingCount: 0,
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      router.push("/");
+    } catch (err) {
+      if (err.code !== "auth/popup-closed-by-user") {
+        setError("구글 로그인 실패: " + err.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 카카오 로그인
   const handleKakaoLogin = () => {
     const KAKAO_CLIENT_ID = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY;
     const REDIRECT_URI = `${window.location.origin}/auth/kakao`;
-
     if (!KAKAO_CLIENT_ID) {
       alert("카카오 API 키가 설정되지 않았습니다.");
       return;
     }
-
-    const kakaoAuthUrl =
+    window.location.href =
       `https://kauth.kakao.com/oauth/authorize` +
       `?client_id=${KAKAO_CLIENT_ID}` +
       `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
       `&response_type=code`;
-
-    window.location.href = kakaoAuthUrl;
   };
 
   // 이메일 로그인/회원가입
@@ -43,7 +76,6 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-
     try {
       if (isSignup) {
         if (!nickname.trim()) {
@@ -72,10 +104,9 @@ export default function LoginPage() {
         "auth/weak-password": "비밀번호는 6자 이상이어야 합니다",
         "auth/user-not-found": "존재하지 않는 계정입니다",
         "auth/wrong-password": "비밀번호가 틀렸습니다",
-        "auth/invalid-email": "올바른 이메일 형식이 아닙니다",
         "auth/invalid-credential": "이메일 또는 비밀번호를 확인하세요",
       };
-      setError(msg[err.code] || "오류가 발생했습니다: " + err.message);
+      setError(msg[err.code] || "오류: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -111,10 +142,26 @@ export default function LoginPage() {
           </button>
         </div>
 
+        {/* ✅ 구글 로그인 버튼 */}
+        <button
+          onClick={handleGoogleLogin}
+          disabled={loading}
+          className="w-full bg-white border border-gray-200 py-3 rounded-xl font-bold text-sm mb-3 flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-sm disabled:opacity-50"
+        >
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 20-8 20-20 0-1.3-.1-2.7-.4-4z"/>
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3-11.3-7.2l-6.5 5C9.5 40 16.3 44 24 44z"/>
+            <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.4-2.5 4.4-4.6 5.8l6.2 5.2C40.8 35.5 44 30.2 44 24c0-1.3-.1-2.7-.4-4z"/>
+          </svg>
+          Google로 시작하기
+        </button>
+
         {/* 카카오 로그인 버튼 */}
         <button
           onClick={handleKakaoLogin}
-          className="w-full bg-[#FEE500] text-[#3C1E1E] py-3 rounded-xl font-bold text-sm mb-4 flex items-center justify-center gap-2 active:scale-95 transition-transform"
+          disabled={loading}
+          className="w-full bg-[#FEE500] text-[#3C1E1E] py-3 rounded-xl font-bold text-sm mb-4 flex items-center justify-center gap-2 active:scale-95 transition-transform disabled:opacity-50"
         >
           <span className="text-lg">💬</span>
           카카오로 시작하기
@@ -122,7 +169,7 @@ export default function LoginPage() {
 
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 h-px bg-gray-200" />
-          <span className="text-xs text-gray-400">또는</span>
+          <span className="text-xs text-gray-400">또는 이메일</span>
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 
