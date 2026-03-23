@@ -1,29 +1,43 @@
 // 주차별 색상 (1주=초록, 2주=파랑, 3주=주황, 4주=보라)
 export const WEEK_COLORS = {
-  1: "#4CAF50",  // 초록
-  2: "#2196F3",  // 파랑
-  3: "#FF9800",  // 주황
-  4: "#9C27B0",  // 보라
+  1: "#4CAF50",
+  2: "#2196F3",
+  3: "#FF9800",
+  4: "#9C27B0",
 };
 
 export const WEEK_LABELS = {
   1: "이번 주",
-  2: "2주 전",
-  3: "3주 전",
-  4: "4주 전",
+  2: "1주 전",
+  3: "2주 전",
+  4: "3주 전+",
 };
 
-// 현재 주차 번호 계산 (앱 기준 상대 주차)
+// ✅ 한국 시간(KST) 기준 + 고정 기준점으로 안정적인 주차 계산
 export function getWeekNumber() {
   const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 1);
-  return Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7);
+
+  // 한국 시간 보정 (UTC+9)
+  const kstOffset = 9 * 60 * 60 * 1000;
+  const kstNow = new Date(now.getTime() + kstOffset);
+
+  // 이번 주 월요일 구하기
+  const day = kstNow.getUTCDay(); // 0=일, 1=월 ... 6=토
+  const daysToMonday = day === 0 ? 6 : day - 1;
+  const monday = new Date(kstNow);
+  monday.setUTCDate(kstNow.getUTCDate() - daysToMonday);
+  monday.setUTCHours(0, 0, 0, 0);
+
+  // 고정 기준점: 2024년 1월 1일 (안정적인 주차 계산)
+  const reference = new Date("2024-01-01T00:00:00Z");
+
+  return Math.floor((monday - reference) / (7 * 24 * 60 * 60 * 1000));
 }
 
 // 만료일 계산 (저장일 기준 4주 후)
 export function getExpiresAt() {
   const date = new Date();
-  date.setDate(date.getDate() + 28); // 28일 후
+  date.setDate(date.getDate() + 28);
   return date;
 }
 
@@ -34,15 +48,15 @@ export function isExpired(expiresAt) {
   return new Date() > expDate;
 }
 
-// weekNumber → 상대 주차(1~4) 변환
+// ✅ weekNumber → 상대 주차(1~4) 변환
 export function getRelativeWeek(savedWeekNumber) {
+  if (!savedWeekNumber && savedWeekNumber !== 0) return 1;
   const current = getWeekNumber();
   const diff = current - savedWeekNumber;
-  if (diff <= 0) return 1;
-  if (diff === 1) return 2;
-  if (diff === 2) return 3;
-  if (diff === 3) return 4;
-  return 4;
+  if (diff <= 0) return 1; // 이번 주
+  if (diff === 1) return 2; // 1주 전
+  if (diff === 2) return 3; // 2주 전
+  return 4;                 // 3주 전+
 }
 
 // 동선 색상 반환
