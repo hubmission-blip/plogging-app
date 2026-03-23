@@ -9,13 +9,13 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata = {
-  title: "오백원의 행복",
+  title: "오백원의행복",
   description: "즐거운 플로깅, 깨끗한 지구 | 사단법인 국제청년환경연합회",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "오백원의 행복",
+    title: "오백원의행복", // ✅ 여기도 동일하게
   },
 };
 
