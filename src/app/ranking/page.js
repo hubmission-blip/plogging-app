@@ -1,284 +1,315 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { db } from "@/lib/firebase";
+import {
+  collection, query, where, getDocs, doc, getDoc
+} from "firebase/firestore";
 
+// ─── 탭 타입 ─────────────────────────────────────────────
 const TABS = [
-  { id: "personal", label: "👤 개인", icon: "👤" },
-  { id: "monthly",  label: "📅 이달",  icon: "📅" },
-  { id: "region",   label: "🗺️ 지역",  icon: "🗺️" },
+  { id: "points",   label: "포인트",  icon: "💰" },
+  { id: "distance", label: "거리",    icon: "📍" },
+  { id: "count",    label: "횟수",    icon: "🏃" },
 ];
 
-const REGION_LIST = [
-  { code: "11", name: "서울특별시",  emoji: "🏙️" },
-  { code: "26", name: "부산광역시",  emoji: "🌊" },
-  { code: "27", name: "대구광역시",  emoji: "🌆" },
-  { code: "28", name: "인천광역시",  emoji: "✈️" },
-  { code: "29", name: "광주광역시",  emoji: "🎨" },
-  { code: "30", name: "대전광역시",  emoji: "🔬" },
-  { code: "31", name: "울산광역시",  emoji: "🏭" },
-  { code: "36", name: "세종특별자치시", emoji: "🏛️" },
-  { code: "41", name: "경기도",      emoji: "🌳" },
-  { code: "43", name: "충청북도",    emoji: "🌾" },
+const PERIOD_TABS = [
+  { id: "weekly",  label: "주간" },
+  { id: "monthly", label: "월간" },
+  { id: "all",     label: "전체" },
 ];
 
-// 등수 아이콘
-function RankBadge({ rank }) {
-  if (rank === 1) return <span className="text-2xl">🥇</span>;
-  if (rank === 2) return <span className="text-2xl">🥈</span>;
-  if (rank === 3) return <span className="text-2xl">🥉</span>;
-  return (
-    <span className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-sm font-bold text-gray-600">
-      {rank}
-    </span>
-  );
+// ─── 현재 주/월 범위 계산 ─────────────────────────────────
+function getPeriodRange(period) {
+  const now = new Date();
+  if (period === "weekly") {
+    const day = now.getDay(); // 0=일
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - day);
+    startOfWeek.setHours(0, 0, 0, 0);
+    return startOfWeek;
+  }
+  if (period === "monthly") {
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  return null; // 전체
 }
 
 export default function RankingPage() {
-  const [tab, setTab] = useState("personal");
-  const [personalRank, setPersonalRank] = useState([]);
-  const [loading, setLoading] = useState(false);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (tab === "personal") fetchPersonalRank();
-  }, [tab]);
+  const [tab, setTab] = useState("points");
+  const [period, setPeriod] = useState("weekly");
+  const [rankList, setRankList] = useState([]);
+  const [myRank, setMyRank] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const fetchPersonalRank = async () => {
+  // ── 랭킹 데이터 조회 ────────────────────────────────────
+  const fetchRanking = useCallback(async () => {
     setLoading(true);
     try {
-      const q = query(
-        collection(db, "users"),
-        orderBy("totalPoints", "desc"),
-        limit(50)
+      const sinceDate = getPeriodRange(period);
+
+      // 1. routes 컬렉션에서 기간 내 플로깅 데이터 집계
+      let routesQuery;
+      if (sinceDate) {
+        routesQuery = query(
+          collection(db, "routes"),
+          where("createdAt", ">=", sinceDate)
+        );
+      } else {
+        routesQuery = query(collection(db, "routes"));
+      }
+
+      const routesSnap = await getDocs(routesQuery);
+
+      // userId 별로 집계
+      const aggregated = {};
+      routesSnap.forEach((docSnap) => {
+        const d = docSnap.data();
+        const uid = d.userId;
+        if (!uid) return;
+        if (!aggregated[uid]) {
+          aggregated[uid] = { points: 0, distance: 0, count: 0 };
+        }
+        aggregated[uid].points   += d.points   || 0;
+        aggregated[uid].distance += d.distance || 0;
+        aggregated[uid].count    += 1;
+      });
+
+      // 2. 유저 정보 병합 (displayName, photoURL)
+      const uids = Object.keys(aggregated);
+      const userInfoMap = {};
+      await Promise.all(
+        uids.map(async (uid) => {
+          try {
+            const userSnap = await getDoc(doc(db, "users", uid));
+            if (userSnap.exists()) {
+              const uData = userSnap.data();
+              userInfoMap[uid] = {
+                displayName: uData.displayName || uData.email?.split("@")[0] || "익명",
+                photoURL:    uData.photoURL || "",
+              };
+            } else {
+              userInfoMap[uid] = { displayName: "익명", photoURL: "" };
+            }
+          } catch {
+            userInfoMap[uid] = { displayName: "익명", photoURL: "" };
+          }
+        })
       );
-      const snap = await getDocs(q);
-      const list = snap.docs.map((doc, i) => ({
-        rank: i + 1,
-        ...doc.data(),
-      }));
-      setPersonalRank(list);
+
+      // 3. 정렬
+      const sorted = uids
+        .map((uid) => ({
+          uid,
+          ...aggregated[uid],
+          ...userInfoMap[uid],
+        }))
+        .sort((a, b) => b[tab] - a[tab]);
+
+      setRankList(sorted);
+
+      // 내 순위 찾기
+      if (user) {
+        const myIdx = sorted.findIndex((r) => r.uid === user.uid);
+        setMyRank(myIdx >= 0 ? { rank: myIdx + 1, ...sorted[myIdx] } : null);
+      }
     } catch (e) {
-      console.error("랭킹 불러오기 실패:", e);
+      console.error("랭킹 로드 실패:", e);
     } finally {
       setLoading(false);
     }
+  }, [tab, period, user]);
+
+  useEffect(() => {
+    fetchRanking();
+  }, [fetchRanking]);
+
+  // ── 값 포맷 ─────────────────────────────────────────────
+  const formatValue = (item) => {
+    if (tab === "points")   return `${item.points.toLocaleString()}P`;
+    if (tab === "distance") return `${item.distance.toFixed(1)}km`;
+    return `${item.count}회`;
   };
 
-  // 현재 사용자 순위 찾기
-  const myRank = personalRank.findIndex((u) => u.uid === user?.uid) + 1;
+  // ── 메달 아이콘 ─────────────────────────────────────────
+  const getMedal = (rank) => {
+    if (rank === 1) return "🥇";
+    if (rank === 2) return "🥈";
+    if (rank === 3) return "🥉";
+    return null;
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      {/* 헤더 */}
-      <div className="bg-gradient-to-b from-blue-600 to-blue-500 px-4 pt-12 pb-6 text-white">
-        <h1 className="text-2xl font-bold">🏆 랭킹</h1>
-        <p className="text-blue-100 text-sm mt-1">플로깅 챔피언에 도전하세요!</p>
-
-        {/* 내 순위 */}
-        {user && myRank > 0 && (
-          <div className="mt-3 bg-white/20 rounded-xl px-4 py-2 inline-flex items-center gap-2">
-            <span className="text-sm">내 순위</span>
-            <span className="font-bold text-lg">{myRank}위</span>
-          </div>
-        )}
+    <div
+      className="min-h-screen bg-gray-50"
+      style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
+    >
+      {/* ── 헤더 ── */}
+      <div className="bg-green-600 text-white px-4 pt-12 pb-6">
+        <h1 className="text-2xl font-bold mb-1">🏆 랭킹</h1>
+        <p className="text-green-200 text-sm">함께하는 플로깅, 더 깨끗한 지구</p>
       </div>
 
-      {/* 탭 */}
-      <div className="flex bg-white border-b sticky top-0 z-10">
-        {TABS.map((t) => (
+      {/* ── 내 순위 카드 ── */}
+      {myRank && (
+        <div className="mx-4 -mt-3 bg-white rounded-2xl shadow-lg p-4 flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-lg overflow-hidden">
+            {myRank.photoURL
+              ? <img src={myRank.photoURL} alt="" className="w-full h-full object-cover" />
+              : "😊"
+            }
+          </div>
+          <div className="flex-1">
+            <p className="text-xs text-gray-400">내 현재 순위</p>
+            <p className="font-bold text-gray-800">
+              {getMedal(myRank.rank) || `#${myRank.rank}`} {myRank.displayName}
+            </p>
+          </div>
+          <span className="text-green-600 font-bold text-sm">{formatValue(myRank)}</span>
+        </div>
+      )}
+
+      {/* ── 기간 탭 ── */}
+      <div className="flex gap-1 mx-4 mt-4 bg-gray-100 rounded-xl p-1">
+        {PERIOD_TABS.map((p) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${
-              tab === t.id
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500"
-            }`}
+            key={p.id}
+            onClick={() => setPeriod(p.id)}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors
+              ${period === p.id ? "bg-white text-green-600 shadow-sm" : "text-gray-500"}`}
           >
-            {t.label}
+            {p.label}
           </button>
         ))}
       </div>
 
-      {/* 개인 랭킹 */}
-      {tab === "personal" && (
-        <div className="p-4">
-          {/* TOP 3 */}
-          {personalRank.length >= 3 && (
-            <div className="flex items-end justify-center gap-3 mb-6 mt-2">
-              {/* 2위 */}
-              <div className="flex flex-col items-center">
-                <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center text-2xl mb-1">
-                  🥈
-                </div>
-                <p className="text-xs font-medium text-center truncate w-16">
-                  {personalRank[1]?.email?.split("@")[0] || "-"}
-                </p>
-                <p className="text-sm font-bold text-gray-500">
-                  {personalRank[1]?.totalPoints?.toLocaleString() || 0}P
-                </p>
-                <div className="w-16 h-16 bg-gray-200 rounded-t-lg mt-1 flex items-end justify-center pb-1">
-                  <span className="text-xs font-bold text-gray-600">2위</span>
-                </div>
-              </div>
-              {/* 1위 */}
-              <div className="flex flex-col items-center">
-                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center text-3xl mb-1">
-                  🥇
-                </div>
-                <p className="text-xs font-medium text-center truncate w-16">
-                  {personalRank[0]?.email?.split("@")[0] || "-"}
-                </p>
-                <p className="text-sm font-bold text-yellow-600">
-                  {personalRank[0]?.totalPoints?.toLocaleString() || 0}P
-                </p>
-                <div className="w-16 h-24 bg-yellow-200 rounded-t-lg mt-1 flex items-end justify-center pb-1">
-                  <span className="text-xs font-bold text-yellow-700">1위</span>
-                </div>
-              </div>
-              {/* 3위 */}
-              <div className="flex flex-col items-center">
-                <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center text-2xl mb-1">
-                  🥉
-                </div>
-                <p className="text-xs font-medium text-center truncate w-16">
-                  {personalRank[2]?.email?.split("@")[0] || "-"}
-                </p>
-                <p className="text-sm font-bold text-orange-500">
-                  {personalRank[2]?.totalPoints?.toLocaleString() || 0}P
-                </p>
-                <div className="w-16 h-10 bg-orange-200 rounded-t-lg mt-1 flex items-end justify-center pb-1">
-                  <span className="text-xs font-bold text-orange-600">3위</span>
-                </div>
-              </div>
-            </div>
-          )}
+      {/* ── 항목 탭 ── */}
+      <div className="flex gap-2 mx-4 mt-3">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-sm font-medium border transition-colors
+              ${tab === t.id
+                ? "bg-green-500 text-white border-green-500"
+                : "bg-white text-gray-500 border-gray-200"
+              }`}
+          >
+            <span>{t.icon}</span>
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </div>
 
-          {/* 4위 이하 목록 */}
-          {loading ? (
-            <div className="text-center py-8 text-gray-400">불러오는 중...</div>
-          ) : (
-            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-              {personalRank.length === 0 ? (
-                <div className="text-center py-10 text-gray-400">
-                  <p className="text-3xl mb-2">🌱</p>
-                  <p>아직 참여자가 없어요</p>
-                  <p className="text-sm mt-1">첫 번째 플로거가 되어보세요!</p>
-                </div>
-              ) : (
-                personalRank.slice(3).map((u) => (
-                  <div
-                    key={u.uid}
-                    className={`flex items-center px-4 py-3 border-b last:border-0 ${
-                      u.uid === user?.uid ? "bg-blue-50" : ""
-                    }`}
-                  >
-                    <RankBadge rank={u.rank} />
-                    <div className="ml-3 flex-1">
-                      <p className="font-medium text-sm">
-                        {u.email?.split("@")[0] || "익명"}
-                        {u.uid === user?.uid && (
-                          <span className="ml-1 text-xs text-blue-500">(나)</span>
-                        )}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {u.ploggingCount || 0}회 · {(u.totalDistance || 0).toFixed(1)}km
-                      </p>
-                    </div>
-                    <span className="font-bold text-blue-600">
-                      {u.totalPoints?.toLocaleString() || 0}P
-                    </span>
-                  </div>
-                ))
-              )}
+      {/* ── TOP 3 시상대 ── */}
+      {!loading && rankList.length >= 3 && (
+        <div className="flex items-end justify-center gap-3 mx-4 mt-6 mb-2">
+          {/* 2위 */}
+          <div className="flex-1 text-center">
+            <div className="w-12 h-12 rounded-full bg-gray-100 mx-auto flex items-center justify-center text-xl overflow-hidden mb-2">
+              {rankList[1].photoURL
+                ? <img src={rankList[1].photoURL} alt="" className="w-full h-full object-cover" />
+                : "😊"
+              }
             </div>
-          )}
+            <div className="bg-gray-200 rounded-t-xl pt-3 pb-2 px-2">
+              <p className="text-lg">🥈</p>
+              <p className="text-xs font-bold text-gray-700 truncate">{rankList[1].displayName}</p>
+              <p className="text-xs text-gray-500">{formatValue(rankList[1])}</p>
+            </div>
+          </div>
+          {/* 1위 */}
+          <div className="flex-1 text-center">
+            <div className="w-14 h-14 rounded-full bg-yellow-100 mx-auto flex items-center justify-center text-2xl overflow-hidden mb-2 border-2 border-yellow-400">
+              {rankList[0].photoURL
+                ? <img src={rankList[0].photoURL} alt="" className="w-full h-full object-cover" />
+                : "😎"
+              }
+            </div>
+            <div className="bg-yellow-100 rounded-t-xl pt-4 pb-2 px-2">
+              <p className="text-xl">🥇</p>
+              <p className="text-xs font-bold text-gray-800 truncate">{rankList[0].displayName}</p>
+              <p className="text-xs text-yellow-600 font-medium">{formatValue(rankList[0])}</p>
+            </div>
+          </div>
+          {/* 3위 */}
+          <div className="flex-1 text-center">
+            <div className="w-12 h-12 rounded-full bg-orange-100 mx-auto flex items-center justify-center text-xl overflow-hidden mb-2">
+              {rankList[2]?.photoURL
+                ? <img src={rankList[2].photoURL} alt="" className="w-full h-full object-cover" />
+                : "😊"
+              }
+            </div>
+            <div className="bg-orange-100 rounded-t-xl pt-2 pb-2 px-2">
+              <p className="text-lg">🥉</p>
+              <p className="text-xs font-bold text-gray-700 truncate">{rankList[2]?.displayName}</p>
+              <p className="text-xs text-gray-500">{rankList[2] ? formatValue(rankList[2]) : "-"}</p>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* 이달의 랭킹 */}
-      {tab === "monthly" && (
-        <div className="p-4">
-          <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
-            <p className="text-4xl mb-3">📅</p>
-            <p className="font-bold text-gray-700">이달의 랭킹</p>
-            <p className="text-sm text-gray-400 mt-2">
-              {new Date().getMonth() + 1}월 랭킹 집계 중...
-            </p>
-            <p className="text-xs text-gray-300 mt-4">
-              월별 랭킹은 매월 1일 초기화됩니다
-            </p>
+      {/* ── 전체 리스트 ── */}
+      <div className="mx-4 mt-3 bg-white rounded-2xl shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="py-12 text-center">
+            <p className="text-gray-400 animate-pulse">랭킹 불러오는 중... 🌿</p>
           </div>
-
-          {/* 이달 개인 랭킹 (간략) */}
-          <div className="mt-4 bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b bg-gray-50">
-              <p className="font-bold text-gray-700 text-sm">
-                {new Date().getMonth() + 1}월 누적 포인트 TOP 10
-              </p>
-            </div>
-            {personalRank.slice(0, 10).map((u) => (
+        ) : rankList.length === 0 ? (
+          <div className="py-12 text-center">
+            <p className="text-4xl mb-2">🌱</p>
+            <p className="text-gray-500">아직 참여자가 없어요!</p>
+            <p className="text-sm text-gray-400 mt-1">첫 번째 플로깅으로 1위를 차지해보세요</p>
+          </div>
+        ) : (
+          rankList.slice(0, 20).map((item, idx) => {
+            const rank = idx + 1;
+            const isMe = user && item.uid === user.uid;
+            return (
               <div
-                key={u.uid}
-                className={`flex items-center px-4 py-3 border-b last:border-0 ${
-                  u.uid === user?.uid ? "bg-blue-50" : ""
-                }`}
+                key={item.uid}
+                className={`flex items-center gap-3 px-4 py-3 border-b last:border-0
+                  ${isMe ? "bg-green-50" : ""}`}
               >
-                <RankBadge rank={u.rank} />
-                <div className="ml-3 flex-1">
-                  <p className="font-medium text-sm">
-                    {u.email?.split("@")[0] || "익명"}
-                    {u.uid === user?.uid && (
-                      <span className="ml-1 text-xs text-blue-500">(나)</span>
-                    )}
+                {/* 순위 */}
+                <div className="w-8 text-center">
+                  {getMedal(rank)
+                    ? <span className="text-xl">{getMedal(rank)}</span>
+                    : <span className="text-sm font-bold text-gray-400">#{rank}</span>
+                  }
+                </div>
+                {/* 아바타 */}
+                <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden text-lg flex-shrink-0">
+                  {item.photoURL
+                    ? <img src={item.photoURL} alt="" className="w-full h-full object-cover" />
+                    : "😊"
+                  }
+                </div>
+                {/* 이름 */}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium truncate ${isMe ? "text-green-700" : "text-gray-700"}`}>
+                    {item.displayName} {isMe && <span className="text-xs text-green-500">(나)</span>}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {item.count}회 · {item.distance.toFixed(1)}km
                   </p>
                 </div>
-                <span className="font-bold text-blue-600">
-                  {u.totalPoints?.toLocaleString() || 0}P
+                {/* 값 */}
+                <span className={`text-sm font-bold flex-shrink-0 ${isMe ? "text-green-600" : "text-gray-700"}`}>
+                  {formatValue(item)}
                 </span>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            );
+          })
+        )}
+      </div>
 
-      {/* 지역 랭킹 */}
-      {tab === "region" && (
-        <div className="p-4">
-          <p className="text-sm text-gray-500 mb-3">
-            지역별 총 플로깅 거리 랭킹입니다
-          </p>
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            {REGION_LIST.map((region, i) => (
-              <div
-                key={region.code}
-                className="flex items-center px-4 py-3 border-b last:border-0"
-              >
-                <RankBadge rank={i + 1} />
-                <span className="text-2xl ml-3">{region.emoji}</span>
-                <div className="ml-3 flex-1">
-                  <p className="font-medium text-sm">{region.name}</p>
-                  <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
-                    <div
-                      className="bg-blue-400 h-1.5 rounded-full"
-                      style={{ width: `${Math.max(5, 100 - i * 9)}%` }}
-                    />
-                  </div>
-                </div>
-                <span className="text-xs text-gray-400 ml-2">
-                  {(100 - i * 9).toFixed(0)}km
-                </span>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-gray-400 text-center mt-3">
-            * 지역 데이터는 실 사용자 증가 후 업데이트 예정
-          </p>
-        </div>
-      )}
+      <p className="text-center text-xs text-gray-300 mt-4 mb-2">
+        상위 20명 표시 · 매일 자정 기준 갱신
+      </p>
     </div>
   );
 }

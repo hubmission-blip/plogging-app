@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-  collection, addDoc, doc, getDoc, updateDoc,
-  arrayUnion, query, where, getDocs, serverTimestamp
+  doc, setDoc, getDoc, updateDoc,
+  collection, serverTimestamp, arrayUnion, onSnapshot
 } from "firebase/firestore";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 
-// 6자리 랜덤 코드 생성
+// ─── 랜덤 6자리 그룹 코드 ─────────────────────────────────
 function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
@@ -18,299 +17,300 @@ function generateCode() {
 export default function GroupPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [tab, setTab] = useState("my"); // my | create | join
-  const [myGroups, setMyGroups] = useState([]);
-  const [loading, setLoading] = useState(false);
 
-  // 그룹 생성 폼
-  const [groupName, setGroupName] = useState("");
-  const [groupDesc, setGroupDesc] = useState("");
+  const [mode, setMode] = useState("home"); // home | create | join | waiting | ready
+  const [groupCode, setGroupCode] = useState("");
+  const [joinCode, setJoinCode]   = useState("");
+  const [groupData, setGroupData] = useState(null);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState("");
+  const [copied, setCopied]       = useState(false);
 
-  // 그룹 참여 폼
-  const [joinCode, setJoinCode] = useState("");
-
+  // ── 그룹 실시간 리슨 ────────────────────────────────────
   useEffect(() => {
-    if (!user) { router.push("/login"); return; }
-    fetchMyGroups();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+    if (!groupCode) return;
+    const unsub = onSnapshot(doc(db, "groups", groupCode), (snap) => {
+      if (snap.exists()) {
+        setGroupData({ id: snap.id, ...snap.data() });
+      }
+    });
+    return () => unsub();
+  }, [groupCode]);
 
-  const fetchMyGroups = async () => {
-    try {
-      const q = query(
-        collection(db, "groups"),
-        where("members", "array-contains", user.uid)
-      );
-      const snap = await getDocs(q);
-      setMyGroups(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    } catch (e) {
-      console.error("그룹 불러오기 실패:", e);
-    }
-  };
-
-  const handleCreateGroup = async (e) => {
-    e.preventDefault();
-    if (!groupName.trim()) return;
+  // ── 그룹 생성 ────────────────────────────────────────────
+  const handleCreate = async () => {
+    if (!user) return;
     setLoading(true);
+    setError("");
     try {
       const code = generateCode();
-      const docRef = await addDoc(collection(db, "groups"), {
-        name: groupName,
-        description: groupDesc,
+      const displayName = user.displayName || user.email?.split("@")[0] || "방장";
+      await setDoc(doc(db, "groups", code), {
         code,
-        leaderId: user.uid,
-        leaderEmail: user.email,
-        leaderNickname: user.displayName || user.email?.split("@")[0],
-        members: [user.uid],
-        memberCount: 1,
-        totalDistance: 0,
+        hostUid: user.uid,
+        hostName: displayName,
+        members: [{ uid: user.uid, name: displayName, photoURL: user.photoURL || "" }],
+        status: "waiting",   // waiting | plogging | done
         createdAt: serverTimestamp(),
-        isActive: true,
+        expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2시간 후 만료
       });
-      setGroupName("");
-      setGroupDesc("");
-      setTab("my");
-      fetchMyGroups();
-      alert(`그룹 생성 완료!\n초대 코드: ${code}\n\n친구에게 코드를 공유하세요!`);
+      setGroupCode(code);
+      setMode("waiting");
     } catch (e) {
-      alert("그룹 생성 실패: " + e.message);
+      setError("그룹 생성 실패: " + e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleJoinGroup = async (e) => {
-    e.preventDefault();
-    if (!joinCode.trim()) return;
+  // ── 그룹 참여 ────────────────────────────────────────────
+  const handleJoin = async () => {
+    if (!user || !joinCode.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const code = joinCode.trim().toUpperCase();
+      const snap = await getDoc(doc(db, "groups", code));
+      if (!snap.exists()) {
+        setError("존재하지 않는 그룹 코드예요.");
+        return;
+      }
+      const data = snap.data();
+      if (data.status !== "waiting") {
+        setError("이미 플로깅이 시작된 그룹이에요.");
+        return;
+      }
+      if (data.members.length >= 10) {
+        setError("그룹 최대 인원(10명)을 초과했어요.");
+        return;
+      }
+
+      const displayName = user.displayName || user.email?.split("@")[0] || "멤버";
+      await updateDoc(doc(db, "groups", code), {
+        members: arrayUnion({
+          uid: user.uid,
+          name: displayName,
+          photoURL: user.photoURL || "",
+        }),
+      });
+      setGroupCode(code);
+      setMode("waiting");
+    } catch (e) {
+      setError("참여 실패: " + e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── 플로깅 시작 (방장만) ─────────────────────────────────
+  const handleStart = async () => {
+    if (!groupData || groupData.hostUid !== user?.uid) return;
     setLoading(true);
     try {
-      const q = query(
-        collection(db, "groups"),
-        where("code", "==", joinCode.toUpperCase())
-      );
-      const snap = await getDocs(q);
-
-      if (snap.empty) {
-        alert("존재하지 않는 코드입니다!");
-        return;
-      }
-
-      const groupDoc = snap.docs[0];
-      const groupData = groupDoc.data();
-
-      if (groupData.members.includes(user.uid)) {
-        alert("이미 가입된 그룹입니다!");
-        return;
-      }
-
-      await updateDoc(doc(db, "groups", groupDoc.id), {
-        members: arrayUnion(user.uid),
-        memberCount: (groupData.memberCount || 1) + 1,
-      });
-
-      setJoinCode("");
-      setTab("my");
-      fetchMyGroups();
-      alert(`"${groupData.name}" 그룹에 참여했습니다! 🎉`);
+      await updateDoc(doc(db, "groups", groupCode), { status: "plogging" });
+      // 지도 페이지로 이동 (그룹 정보 파라미터 전달)
+      router.push(`/map?groupId=${groupCode}&groupSize=${groupData.members.length}`);
     } catch (e) {
-      alert("참여 실패: " + e.message);
+      setError("시작 실패: " + e.message);
     } finally {
       setLoading(false);
     }
   };
 
+  // ── 링크/코드 복사 ───────────────────────────────────────
+  const handleCopy = async () => {
+    const text = `🌿 오백원의 행복 그룹 플로깅 초대!\n\n그룹 코드: ${groupCode}\n앱에서 '그룹 플로깅 → 코드로 참여' 에 입력하세요.\n\nhttps://your-app.vercel.app/group`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      alert("코드: " + groupCode);
+    }
+  };
+
+  // ── 나가기 ───────────────────────────────────────────────
+  const handleLeave = () => {
+    setGroupCode("");
+    setGroupData(null);
+    setMode("home");
+    setJoinCode("");
+    setError("");
+  };
+
+  // ── 상태에 따라 플로깅 시작으로 리디렉트 ────────────────
+  useEffect(() => {
+    if (groupData?.status === "plogging" && mode === "waiting") {
+      router.push(`/map?groupId=${groupCode}&groupSize=${groupData.members.length}`);
+    }
+  }, [groupData, mode, groupCode, router]);
+
+  if (!user) return (
+    <div className="flex flex-col items-center justify-center h-screen gap-4 text-center px-6">
+      <div className="text-5xl">🔑</div>
+      <p className="font-bold text-gray-700">로그인이 필요해요</p>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      {/* 헤더 */}
-      <div className="bg-gradient-to-b from-purple-600 to-purple-500 px-4 pt-12 pb-6 text-white">
-        <h1 className="text-2xl font-bold">👥 그룹 플로깅</h1>
-        <p className="text-purple-100 text-sm mt-1">함께하면 보너스 포인트!</p>
-        <div className="mt-3 bg-white/20 rounded-xl px-4 py-2 inline-block">
-          <p className="text-sm">그룹원 수 × 5P 추가 보너스 🎁</p>
-        </div>
+    <div
+      className="min-h-screen bg-gray-50"
+      style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
+    >
+      {/* ── 헤더 ── */}
+      <div className="bg-purple-600 text-white px-4 pt-12 pb-6">
+        <h1 className="text-2xl font-bold mb-1">👥 그룹 플로깅</h1>
+        <p className="text-purple-200 text-sm">함께하면 보너스 포인트! 인원 × 5P 추가</p>
       </div>
 
-      {/* 탭 */}
-      <div className="flex bg-white border-b sticky top-0 z-10">
-        {[
-          { id: "my",     label: "내 그룹" },
-          { id: "create", label: "그룹 만들기" },
-          { id: "join",   label: "그룹 참여" },
-        ].map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
-              tab === t.id
-                ? "border-purple-500 text-purple-600"
-                : "border-transparent text-gray-500"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <div className="px-4 mt-6 space-y-4">
 
-      <div className="p-4">
-        {/* 내 그룹 목록 */}
-        {tab === "my" && (
-          <div>
-            {myGroups.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-4xl mb-3">👥</p>
-                <p className="text-gray-500 font-medium">아직 그룹이 없어요</p>
-                <p className="text-gray-400 text-sm mt-1">그룹을 만들거나 코드로 참여해보세요!</p>
-                <div className="flex gap-2 mt-4 justify-center">
-                  <button
-                    onClick={() => setTab("create")}
-                    className="bg-purple-500 text-white px-4 py-2 rounded-full text-sm font-bold"
-                  >
-                    그룹 만들기
-                  </button>
-                  <button
-                    onClick={() => setTab("join")}
-                    className="border border-purple-500 text-purple-500 px-4 py-2 rounded-full text-sm font-bold"
-                  >
-                    코드로 참여
-                  </button>
+        {/* ─────── HOME: 방 만들기 / 참여하기 ─────── */}
+        {mode === "home" && (
+          <>
+            {/* 그룹 포인트 안내 */}
+            <div className="bg-purple-50 rounded-2xl p-4 border border-purple-100">
+              <h2 className="font-bold text-purple-700 mb-2">🎁 그룹 보너스 포인트</h2>
+              {[
+                { size: "2명", bonus: "+10P" },
+                { size: "3명", bonus: "+15P" },
+                { size: "5명", bonus: "+25P" },
+                { size: "10명", bonus: "+50P" },
+              ].map((item) => (
+                <div key={item.size} className="flex justify-between text-sm py-1 border-b border-purple-100 last:border-0">
+                  <span className="text-gray-600">그룹 {item.size}</span>
+                  <span className="font-bold text-purple-600">{item.bonus} (인원 × 5P)</span>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {myGroups.map((group) => (
-                  <div key={group.id} className="bg-white rounded-2xl shadow-sm p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-gray-800">{group.name}</h3>
-                          {group.leaderId === user.uid && (
-                            <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">
-                              리더
-                            </span>
-                          )}
-                        </div>
-                        {group.description && (
-                          <p className="text-sm text-gray-500 mt-0.5">{group.description}</p>
-                        )}
-                        <p className="text-xs text-gray-400 mt-1">
-                          👥 {group.memberCount}명 참여 중
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-gray-400">초대 코드</p>
-                        <p className="font-bold text-purple-600 text-lg tracking-widest">
-                          {group.code}
-                        </p>
-                      </div>
-                    </div>
+              ))}
+            </div>
 
-                    <div className="flex gap-2 mt-3">
-                      {/* 그룹과 함께 플로깅 시작 */}
-                      <Link
-                        href={`/map?groupId=${group.id}&groupSize=${group.memberCount}`}
-                        className="flex-1"
-                      >
-                        <button className="w-full bg-purple-500 text-white py-2 rounded-xl text-sm font-bold">
-                          🚶 함께 플로깅 시작
-                        </button>
-                      </Link>
-                      {/* 코드 복사 */}
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(group.code);
-                          alert(`코드 ${group.code} 복사됨!`);
-                        }}
-                        className="border border-gray-200 px-3 py-2 rounded-xl text-sm text-gray-500"
-                      >
-                        📋
-                      </button>
+            {/* 방 만들기 */}
+            <button
+              onClick={handleCreate}
+              disabled={loading}
+              className="w-full bg-purple-500 text-white py-5 rounded-2xl shadow-md font-bold text-lg active:scale-95 transition-transform"
+            >
+              {loading ? "생성 중..." : "🚀 그룹 방 만들기"}
+            </button>
+
+            {/* 코드로 참여 */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm">
+              <h2 className="font-bold text-gray-700 mb-3">🔑 코드로 참여하기</h2>
+              <div className="flex gap-2">
+                <input
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  placeholder="6자리 코드 입력"
+                  maxLength={6}
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-purple-400"
+                />
+                <button
+                  onClick={handleJoin}
+                  disabled={loading || joinCode.length < 6}
+                  className="bg-purple-500 text-white px-5 rounded-xl font-bold disabled:opacity-40"
+                >
+                  참여
+                </button>
+              </div>
+              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+            </div>
+          </>
+        )}
+
+        {/* ─────── WAITING: 대기실 ─────── */}
+        {mode === "waiting" && groupData && (
+          <>
+            {/* 그룹 코드 카드 */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
+              <p className="text-sm text-gray-400 mb-1">그룹 코드</p>
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <span className="text-4xl font-mono font-black text-purple-600 tracking-widest">
+                  {groupCode}
+                </span>
+              </div>
+              <button
+                onClick={handleCopy}
+                className={`w-full py-3 rounded-xl font-medium text-sm transition-colors
+                  ${copied
+                    ? "bg-green-100 text-green-600"
+                    : "bg-purple-50 text-purple-600 border border-purple-200"
+                  }`}
+              >
+                {copied ? "✅ 복사됨!" : "📋 코드 및 링크 복사하기"}
+              </button>
+            </div>
+
+            {/* 멤버 목록 */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="font-bold text-gray-700">
+                  참여 멤버 ({groupData.members?.length || 0}/10)
+                </h2>
+                <span className="text-xs text-gray-400 animate-pulse">● 실시간</span>
+              </div>
+              <div className="space-y-2">
+                {(groupData.members || []).map((member, idx) => (
+                  <div key={member.uid} className="flex items-center gap-3 py-1">
+                    <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-lg overflow-hidden">
+                      {member.photoURL
+                        ? <img src={member.photoURL} alt="" className="w-full h-full object-cover" />
+                        : "😊"
+                      }
                     </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-700">
+                        {member.name}
+                        {member.uid === groupData.hostUid && (
+                          <span className="ml-1 text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded">방장</span>
+                        )}
+                        {member.uid === user?.uid && (
+                          <span className="ml-1 text-xs text-gray-400">(나)</span>
+                        )}
+                      </p>
+                    </div>
+                    <span className="text-green-500 text-sm">준비 ✓</span>
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* 그룹 보너스 미리보기 */}
+            <div className="bg-purple-50 rounded-2xl p-3 text-center">
+              <p className="text-sm text-purple-700">
+                현재 <span className="font-bold">{groupData.members?.length || 0}명</span> 참여 중 —
+                그룹 보너스 <span className="font-bold text-purple-600">+{(groupData.members?.length || 0) * 5}P</span> 예정
+              </p>
+            </div>
+
+            {/* 시작 버튼 (방장만) / 대기 안내 (일반) */}
+            {groupData.hostUid === user?.uid ? (
+              <button
+                onClick={handleStart}
+                disabled={loading || (groupData.members?.length || 0) < 2}
+                className="w-full bg-green-500 text-white py-5 rounded-2xl font-bold text-lg shadow-md disabled:opacity-40 active:scale-95 transition-transform"
+              >
+                {loading ? "시작 중..." :
+                  (groupData.members?.length || 0) < 2
+                    ? "멤버를 기다리는 중... (최소 2명)"
+                    : `🚀 플로깅 시작 (${groupData.members?.length}명)`
+                }
+              </button>
+            ) : (
+              <div className="bg-white rounded-2xl p-5 text-center shadow-sm">
+                <div className="text-3xl mb-2 animate-bounce">⏳</div>
+                <p className="text-gray-600 font-medium">방장이 시작하길 기다리는 중...</p>
+                <p className="text-sm text-gray-400 mt-1">시작되면 자동으로 이동해요</p>
+              </div>
             )}
-          </div>
-        )}
 
-        {/* 그룹 만들기 */}
-        {tab === "create" && (
-          <form onSubmit={handleCreateGroup} className="space-y-4">
-            <div className="bg-purple-50 rounded-2xl p-4 text-sm text-purple-700">
-              <p className="font-bold mb-1">💡 그룹 플로깅 보너스</p>
-              <p>그룹원이 많을수록 포인트 UP!</p>
-              <p>2명: +10P / 5명: +25P / 10명: +50P</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                그룹 이름 *
-              </label>
-              <input
-                type="text"
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
-                placeholder="예: 한강 플로깅 팀"
-                required
-                maxLength={20}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                그룹 소개 (선택)
-              </label>
-              <textarea
-                value={groupDesc}
-                onChange={(e) => setGroupDesc(e.target.value)}
-                placeholder="그룹 소개를 입력해주세요"
-                rows={3}
-                maxLength={100}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
-              />
-            </div>
-
+            {/* 나가기 */}
             <button
-              type="submit"
-              disabled={loading || !groupName.trim()}
-              className="w-full bg-purple-500 text-white py-3 rounded-xl font-bold disabled:opacity-50"
+              onClick={handleLeave}
+              className="w-full bg-white text-gray-400 py-3 rounded-2xl text-sm font-medium shadow-sm"
             >
-              {loading ? "생성 중..." : "✅ 그룹 만들기"}
+              그룹 나가기
             </button>
-          </form>
-        )}
-
-        {/* 그룹 참여 */}
-        {tab === "join" && (
-          <form onSubmit={handleJoinGroup} className="space-y-4">
-            <div className="bg-blue-50 rounded-2xl p-4 text-sm text-blue-700">
-              <p className="font-bold mb-1">📋 참여 방법</p>
-              <p>그룹 리더에게 6자리 초대 코드를 받아 입력하세요!</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                초대 코드 (6자리)
-              </label>
-              <input
-                type="text"
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                placeholder="예: ABC123"
-                required
-                maxLength={6}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 text-center text-2xl font-bold tracking-widest uppercase"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || joinCode.length < 6}
-              className="w-full bg-blue-500 text-white py-3 rounded-xl font-bold disabled:opacity-50"
-            >
-              {loading ? "참여 중..." : "🚀 그룹 참여하기"}
-            </button>
-          </form>
+          </>
         )}
       </div>
     </div>

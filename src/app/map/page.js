@@ -2,7 +2,7 @@
 
 import { notifyPloggingComplete } from "@/lib/notify";
 import Link from "next/link";
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { useKakaoLoader } from "react-kakao-maps-sdk";
@@ -19,6 +19,31 @@ import {
 import { calculatePoints } from "@/lib/pointCalc";
 import { getWeekNumber, getExpiresAt, isExpired, getRouteColor } from "@/lib/routeUtils";
 
+// ─── 속도 위반으로 자동 종료됐을 때 보여줄 모달 ─────────────────
+function SpeedViolationModal({ onClose }) {
+  return (
+    <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20 p-4">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center">
+        <div className="text-5xl mb-3">🚗</div>
+        <h2 className="text-xl font-bold text-red-600 mb-2">이동수단 감지!</h2>
+        <p className="text-gray-600 text-sm mb-1">
+          시속 <span className="font-bold text-red-500">30km/h</span>를 5초 이상 초과했어요.
+        </p>
+        <p className="text-gray-500 text-sm mb-5">
+          플로깅은 걷거나 뛰는 활동이에요. 🚶‍♂️<br />
+          이번 기록은 포인트가 지급되지 않아요.
+        </p>
+        <button
+          onClick={onClose}
+          className="w-full bg-red-500 text-white py-3 rounded-xl font-bold"
+        >
+          확인
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function MapPageInner() {
   const [loading, error] = useKakaoLoader({
     appkey: process.env.NEXT_PUBLIC_KAKAO_MAP_KEY,
@@ -30,10 +55,38 @@ function MapPageInner() {
   const groupId = searchParams.get("groupId");
   const groupSize = parseInt(searchParams.get("groupSize") || "1");
 
-  const { path, distance, isTracking, startTracking, stopTracking } = useLocation();
   const { user } = useAuth();
   const [result, setResult] = useState(null);
   const [pastRoutes, setPastRoutes] = useState([]);
+
+  // ── 속도 위반 자동종료 상태 ───────────────────────────────
+  const [speedViolationStop, setSpeedViolationStop] = useState(false);
+  // path/distance를 자동종료 직전 값으로 보존하기 위한 ref
+  const savedPathRef = useRef([]);
+  const savedDistanceRef = useRef(0);
+
+  // ── onSpeedViolation 콜백: 자동종료 트리거 ───────────────
+  const handleSpeedViolation = useCallback(() => {
+    setSpeedViolationStop(true);
+  }, []);
+
+  const {
+    path,
+    distance,
+    isTracking,
+    currentSpeed,
+    isSpeedWarning,
+    startTracking,
+    stopTracking,
+  } = useLocation({ onSpeedViolation: handleSpeedViolation });
+
+  // 경로 추적 중 path/distance를 ref에 저장
+  useEffect(() => {
+    if (isTracking) {
+      savedPathRef.current = path;
+      savedDistanceRef.current = distance;
+    }
+  }, [path, distance, isTracking]);
 
   // ✅ useCallback으로 외부에서도 호출 가능하게
   const fetchPastRoutes = useCallback(async () => {
@@ -158,20 +211,45 @@ function MapPageInner() {
     <div className="relative w-full h-screen">
       <MapView currentPath={path} pastRoutes={pastRoutes} />
 
-      {/* 상단: 거리 표시 */}
+      {/* ── 상단: 거리 + 속도 표시 ── */}
       <div className="absolute top-4 left-0 right-0 flex justify-center z-10">
-        <div className="bg-white rounded-full px-6 py-2 shadow-lg flex items-center gap-2">
+        <div className="bg-white rounded-full px-6 py-2 shadow-lg flex items-center gap-3">
           <span className="text-lg font-bold text-green-700">
             📍 {distance.toFixed(2)} km
           </span>
           {isTracking && (
-            <span className="text-xs text-red-500 animate-pulse">● 기록 중</span>
+            <>
+              <span className="text-gray-300">|</span>
+              <span
+                className={`text-sm font-bold ${
+                  isSpeedWarning ? "text-red-500" : "text-blue-500"
+                }`}
+              >
+                🚀 {currentSpeed} km/h
+              </span>
+              <span className="text-xs text-red-500 animate-pulse">● 기록 중</span>
+            </>
           )}
         </div>
       </div>
 
-      {/* 그룹 플로깅 표시 */}
-      {groupId && (
+      {/* ── 속도 경고 배너 (30km/h 초과 시) ── */}
+      {isSpeedWarning && isTracking && (
+        <div className="absolute top-16 left-0 right-0 flex justify-center z-10 px-4">
+          <div className="bg-red-500 text-white rounded-2xl px-5 py-3 shadow-xl flex items-center gap-2 animate-pulse">
+            <span className="text-xl">⚠️</span>
+            <div>
+              <p className="font-bold text-sm">이동수단 감지!</p>
+              <p className="text-xs opacity-90">
+                시속 30km/h 초과 — 5초 지속 시 자동 종료됩니다
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 그룹 플로깅 표시 ── */}
+      {groupId && !isSpeedWarning && (
         <div className="absolute top-16 left-0 right-0 flex justify-center z-10">
           <div className="bg-purple-500 text-white rounded-full px-4 py-1 text-xs font-bold shadow">
             👥 그룹 플로깅 중 · {groupSize}명 · +{groupSize * 5}P 보너스
@@ -179,7 +257,7 @@ function MapPageInner() {
         </div>
       )}
 
-      {/* 주차별 색상 범례 */}
+      {/* ── 주차별 색상 범례 ── */}
       {pastRoutes.length > 0 && !isTracking && (
         <div className="absolute top-16 right-3 bg-white rounded-xl p-2 shadow-lg z-10">
           <p className="text-xs font-bold text-gray-500 mb-1">내 동선</p>
@@ -197,7 +275,7 @@ function MapPageInner() {
         </div>
       )}
 
-      {/* 하단 버튼 */}
+      {/* ── 하단 버튼 ── */}
       <div className="absolute bottom-24 left-0 right-0 flex justify-center z-10">
         {!isTracking ? (
           <button
@@ -216,7 +294,17 @@ function MapPageInner() {
         )}
       </div>
 
-      {/* 결과 모달 */}
+      {/* ── 속도 위반 자동종료 모달 ── */}
+      {speedViolationStop && (
+        <SpeedViolationModal
+          onClose={() => {
+            setSpeedViolationStop(false);
+            fetchPastRoutes();
+          }}
+        />
+      )}
+
+      {/* ── 정상 완료 결과 모달 ── */}
       {result && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
@@ -248,7 +336,7 @@ function MapPageInner() {
               onUploadComplete={(url) => console.log("✅ 사진 저장:", url)}
             />
 
-            {/* ✅ 버튼 두 개: 닫기 + 기록 보기 */}
+            {/* 닫기 + 기록 보기 버튼 */}
             <div className="flex gap-2 mt-3">
               <button
                 onClick={() => setResult(null)}

@@ -1,45 +1,110 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { db, auth } from "@/lib/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { updateProfile } from "firebase/auth";
-import { signOut } from "firebase/auth";
-import { getPointGrade } from "@/lib/pointCalc";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { db } from "@/lib/firebase";
+import {
+  doc, getDoc, updateDoc,
+  collection, query, where, getDocs, orderBy, limit
+} from "firebase/firestore";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import Link from "next/link";
+
+// ─── 뱃지 기준 ────────────────────────────────────────────
+const BADGES = [
+  { id: "first",    icon: "🌱", label: "첫 플로깅",  desc: "1회 완료",         condition: (s) => s.ploggingCount >= 1 },
+  { id: "walker",   icon: "🚶", label: "5km 달성",   desc: "누적 5km 이상",    condition: (s) => s.totalDistance >= 5 },
+  { id: "runner",   icon: "🏃", label: "10km 달성",  desc: "누적 10km 이상",   condition: (s) => s.totalDistance >= 10 },
+  { id: "hero",     icon: "🦸", label: "환경 영웅",  desc: "누적 50km 이상",   condition: (s) => s.totalDistance >= 50 },
+  { id: "tenner",   icon: "🔥", label: "10회 달성",  desc: "10회 완료",        condition: (s) => s.ploggingCount >= 10 },
+  { id: "rich",     icon: "💰", label: "부자",        desc: "1000포인트 이상",  condition: (s) => s.totalPoints >= 1000 },
+];
+
+// ─── 레벨 계산 ────────────────────────────────────────────
+function getLevel(points) {
+  if (points < 100)  return { level: 1, name: "새싹",   icon: "🌱", next: 100 };
+  if (points < 300)  return { level: 2, name: "걸음마", icon: "🚶", next: 300 };
+  if (points < 600)  return { level: 3, name: "러너",   icon: "🏃", next: 600 };
+  if (points < 1000) return { level: 4, name: "용사",   icon: "⚔️",  next: 1000 };
+  if (points < 2000) return { level: 5, name: "영웅",   icon: "🦸", next: 2000 };
+  return              { level: 6, name: "전설",   icon: "🏆", next: null };
+}
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const [userData, setUserData] = useState(null);
-  const [editingNick, setEditingNick] = useState(false);
-  const [newNick, setNewNick] = useState("");
-  const [saving, setSaving] = useState(false);
   const router = useRouter();
+
+  const [stats, setStats] = useState({
+    totalPoints: 0,
+    totalDistance: 0,
+    ploggingCount: 0,
+    displayName: "",
+    photoURL: "",
+  });
+  const [recentRoutes, setRecentRoutes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editingName, setEditingName] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // ── 유저 데이터 불러오기 ────────────────────────────────
+  const fetchData = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      // 유저 기본 정보
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      if (userSnap.exists()) {
+        const data = userSnap.data();
+        setStats({
+          totalPoints:   data.totalPoints   || 0,
+          totalDistance: data.totalDistance || 0,
+          ploggingCount: data.ploggingCount || 0,
+          displayName:   data.displayName   || user.displayName || user.email?.split("@")[0] || "익명",
+          photoURL:      data.photoURL      || user.photoURL    || "",
+        });
+        setNewName(data.displayName || user.displayName || "");
+      }
+
+      // 최근 플로깅 기록 (최대 5개)
+      const q = query(
+        collection(db, "routes"),
+        where("userId", "==", user.uid)
+      );
+      const snap = await getDocs(q);
+      const routes = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => {
+          const aTime = a.createdAt?.toMillis?.() || 0;
+          const bTime = b.createdAt?.toMillis?.() || 0;
+          return bTime - aTime;
+        })
+        .slice(0, 5);
+      setRecentRoutes(routes);
+    } catch (e) {
+      console.error("데이터 로드 실패:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
-    const fetchUser = async () => {
-      const ref = doc(db, "users", user.uid);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        setUserData(snap.data());
-        setNewNick(snap.data().nickname || user.displayName || "");
-      }
-    };
-    fetchUser();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+    fetchData();
+  }, [user, fetchData, router]);
 
-  const handleSaveNick = async () => {
-    if (!newNick.trim() || newNick.length < 2) return;
+  // ── 닉네임 저장 ─────────────────────────────────────────
+  const handleSaveName = async () => {
+    if (!newName.trim()) return;
     setSaving(true);
     try {
-      await updateProfile(user, { displayName: newNick });
-      await updateDoc(doc(db, "users", user.uid), { nickname: newNick });
-      setUserData((prev) => ({ ...prev, nickname: newNick }));
-      setEditingNick(false);
+      await updateDoc(doc(db, "users", user.uid), {
+        displayName: newName.trim(),
+      });
+      setStats((prev) => ({ ...prev, displayName: newName.trim() }));
+      setEditingName(false);
     } catch (e) {
       alert("저장 실패: " + e.message);
     } finally {
@@ -47,151 +112,200 @@ export default function ProfilePage() {
     }
   };
 
+  // ── 로그아웃 ────────────────────────────────────────────
   const handleLogout = async () => {
+    if (!confirm("로그아웃 하시겠어요?")) return;
     await signOut(auth);
     router.push("/login");
   };
 
-  if (!user) return null;
+  if (loading) return (
+    <div className="flex items-center justify-center h-screen">
+      <p className="text-lg animate-pulse">🌿 프로필 불러오는 중...</p>
+    </div>
+  );
 
-  const totalPoints = userData?.totalPoints || 0;
-  const { grade, color } = getPointGrade(totalPoints);
-  const displayName = userData?.nickname || user.displayName || user.email?.split("@")[0];
+  const levelInfo = getLevel(stats.totalPoints);
+  const progressPct = levelInfo.next
+    ? Math.min(100, (stats.totalPoints / levelInfo.next) * 100)
+    : 100;
+  const earnedBadges = BADGES.filter((b) => b.condition(stats));
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      {/* 헤더 */}
-      <div className="bg-gradient-to-b from-green-500 to-green-400 p-6 pt-12 text-white">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-white/30 rounded-full flex items-center justify-center text-3xl">
-            🌿
+    <div
+      className="min-h-screen bg-gray-50 pb-28"
+      style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
+    >
+      {/* ── 헤더 ── */}
+      <div className="bg-green-600 text-white px-4 pt-12 pb-8">
+        {/* 아바타 + 이름 */}
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-3xl overflow-hidden shadow">
+            {stats.photoURL
+              ? <img src={stats.photoURL} alt="프로필" className="w-full h-full object-cover" />
+              : <span>{levelInfo.icon}</span>
+            }
           </div>
           <div className="flex-1">
-            {editingNick ? (
-              <div className="flex items-center gap-2">
+            {editingName ? (
+              <div className="flex gap-2 items-center">
                 <input
-                  value={newNick}
-                  onChange={(e) => setNewNick(e.target.value)}
-                  maxLength={10}
-                  className="bg-white/20 text-white placeholder-white/60 rounded-lg px-3 py-1 text-sm w-32 focus:outline-none"
-                  placeholder="닉네임 입력"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="text-black rounded-lg px-3 py-1 text-sm flex-1 max-w-[160px]"
+                  maxLength={12}
                   autoFocus
                 />
                 <button
-                  onClick={handleSaveNick}
+                  onClick={handleSaveName}
                   disabled={saving}
-                  className="bg-white text-green-600 text-xs px-3 py-1.5 rounded-lg font-bold"
+                  className="bg-white text-green-600 px-3 py-1 rounded-lg text-sm font-bold"
                 >
                   {saving ? "..." : "저장"}
                 </button>
                 <button
-                  onClick={() => setEditingNick(false)}
-                  className="text-white/70 text-xs"
+                  onClick={() => setEditingName(false)}
+                  className="text-white/70 text-sm"
                 >
                   취소
                 </button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <p className="font-bold text-lg">{displayName}</p>
+                <h1 className="text-xl font-bold">{stats.displayName}</h1>
                 <button
-                  onClick={() => setEditingNick(true)}
-                  className="text-white/70 text-xs bg-white/20 px-2 py-0.5 rounded-full"
+                  onClick={() => setEditingName(true)}
+                  className="text-white/70 text-xs border border-white/40 rounded px-1.5 py-0.5"
                 >
                   ✏️ 수정
                 </button>
               </div>
             )}
-            <p className="text-green-100 text-sm mt-0.5">{user.email}</p>
-            <p className="text-sm font-medium mt-0.5" style={{ color }}>
-              {grade}
+            <p className="text-green-200 text-sm mt-0.5">
+              {levelInfo.icon} Lv.{levelInfo.level} {levelInfo.name}
             </p>
           </div>
         </div>
-      </div>
 
-      {/* 포인트 카드 */}
-      <div className="mx-4 -mt-4 bg-white rounded-2xl shadow-lg p-6 mb-4">
-        <p className="text-sm text-gray-500 mb-1">총 보유 포인트</p>
-        <p className="text-4xl font-bold text-green-600">{totalPoints.toLocaleString()} P</p>
-        <div className="mt-3 bg-gray-100 rounded-full h-2">
+        {/* 레벨 진행바 */}
+        <div className="bg-white/20 rounded-full h-2 mb-1">
           <div
-            className="bg-green-400 h-2 rounded-full transition-all"
-            style={{ width: `${Math.min(100, (totalPoints / 500) * 100)}%` }}
+            className="bg-white rounded-full h-2 transition-all"
+            style={{ width: `${progressPct}%` }}
           />
         </div>
-        <p className="text-xs text-gray-400 mt-1">
-          실버까지 {Math.max(0, 500 - totalPoints)}P 남음
+        <p className="text-xs text-green-200">
+          {levelInfo.next
+            ? `다음 레벨까지 ${levelInfo.next - stats.totalPoints}P 남았어요`
+            : "최고 레벨 달성! 🎉"}
         </p>
       </div>
 
-      {/* 통계 */}
-      <div className="mx-4 grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-          <p className="text-2xl font-bold text-green-600">{userData?.ploggingCount || 0}</p>
-          <p className="text-xs text-gray-500 mt-1">총 플로깅 횟수</p>
+      <div className="px-4 mt-4 space-y-4">
+        {/* ── 핵심 통계 3가지 ── */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { icon: "💰", label: "총 포인트",  value: `${stats.totalPoints.toLocaleString()}P` },
+            { icon: "📍", label: "총 거리",    value: `${stats.totalDistance.toFixed(1)}km` },
+            { icon: "🏃", label: "플로깅 횟수", value: `${stats.ploggingCount}회` },
+          ].map((item) => (
+            <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm text-center">
+              <div className="text-2xl mb-1">{item.icon}</div>
+              <p className="text-lg font-bold text-gray-800">{item.value}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{item.label}</p>
+            </div>
+          ))}
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-          <p className="text-2xl font-bold text-blue-500">
-            {(userData?.totalDistance || 0).toFixed(1)} km
-          </p>
-          <p className="text-xs text-gray-500 mt-1">총 이동 거리</p>
-        </div>
-      </div>
 
-      {/* 등급 안내 */}
-      <div className="mx-4 bg-white rounded-2xl shadow-sm p-4 mb-4">
-        <p className="font-bold text-gray-700 mb-3">🏅 등급 안내</p>
-        {[
-          { grade: "브론즈 🥉", range: "0 ~ 499P",      color: "#CD7F32" },
-          { grade: "실버 🥈",  range: "500 ~ 1,999P",  color: "#9E9E9E" },
-          { grade: "골드 🥇",  range: "2,000 ~ 4,999P",color: "#FFC107" },
-          { grade: "플래티넘 🏆", range: "5,000P~",    color: "#00BCD4" },
-        ].map((g) => (
-          <div key={g.grade} className="flex justify-between items-center py-2 border-b last:border-0">
-            <span className="font-medium" style={{ color: g.color }}>{g.grade}</span>
-            <span className="text-sm text-gray-500">{g.range}</span>
+        {/* ── 획득 뱃지 ── */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <h2 className="font-bold text-gray-700 mb-3">🏅 획득 뱃지</h2>
+          {earnedBadges.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-2">
+              첫 플로깅을 완료하면 뱃지를 받아요!
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {BADGES.map((badge) => {
+                const earned = badge.condition(stats);
+                return (
+                  <div
+                    key={badge.id}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm
+                      ${earned
+                        ? "bg-green-50 border border-green-200 text-green-700"
+                        : "bg-gray-100 text-gray-300"
+                      }`}
+                  >
+                    <span>{badge.icon}</span>
+                    <span className="font-medium">{badge.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── 최근 플로깅 기록 ── */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="font-bold text-gray-700">📋 최근 플로깅</h2>
+            <Link href="/history" className="text-xs text-green-500 font-medium">
+              전체 보기 →
+            </Link>
           </div>
-        ))}
-      </div>
-
-{/* 바로가기 메뉴 */}
-<div className="mx-4 bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
-  <p className="font-bold text-gray-700 px-4 pt-4 pb-2">📌 바로가기</p>
-  {[
-    { href: "/history", icon: "📋", label: "플로깅 기록", desc: `총 ${userData?.ploggingCount || 0}회` },
-    { href: "/rewards", icon: "🎁", label: "포인트 교환", desc: `${totalPoints.toLocaleString()}P 보유` },
-    { href: "/group",   icon: "👥", label: "그룹 플로깅", desc: "그룹 관리" },
-  ].map((item) => (
-    <Link key={item.href} href={item.href}>
-      <div className="flex items-center px-4 py-3 border-t hover:bg-gray-50 transition-colors">
-        <span className="text-xl mr-3">{item.icon}</span>
-        <div className="flex-1">
-          <p className="font-medium text-sm text-gray-800">{item.label}</p>
-          <p className="text-xs text-gray-400">{item.desc}</p>
+          {recentRoutes.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-3">
+              아직 플로깅 기록이 없어요. 지금 시작해볼까요? 🌿
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {recentRoutes.map((route) => {
+                const date = route.createdAt?.toDate?.();
+                const dateStr = date
+                  ? `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2,"0")}`
+                  : "날짜 없음";
+                return (
+                  <div key={route.id} className="flex justify-between items-center py-2 border-b last:border-0">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">
+                        📍 {(route.distance || 0).toFixed(2)} km
+                      </p>
+                      <p className="text-xs text-gray-400">{dateStr}</p>
+                    </div>
+                    <span className="text-sm font-bold text-green-600">
+                      +{route.points || 0}P
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-        <span className="text-gray-300">›</span>
-      </div>
-    </Link>
-  ))}
-</div>
 
-{/* 관리자 메뉴 (관리자만 표시) */}
-{user?.email === "hubmission@gmail.com" && (
-  <div className="mx-4 mb-4">
-    <Link href="/admin">
-      <button className="w-full bg-gray-800 text-white py-3 rounded-xl font-medium text-sm">
-        ⚙️ 관리자 페이지
-      </button>
-    </Link>
-  </div>
-)}
+        {/* ── 바로가기 메뉴 ── */}
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          {[
+            { href: "/history", icon: "📊", label: "전체 플로깅 기록" },
+            { href: "/ranking", icon: "🏆", label: "랭킹 보기" },
+            { href: "/group",   icon: "👥", label: "그룹 플로깅" },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-3 px-4 py-4 border-b last:border-0 active:bg-gray-50"
+            >
+              <span className="text-xl">{item.icon}</span>
+              <span className="flex-1 text-sm font-medium text-gray-700">{item.label}</span>
+              <span className="text-gray-300">›</span>
+            </Link>
+          ))}
+        </div>
 
-      {/* 로그아웃 */}
-      <div className="mx-4">
+        {/* ── 로그아웃 ── */}
         <button
           onClick={handleLogout}
-          className="w-full border border-red-300 text-red-500 py-3 rounded-xl font-medium"
+          className="w-full bg-white text-red-400 py-4 rounded-2xl shadow-sm font-medium text-sm"
         >
           로그아웃
         </button>
