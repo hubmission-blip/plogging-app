@@ -1,40 +1,47 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
-import {
-  collection, query, where, orderBy, getDocs
-} from "firebase/firestore";
-import { getRouteColor, WEEK_LABELS, getRelativeWeek } from "@/lib/routeUtils";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { getRouteColor, getRelativeWeek } from "@/lib/routeUtils";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+
+const WEEK_LABELS = ["이번 주", "2주 전", "3주 전", "4주 전"];
 
 export default function HistoryPage() {
   const { user } = useAuth();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(""); // ✅ 에러 표시용
   const [totalStats, setTotalStats] = useState({ count: 0, distance: 0, points: 0 });
   const router = useRouter();
 
-  useEffect(() => {
-    if (!user) { router.push("/login"); return; }
-    fetchHistory();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
-  const fetchHistory = async () => {
+  // ✅ fetchHistory를 useCallback으로 정의 + useEffect 안으로 이동
+  const fetchHistory = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    setError("");
     try {
+      // ✅ orderBy 제거 → 클라이언트에서 정렬 (인덱스 불필요)
       const q = query(
         collection(db, "routes"),
-        where("userId", "==", user.uid),
-        orderBy("createdAt", "desc")
+        where("userId", "==", user.uid)
       );
       const snap = await getDocs(q);
-      const list = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+      // ✅ 클라이언트에서 날짜 내림차순 정렬
+      const list = snap.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => {
+          const aTime = a.createdAt?.toDate?.() || new Date(0);
+          const bTime = b.createdAt?.toDate?.() || new Date(0);
+          return bTime - aTime;
+        });
+
       setRecords(list);
 
-      // 통계 계산
       const stats = list.reduce(
         (acc, r) => ({
           count: acc.count + 1,
@@ -46,17 +53,25 @@ export default function HistoryPage() {
       setTotalStats(stats);
     } catch (e) {
       console.error("기록 불러오기 실패:", e);
+      setError("기록을 불러오지 못했습니다: " + e.message); // ✅ 에러 표시
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    fetchHistory();
+  }, [user, router, fetchHistory]);
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "-";
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     return date.toLocaleDateString("ko-KR", {
-      year: "numeric", month: "long", day: "numeric",
-      weekday: "short",
+      year: "numeric", month: "long", day: "numeric", weekday: "short",
     });
   };
 
@@ -101,20 +116,34 @@ export default function HistoryPage() {
             <p className="text-3xl mb-2">⏳</p>
             <p>불러오는 중...</p>
           </div>
+        ) : error ? (
+          // ✅ 에러 메시지 표시
+          <div className="text-center py-12">
+            <p className="text-3xl mb-2">⚠️</p>
+            <p className="text-red-500 text-sm">{error}</p>
+            <button
+              onClick={fetchHistory}
+              className="mt-4 bg-green-500 text-white px-6 py-2 rounded-full font-bold text-sm"
+            >
+              다시 시도
+            </button>
+          </div>
         ) : records.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-5xl mb-3">🌱</p>
             <p className="text-gray-500 font-medium">아직 플로깅 기록이 없어요</p>
             <p className="text-gray-400 text-sm mt-1">첫 플로깅을 시작해보세요!</p>
-            <Link href="/map">
-              <button className="mt-4 bg-green-500 text-white px-6 py-2.5 rounded-full font-bold">
-                🚶 플로깅 시작하기
-              </button>
+            {/* ✅ Link 안에 button 제거 */}
+            <Link
+              href="/map"
+              className="mt-4 inline-block bg-green-500 text-white px-6 py-2.5 rounded-full font-bold"
+            >
+              🚶 플로깅 시작하기
             </Link>
           </div>
         ) : (
           <div className="space-y-3">
-            {records.map((record, idx) => {
+            {records.map((record) => {
               const relWeek = getRelativeWeek(record.weekNumber);
               const color = getRouteColor(record.weekNumber);
               const weekLabel = WEEK_LABELS[relWeek] || "4주 전";
@@ -122,7 +151,6 @@ export default function HistoryPage() {
                 <div key={record.id} className="bg-white rounded-2xl shadow-sm p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      {/* 주차 색상 인디케이터 */}
                       <div
                         className="w-3 h-12 rounded-full flex-shrink-0"
                         style={{ backgroundColor: color }}
@@ -154,12 +182,22 @@ export default function HistoryPage() {
                         {record.coords?.length || 0}개 좌표
                       </span>
                     </div>
-                    <div
-                      className="ml-auto text-xs px-2 py-0.5 rounded-full text-white"
-                      style={{ backgroundColor: color }}
-                    >
-                      {weekLabel}
-                    </div>
+                    {/* ✅ 사진 있으면 표시 */}
+                    {record.photoURL && (
+                      <img
+                        src={record.photoURL}
+                        alt="플로깅 사진"
+                        className="ml-auto w-12 h-12 rounded-lg object-cover"
+                      />
+                    )}
+                    {!record.photoURL && (
+                      <div
+                        className="ml-auto text-xs px-2 py-0.5 rounded-full text-white"
+                        style={{ backgroundColor: color }}
+                      >
+                        {weekLabel}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
