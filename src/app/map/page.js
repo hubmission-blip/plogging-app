@@ -2,7 +2,9 @@
 
 import { notifyPloggingComplete } from "@/lib/notify";
 import Link from "next/link";
-import { useState, useEffect, useCallback, Suspense } from "react"; // ✅ useCallback 추가
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useKakaoLoader } from "react-kakao-maps-sdk";
 import MapView from "@/components/MapView";
 import { useLocation } from "@/hooks/useLocation";
@@ -16,13 +18,13 @@ import {
 } from "firebase/firestore";
 import { calculatePoints } from "@/lib/pointCalc";
 import { getWeekNumber, getExpiresAt, isExpired, getRouteColor } from "@/lib/routeUtils";
-import { useSearchParams } from "next/navigation";
 
 function MapPageInner() {
   const [loading, error] = useKakaoLoader({
     appkey: process.env.NEXT_PUBLIC_KAKAO_MAP_KEY,
   });
 
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [savedRouteId, setSavedRouteId] = useState(null);
   const groupId = searchParams.get("groupId");
@@ -81,7 +83,6 @@ function MapPageInner() {
       <div className="text-6xl">🔑</div>
       <h2 className="text-xl font-bold text-gray-700">로그인이 필요해요</h2>
       <p className="text-gray-400 text-sm">플로깅 기록과 포인트 적립을 위해 로그인해주세요</p>
-      {/* ✅ Link 안에 button 제거 */}
       <Link
         href="/login"
         className="bg-green-500 text-white px-8 py-3 rounded-full font-bold"
@@ -115,7 +116,6 @@ function MapPageInner() {
     const expiresAt = getExpiresAt();
 
     try {
-      // ✅ 불필요한 주석 제거, routeDoc ID 저장
       const routeDoc = await addDoc(collection(db, "routes"), {
         userId: user?.uid || "anonymous",
         coords: path,
@@ -147,7 +147,7 @@ function MapPageInner() {
 
       notifyPloggingComplete(distance, total);
       setResult({ distance, total, breakdown });
-      fetchPastRoutes(); // ✅ 새 동선 지도에 바로 반영
+      fetchPastRoutes();
     } catch (e) {
       console.error("저장 실패:", e);
       alert("저장 중 오류가 발생했습니다");
@@ -248,12 +248,21 @@ function MapPageInner() {
               onUploadComplete={(url) => console.log("✅ 사진 저장:", url)}
             />
 
-            <button
-              onClick={() => setResult(null)}
-              className="w-full bg-green-500 text-white py-3 rounded-xl font-bold mt-3"
-            >
-              확인
-            </button>
+            {/* ✅ 버튼 두 개: 닫기 + 기록 보기 */}
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => setResult(null)}
+                className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold"
+              >
+                닫기
+              </button>
+              <button
+                onClick={() => router.push("/history")}
+                className="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold"
+              >
+                기록 보기 →
+              </button>
+            </div>
           </div>
         </div>
       )}
