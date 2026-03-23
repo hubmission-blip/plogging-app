@@ -2,14 +2,15 @@
 
 import { notifyPloggingComplete } from "@/lib/notify";
 import Link from "next/link";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react"; // ✅ useCallback 추가
 import { useKakaoLoader } from "react-kakao-maps-sdk";
 import MapView from "@/components/MapView";
 import { useLocation } from "@/hooks/useLocation";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
+import PhotoUpload from "@/components/PhotoUpload";
 import {
-  doc, collection, addDoc, updateDoc, setDoc, // ✅ setDoc 추가
+  doc, collection, addDoc, updateDoc, setDoc,
   increment, serverTimestamp, query,
   where, getDocs, deleteDoc
 } from "firebase/firestore";
@@ -17,13 +18,13 @@ import { calculatePoints } from "@/lib/pointCalc";
 import { getWeekNumber, getExpiresAt, isExpired, getRouteColor } from "@/lib/routeUtils";
 import { useSearchParams } from "next/navigation";
 
-// ✅ useSearchParams는 별도 컴포넌트로 분리 (Suspense 필요)
 function MapPageInner() {
   const [loading, error] = useKakaoLoader({
     appkey: process.env.NEXT_PUBLIC_KAKAO_MAP_KEY,
   });
 
   const searchParams = useSearchParams();
+  const [savedRouteId, setSavedRouteId] = useState(null);
   const groupId = searchParams.get("groupId");
   const groupSize = parseInt(searchParams.get("groupSize") || "1");
 
@@ -32,47 +33,47 @@ function MapPageInner() {
   const [result, setResult] = useState(null);
   const [pastRoutes, setPastRoutes] = useState([]);
 
-  // ✅ 훅(useEffect)을 early return보다 먼저 선언
+  // ✅ useCallback으로 외부에서도 호출 가능하게
+  const fetchPastRoutes = useCallback(async () => {
+    if (!user) return;
+    try {
+      const q = query(
+        collection(db, "routes"),
+        where("userId", "==", user.uid)
+      );
+      const snap = await getDocs(q);
+      const routes = [];
+      const expiredIds = [];
+
+      snap.forEach((docSnap) => {
+        const data = { id: docSnap.id, ...docSnap.data() };
+        if (isExpired(data.expiresAt)) {
+          expiredIds.push(docSnap.id);
+        } else {
+          routes.push({
+            id: data.id,
+            coords: data.coords,
+            color: getRouteColor(data.weekNumber),
+            weekNumber: data.weekNumber,
+            distance: data.distance,
+          });
+        }
+      });
+
+      for (const id of expiredIds) {
+        await deleteDoc(doc(db, "routes", id));
+      }
+
+      setPastRoutes(routes);
+    } catch (e) {
+      console.error("동선 불러오기 실패:", e);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!user || loading) return;
-
-    const fetchPastRoutes = async () => {
-      try {
-        const q = query(
-          collection(db, "routes"),
-          where("userId", "==", user.uid)
-        );
-        const snap = await getDocs(q);
-        const routes = [];
-        const expiredIds = [];
-
-        snap.forEach((docSnap) => {
-          const data = { id: docSnap.id, ...docSnap.data() };
-          if (isExpired(data.expiresAt)) {
-            expiredIds.push(docSnap.id);
-          } else {
-            routes.push({
-              id: data.id,
-              coords: data.coords,
-              color: getRouteColor(data.weekNumber),
-              weekNumber: data.weekNumber,
-              distance: data.distance,
-            });
-          }
-        });
-
-        for (const id of expiredIds) {
-          await deleteDoc(doc(db, "routes", id));
-        }
-
-        setPastRoutes(routes);
-      } catch (e) {
-        console.error("동선 불러오기 실패:", e);
-      }
-    };
-
     fetchPastRoutes();
-  }, [user, loading]); // ✅ eslint-disable 불필요
+  }, [user, loading, fetchPastRoutes]);
 
   // ✅ 모든 훅 선언 후 early return
   if (!user) return (
@@ -80,10 +81,12 @@ function MapPageInner() {
       <div className="text-6xl">🔑</div>
       <h2 className="text-xl font-bold text-gray-700">로그인이 필요해요</h2>
       <p className="text-gray-400 text-sm">플로깅 기록과 포인트 적립을 위해 로그인해주세요</p>
-      <Link href="/login">
-        <button className="bg-green-500 text-white px-8 py-3 rounded-full font-bold">
-          로그인하기
-        </button>
+      {/* ✅ Link 안에 button 제거 */}
+      <Link
+        href="/login"
+        className="bg-green-500 text-white px-8 py-3 rounded-full font-bold"
+      >
+        로그인하기
       </Link>
     </div>
   );
@@ -112,7 +115,8 @@ function MapPageInner() {
     const expiresAt = getExpiresAt();
 
     try {
-      await addDoc(collection(db, "routes"), {
+      // ✅ 불필요한 주석 제거, routeDoc ID 저장
+      const routeDoc = await addDoc(collection(db, "routes"), {
         userId: user?.uid || "anonymous",
         coords: path,
         distance: distance,
@@ -121,6 +125,7 @@ function MapPageInner() {
         expiresAt: expiresAt,
         createdAt: serverTimestamp(),
       });
+      setSavedRouteId(routeDoc.id);
 
       if (user) {
         const userRef = doc(db, "users", user.uid);
@@ -129,7 +134,6 @@ function MapPageInner() {
           totalDistance: increment(distance),
           ploggingCount: increment(1),
         }).catch(async () => {
-          // ✅ addDoc → setDoc으로 변경 (user.uid를 문서 ID로 사용)
           await setDoc(doc(db, "users", user.uid), {
             uid: user.uid,
             email: user.email || "",
@@ -143,6 +147,7 @@ function MapPageInner() {
 
       notifyPloggingComplete(distance, total);
       setResult({ distance, total, breakdown });
+      fetchPastRoutes(); // ✅ 새 동선 지도에 바로 반영
     } catch (e) {
       console.error("저장 실패:", e);
       alert("저장 중 오류가 발생했습니다");
@@ -235,9 +240,17 @@ function MapPageInner() {
                 <span>{result.distance.toFixed(2)} km</span>
               </div>
             </div>
+
+            {/* 사진 업로드 */}
+            <PhotoUpload
+              userId={user?.uid}
+              routeId={savedRouteId}
+              onUploadComplete={(url) => console.log("✅ 사진 저장:", url)}
+            />
+
             <button
               onClick={() => setResult(null)}
-              className="w-full bg-green-500 text-white py-3 rounded-xl font-bold"
+              className="w-full bg-green-500 text-white py-3 rounded-xl font-bold mt-3"
             >
               확인
             </button>
@@ -248,7 +261,6 @@ function MapPageInner() {
   );
 }
 
-// ✅ Suspense로 감싸서 export (useSearchParams 필수 요건)
 export default function MapPage() {
   return (
     <Suspense fallback={
