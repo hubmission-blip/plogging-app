@@ -55,7 +55,7 @@ const GUIDE_STEPS = [
     character: "카메라",
     title: "인증샷도 찍어보세요!",
     desc: "플로깅 완료 후 주운 쓰레기와 함께\n사진을 찍어 기록에 남길 수 있어요.",
-    tip: "💡 TIP: 사진은 플로깅 기록 페이지에서 확인 가능해요",
+    tip: "💡 TIP: 사진 인증 시 포인트가 정상 지급돼요",
     bg: "from-teal-400 to-teal-600",
   },
   {
@@ -81,9 +81,9 @@ const GUIDE_STEPS = [
 // ─── 컴포넌트 ─────────────────────────────────────────────
 export default function CharacterGuide({ onComplete }) {
   const [step, setStep] = useState(0);
-  const total = GUIDE_STEPS.length;
+  const total   = GUIDE_STEPS.length;
   const current = GUIDE_STEPS[step];
-  const isLast = step === total - 1;
+  const isLast  = step === total - 1;
 
   const handleNext = () => {
     if (isLast) {
@@ -98,17 +98,21 @@ export default function CharacterGuide({ onComplete }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-end z-50">
-      <div className="w-full bg-white rounded-t-3xl overflow-hidden shadow-2xl">
-        {/* ── 캐릭터 배경 ── */}
-        <div className={`bg-gradient-to-br ${current.bg} px-6 pt-8 pb-6 text-white text-center`}>
+    // ✅ 핵심 수정 1: z-[200] → BottomNav(z-50)보다 확실히 위에 렌더
+    <div className="fixed inset-0 bg-black/60 flex items-end z-[200]">
+
+      {/* ✅ 핵심 수정 2: overflow-hidden 제거, max-h로 스크롤 허용 */}
+      <div className="w-full bg-white rounded-t-3xl shadow-2xl max-h-[88vh] flex flex-col">
+
+        {/* ── 캐릭터 배경 (스크롤 불가 고정 영역) ── */}
+        <div className={`bg-gradient-to-br ${current.bg} px-6 pt-8 pb-6 text-white text-center flex-shrink-0 rounded-t-3xl`}>
           <div className="text-7xl mb-2">{current.emoji}</div>
           <p className="text-sm opacity-80 mb-1">{current.character}</p>
           <h2 className="text-xl font-black leading-tight">{current.title}</h2>
         </div>
 
-        {/* ── 내용 ── */}
-        <div className="px-6 py-5">
+        {/* ── 내용 (스크롤 가능) ── */}
+        <div className="px-6 py-5 overflow-y-auto flex-1">
           <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
             {current.desc}
           </p>
@@ -119,8 +123,8 @@ export default function CharacterGuide({ onComplete }) {
           )}
         </div>
 
-        {/* ── 진행 인디케이터 ── */}
-        <div className="flex justify-center gap-1.5 pb-2">
+        {/* ── 진행 인디케이터 (고정) ── */}
+        <div className="flex justify-center gap-1.5 py-2 flex-shrink-0">
           {GUIDE_STEPS.map((_, idx) => (
             <button
               key={idx}
@@ -131,8 +135,12 @@ export default function CharacterGuide({ onComplete }) {
           ))}
         </div>
 
-        {/* ── 버튼 ── */}
-        <div className="flex gap-2 px-6 pb-8 pt-2">
+        {/* ── 버튼 영역 (고정, safe-area 패딩 포함) ── */}
+        {/* ✅ 핵심 수정 3: style로 safe-area-inset-bottom 적용 → iOS 홈 인디케이터 대응 */}
+        <div
+          className="flex gap-2 px-6 pt-2 flex-shrink-0"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 12px) + 20px)" }}
+        >
           {step > 0 && (
             <button
               onClick={handlePrev}
@@ -151,11 +159,11 @@ export default function CharacterGuide({ onComplete }) {
           </button>
         </div>
 
-        {/* 건너뛰기 */}
+        {/* ── 건너뛰기 (마지막 페이지 제외) ── */}
         {!isLast && (
           <button
             onClick={() => { if (onComplete) onComplete(); }}
-            className="w-full text-center text-xs text-gray-300 pb-4"
+            className="w-full text-center text-xs text-gray-300 pb-3 flex-shrink-0"
           >
             건너뛰기
           </button>
