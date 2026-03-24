@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Map, CustomOverlayMap } from "react-kakao-maps-sdk";
+import { Map, CustomOverlayMap, Polygon } from "react-kakao-maps-sdk";
 import { useKakaoLoader } from "react-kakao-maps-sdk";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
@@ -27,14 +27,66 @@ const REGIONS = [
   { code: "50", name: "제주",   lat: 33.4996, lng: 126.5312 },
 ];
 
+// ─── GeoJSON 이름 → 지역 코드 매핑 ──────────────────────────
+// (southkorea-maps 저장소의 CTP_KOR_NM 기준 + 최근 행정구역명 변경 대응)
+const NAME_TO_CODE = {
+  "서울특별시":       "11",
+  "부산광역시":       "26",
+  "대구광역시":       "27",
+  "인천광역시":       "28",
+  "광주광역시":       "29",
+  "대전광역시":       "30",
+  "울산광역시":       "31",
+  "세종특별자치시":   "36",
+  "경기도":           "41",
+  "강원도":           "42",
+  "강원특별자치도":   "42",   // 2023년 명칭 변경
+  "충청북도":         "43",
+  "충청남도":         "44",
+  "전라북도":         "45",
+  "전북특별자치도":   "45",   // 2024년 명칭 변경
+  "전라남도":         "46",
+  "경상북도":         "47",
+  "경상남도":         "48",
+  "제주특별자치도":   "50",
+};
+
 // ─── 등급에 따른 색상 ─────────────────────────────────────
 function getGradeColor(distance) {
-  if (distance >= 500)  return { bg: "#1B5E20", text: "#ffffff", grade: "S" }; // 진초록
-  if (distance >= 200)  return { bg: "#388E3C", text: "#ffffff", grade: "A" };
-  if (distance >= 100)  return { bg: "#66BB6A", text: "#ffffff", grade: "B" };
-  if (distance >= 50)   return { bg: "#A5D6A7", text: "#1B5E20", grade: "C" };
-  if (distance >= 10)   return { bg: "#C8E6C9", text: "#388E3C", grade: "D" };
-  return                        { bg: "#F1F8E9", text: "#aaa",    grade: "-" };
+  if (distance >= 500)  return { fill: "#1B5E20", stroke: "#145214", text: "#ffffff", grade: "S" };
+  if (distance >= 200)  return { fill: "#388E3C", stroke: "#2E7D32", text: "#ffffff", grade: "A" };
+  if (distance >= 100)  return { fill: "#66BB6A", stroke: "#43A047", text: "#ffffff", grade: "B" };
+  if (distance >= 50)   return { fill: "#A5D6A7", stroke: "#66BB6A", text: "#1B5E20", grade: "C" };
+  if (distance >= 10)   return { fill: "#C8E6C9", stroke: "#A5D6A7", text: "#388E3C", grade: "D" };
+  return                        { fill: "#E8F5E9", stroke: "#C8E6C9", text: "#9E9E9E", grade: "-" };
+}
+
+// ─── GeoJSON 폴리곤 좌표 변환 유틸 ──────────────────────────
+// GeoJSON: [lng, lat] → Kakao Maps: {lat, lng}
+function coordsToLatLng(ring) {
+  return ring.map(([lng, lat]) => ({ lat, lng }));
+}
+
+// GeoJSON Feature → Polygon 엔트리 배열 반환
+// MultiPolygon(섬 포함 지역)은 각각 별도 엔트리로 분리
+function featureToPolygonEntries(feature, code) {
+  const geom = feature.geometry;
+  const entries = [];
+
+  if (geom.type === "Polygon") {
+    // coordinates[0] = 외곽, [1]+ = 홀(구멍)
+    const paths = geom.coordinates.map(coordsToLatLng);
+    entries.push({ code, paths });
+
+  } else if (geom.type === "MultiPolygon") {
+    // 각 polygon을 독립 엔트리로 (섬, 고립 지역 등)
+    geom.coordinates.forEach((poly) => {
+      const paths = poly.map(coordsToLatLng);
+      entries.push({ code, paths });
+    });
+  }
+
+  return entries;
 }
 
 export default function RankingMap() {
@@ -42,15 +94,51 @@ export default function RankingMap() {
     appkey: process.env.NEXT_PUBLIC_KAKAO_MAP_KEY,
   });
 
-  const [regionStats, setRegionStats] = useState({});
-  const [loading, setLoading]         = useState(true);
+  const [regionStats, setRegionStats]   = useState({});
+  const [loading, setLoading]           = useState(true);
   const [selectedRegion, setSelectedRegion] = useState(null);
+  const [polygonEntries, setPolygonEntries] = useState([]); // [{code, paths}]
+  const [geoLoading, setGeoLoading]     = useState(true);
+
+  // ── 행정구역 경계 GeoJSON 로드 ────────────────────────────
+  useEffect(() => {
+    setGeoLoading(true);
+    fetch(
+      "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2018/json/skorea-provinces-2018-geo.json"
+    )
+      .then((r) => {
+        if (!r.ok) throw new Error("GeoJSON 로드 실패");
+        return r.json();
+      })
+      .then((geoJson) => {
+        const entries = [];
+        geoJson.features.forEach((feature) => {
+          // CTPRVN_CD 속성 (코드) 또는 CTP_KOR_NM 속성 (이름) 중 존재하는 것 사용
+          const props = feature.properties;
+          const code =
+            props.CTPRVN_CD ||
+            NAME_TO_CODE[props.CTP_KOR_NM] ||
+            NAME_TO_CODE[props.name];
+
+          if (!code || !REGIONS.find((r) => r.code === code)) return;
+
+          const newEntries = featureToPolygonEntries(feature, code);
+          entries.push(...newEntries);
+        });
+        setPolygonEntries(entries);
+      })
+      .catch((e) => {
+        console.error("GeoJSON 로드 실패:", e);
+        // GeoJSON 실패 시 기존 마커 방식으로 fallback
+        setPolygonEntries([]);
+      })
+      .finally(() => setGeoLoading(false));
+  }, []);
 
   // ── 지역별 플로깅 집계 ───────────────────────────────────
   const fetchRegionStats = useCallback(async () => {
     setLoading(true);
     try {
-      // 이번 달 데이터만 집계
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
@@ -59,8 +147,6 @@ export default function RankingMap() {
         query(collection(db, "routes"), where("createdAt", ">=", startOfMonth))
       );
 
-      // 유저별 지역 정보가 없으므로: GPS 첫 좌표로 지역 추정
-      // (실제 서비스에서는 유저 프로필에 지역 저장 권장)
       const stats = {};
       REGIONS.forEach((r) => { stats[r.code] = { distance: 0, count: 0 }; });
 
@@ -70,7 +156,6 @@ export default function RankingMap() {
         if (!coords || coords.length === 0) return;
         const firstCoord = coords[0];
 
-        // 첫 좌표와 가장 가까운 지역 찾기
         let minDist = Infinity;
         let closestCode = "11";
         REGIONS.forEach((r) => {
@@ -104,21 +189,99 @@ export default function RankingMap() {
     }))
     .sort((a, b) => b.distance - a.distance);
 
+  // GeoJSON 폴리곤이 없는 경우 → 기존 마커 방식으로 fallback
+  const useFallbackMarkers = !geoLoading && polygonEntries.length === 0;
+
   return (
     <div className="space-y-4">
-      {/* ── 지도 ── */}
-      <div className="rounded-2xl overflow-hidden shadow-sm" style={{ height: "320px" }}>
-        {mapLoading ? (
-          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-            <p className="text-gray-400 animate-pulse">🗺️ 지도 로딩 중...</p>
+
+      {/* ── 지도 ─────────────────────────────────────────── */}
+      <div className="rounded-2xl overflow-hidden shadow-sm" style={{ height: "360px" }}>
+        {(mapLoading || geoLoading) ? (
+          <div className="w-full h-full bg-gray-100 flex flex-col items-center justify-center gap-2">
+            <p className="text-gray-400 animate-pulse text-2xl">🗺️</p>
+            <p className="text-gray-400 text-sm animate-pulse">
+              {mapLoading ? "지도 로딩 중..." : "행정구역 경계 로딩 중..."}
+            </p>
           </div>
         ) : (
           <Map
-            center={{ lat: 36.5, lng: 127.5 }}
+            center={{ lat: 36.5, lng: 127.8 }}
             style={{ width: "100%", height: "100%" }}
-            level={12}
+            level={13}
           >
-            {REGIONS.map((region) => {
+            {/* ── A. 행정구역 경계 폴리곤 (코로플레스) ── */}
+            {polygonEntries.map((entry, idx) => {
+              const stat  = regionStats[entry.code] || { distance: 0 };
+              const color = getGradeColor(stat.distance);
+              const isSelected = selectedRegion?.code === entry.code;
+              const region = REGIONS.find((r) => r.code === entry.code);
+
+              return (
+                <Polygon
+                  key={`${entry.code}-${idx}`}
+                  path={entry.paths}
+                  strokeWeight={isSelected ? 2.5 : 1.5}
+                  strokeColor={isSelected ? "#1B5E20" : color.stroke}
+                  strokeOpacity={isSelected ? 1 : 0.7}
+                  fillColor={color.fill}
+                  fillOpacity={isSelected ? 0.75 : 0.45}
+                  onClick={() =>
+                    setSelectedRegion({
+                      ...region,
+                      distance: stat.distance,
+                      count:    stat.count,
+                      color,
+                    })
+                  }
+                />
+              );
+            })}
+
+            {/* ── B. 지역명 레이블 (폴리곤 위에 텍스트) ── */}
+            {!useFallbackMarkers && REGIONS.map((region) => {
+              const stat  = regionStats[region.code] || { distance: 0 };
+              const color = getGradeColor(stat.distance);
+              const isSelected = selectedRegion?.code === region.code;
+
+              return (
+                <CustomOverlayMap
+                  key={region.code}
+                  position={{ lat: region.lat, lng: region.lng }}
+                  zIndex={2}
+                >
+                  <div
+                    onClick={() =>
+                      setSelectedRegion({
+                        ...region,
+                        distance: stat.distance,
+                        count:    stat.count,
+                        color,
+                      })
+                    }
+                    style={{
+                      textShadow: "0 0 4px #fff, 0 0 4px #fff, 0 0 4px #fff",
+                      color: isSelected ? "#1B5E20" : "#333",
+                      cursor: "pointer",
+                    }}
+                    className={`text-center select-none leading-tight ${
+                      isSelected ? "font-black" : "font-bold"
+                    }`}
+                  >
+                    <div className="text-xs">{region.name}</div>
+                    <div
+                      className="text-[10px] font-bold"
+                      style={{ color: color.fill }}
+                    >
+                      {color.grade}
+                    </div>
+                  </div>
+                </CustomOverlayMap>
+              );
+            })}
+
+            {/* ── Fallback: GeoJSON 실패 시 기존 마커 방식 ── */}
+            {useFallbackMarkers && REGIONS.map((region) => {
               const stat  = regionStats[region.code] || { distance: 0 };
               const color = getGradeColor(stat.distance);
               return (
@@ -128,9 +291,16 @@ export default function RankingMap() {
                   zIndex={1}
                 >
                   <button
-                    onClick={() => setSelectedRegion({ ...region, ...stat, color })}
+                    onClick={() =>
+                      setSelectedRegion({
+                        ...region,
+                        distance: stat.distance,
+                        count:    stat.count,
+                        color,
+                      })
+                    }
                     style={{
-                      background: color.bg,
+                      background: color.fill,
                       color: color.text,
                       border: selectedRegion?.code === region.code ? "2px solid #1B5E20" : "none",
                     }}
@@ -146,17 +316,31 @@ export default function RankingMap() {
         )}
       </div>
 
-      {/* ── 선택된 지역 팝업 ── */}
+      {/* ── 선택된 지역 팝업 ─────────────────────────────── */}
       {selectedRegion && (
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-green-100">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="font-bold text-gray-800 text-base">
-                {selectedRegion.name} — 등급 {selectedRegion.color.grade}
+                {selectedRegion.name}
+                <span
+                  className="ml-2 px-2 py-0.5 rounded-lg text-xs font-black"
+                  style={{
+                    background: selectedRegion.color.fill,
+                    color: selectedRegion.color.text,
+                  }}
+                >
+                  {selectedRegion.color.grade}등급
+                </span>
               </h3>
               <p className="text-sm text-gray-500 mt-0.5">이번 달 플로깅 현황</p>
             </div>
-            <button onClick={() => setSelectedRegion(null)} className="text-gray-300 text-xl">×</button>
+            <button
+              onClick={() => setSelectedRegion(null)}
+              className="text-gray-300 text-xl leading-none"
+            >
+              ×
+            </button>
           </div>
           <div className="flex gap-4 mt-3">
             <div className="text-center flex-1 bg-green-50 rounded-xl py-2">
@@ -173,21 +357,21 @@ export default function RankingMap() {
         </div>
       )}
 
-      {/* ── 등급 범례 ── */}
+      {/* ── 등급 범례 ─────────────────────────────────────── */}
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <h3 className="font-bold text-gray-700 mb-2 text-sm">등급 기준 (이번 달 누적 거리)</h3>
         <div className="flex gap-1.5 flex-wrap">
           {[
-            { grade: "S", label: "500km+", bg: "#1B5E20", text: "#fff" },
-            { grade: "A", label: "200km+", bg: "#388E3C", text: "#fff" },
-            { grade: "B", label: "100km+", bg: "#66BB6A", text: "#fff" },
-            { grade: "C", label: "50km+",  bg: "#A5D6A7", text: "#1B5E20" },
-            { grade: "D", label: "10km+",  bg: "#C8E6C9", text: "#388E3C" },
-            { grade: "-", label: "10km 미만", bg: "#F1F8E9", text: "#aaa" },
+            { grade: "S", label: "500km+",   fill: "#1B5E20", text: "#fff" },
+            { grade: "A", label: "200km+",   fill: "#388E3C", text: "#fff" },
+            { grade: "B", label: "100km+",   fill: "#66BB6A", text: "#fff" },
+            { grade: "C", label: "50km+",    fill: "#A5D6A7", text: "#1B5E20" },
+            { grade: "D", label: "10km+",    fill: "#C8E6C9", text: "#388E3C" },
+            { grade: "-", label: "10km 미만", fill: "#E8F5E9", text: "#9E9E9E" },
           ].map((g) => (
             <div
               key={g.grade}
-              style={{ background: g.bg, color: g.text }}
+              style={{ background: g.fill, color: g.text }}
               className="px-2 py-1 rounded-lg text-xs font-bold"
             >
               {g.grade} {g.label}
@@ -196,7 +380,7 @@ export default function RankingMap() {
         </div>
       </div>
 
-      {/* ── 지역 순위 리스트 ── */}
+      {/* ── 지역 순위 리스트 ──────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b">
           <h3 className="font-bold text-gray-700">지역별 순위 (이번 달)</h3>
@@ -207,12 +391,22 @@ export default function RankingMap() {
           ranked.map((r, idx) => {
             const color = getGradeColor(r.distance);
             return (
-              <div key={r.code} className="flex items-center gap-3 px-4 py-2.5 border-b last:border-0">
+              <div
+                key={r.code}
+                className={`flex items-center gap-3 px-4 py-2.5 border-b last:border-0 cursor-pointer transition-colors ${
+                  selectedRegion?.code === r.code ? "bg-green-50" : "hover:bg-gray-50"
+                }`}
+                onClick={() =>
+                  setSelectedRegion(
+                    selectedRegion?.code === r.code ? null : { ...r, color }
+                  )
+                }
+              >
                 <span className="text-sm font-bold text-gray-400 w-5 text-center">
                   {idx + 1}
                 </span>
                 <div
-                  style={{ background: color.bg, color: color.text }}
+                  style={{ background: color.fill, color: color.text }}
                   className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
                 >
                   {color.grade}
@@ -229,6 +423,7 @@ export default function RankingMap() {
           })
         )}
       </div>
+
     </div>
   );
 }
