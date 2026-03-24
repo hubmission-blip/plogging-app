@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Map, CustomOverlayMap, Polygon } from "react-kakao-maps-sdk";
+import { Map, CustomOverlayMap } from "react-kakao-maps-sdk";
 import { useKakaoLoader } from "react-kakao-maps-sdk";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
@@ -27,25 +27,14 @@ const REGIONS = [
   { code: "50", name: "제주",   lat: 33.4996, lng: 126.5312 },
 ];
 
-// ─── GeoJSON 이름 → 지역 코드 매핑 ──────────────────────────
-const NAME_TO_CODE = {
-  "서울특별시":     "11", "부산광역시":     "26", "대구광역시":     "27",
-  "인천광역시":     "28", "광주광역시":     "29", "대전광역시":     "30",
-  "울산광역시":     "31", "세종특별자치시": "36", "경기도":         "41",
-  "강원도":         "42", "강원특별자치도": "42", "충청북도":       "43",
-  "충청남도":       "44", "전라북도":       "45", "전북특별자치도": "45",
-  "전라남도":       "46", "경상북도":       "47", "경상남도":       "48",
-  "제주특별자치도": "50",
-};
-
 // ─── 등급에 따른 색상 ─────────────────────────────────────
 function getGradeColor(distance) {
-  if (distance >= 500)  return { fill: "#1B5E20", stroke: "#145214", text: "#ffffff", grade: "S" };
-  if (distance >= 200)  return { fill: "#388E3C", stroke: "#2E7D32", text: "#ffffff", grade: "A" };
-  if (distance >= 100)  return { fill: "#66BB6A", stroke: "#43A047", text: "#ffffff", grade: "B" };
-  if (distance >= 50)   return { fill: "#A5D6A7", stroke: "#66BB6A", text: "#1B5E20", grade: "C" };
-  if (distance >= 10)   return { fill: "#C8E6C9", stroke: "#A5D6A7", text: "#388E3C", grade: "D" };
-  return                        { fill: "#E8F5E9", stroke: "#C8E6C9", text: "#9E9E9E", grade: "-" };
+  if (distance >= 500)  return { bg: "#1B5E20", text: "#fff",     border: "#0D3B11", grade: "S", emoji: "🏆" };
+  if (distance >= 200)  return { bg: "#2E7D32", text: "#fff",     border: "#1B5E20", grade: "A", emoji: "🥇" };
+  if (distance >= 100)  return { bg: "#4CAF50", text: "#fff",     border: "#388E3C", grade: "B", emoji: "🥈" };
+  if (distance >= 50)   return { bg: "#81C784", text: "#1B5E20", border: "#4CAF50", grade: "C", emoji: "🥉" };
+  if (distance >= 10)   return { bg: "#C8E6C9", text: "#2E7D32", border: "#81C784", grade: "D", emoji: "🌱" };
+  return                        { bg: "#F1F8E9", text: "#9E9E9E", border: "#DCEDC8", grade: "-", emoji: "·" };
 }
 
 export default function RankingMap() {
@@ -56,43 +45,6 @@ export default function RankingMap() {
   const [regionStats, setRegionStats]       = useState({});
   const [loading, setLoading]               = useState(true);
   const [selectedRegion, setSelectedRegion] = useState(null);
-  const [polygonEntries, setPolygonEntries] = useState([]);
-  const [geoLoading, setGeoLoading]         = useState(true);
-  const [geoError, setGeoError]             = useState(false);
-
-  // ── 행정구역 GeoJSON 로드 ─────────────────────────────────
-  useEffect(() => {
-    setGeoLoading(true);
-    fetch(
-      "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2018/json/skorea-provinces-2018-geo.json"
-    )
-      .then((r) => { if (!r.ok) throw new Error("fetch 실패"); return r.json(); })
-      .then((geoJson) => {
-        const entries = [];
-        geoJson.features.forEach((feature) => {
-          const props = feature.properties;
-          const code  =
-            props.CTPRVN_CD ||
-            NAME_TO_CODE[props.CTP_KOR_NM] ||
-            NAME_TO_CODE[props.name];
-          if (!code || !REGIONS.find((r) => r.code === code)) return;
-
-          const toLatlng = ([lng, lat]) => ({ lat, lng });
-          const geom = feature.geometry;
-
-          if (geom.type === "Polygon") {
-            entries.push({ code, paths: geom.coordinates.map((ring) => ring.map(toLatlng)) });
-          } else if (geom.type === "MultiPolygon") {
-            geom.coordinates.forEach((poly) => {
-              entries.push({ code, paths: poly.map((ring) => ring.map(toLatlng)) });
-            });
-          }
-        });
-        setPolygonEntries(entries);
-      })
-      .catch(() => setGeoError(true))
-      .finally(() => setGeoLoading(false));
-  }, []);
 
   // ── 지역별 플로깅 집계 ───────────────────────────────────
   const fetchRegionStats = useCallback(async () => {
@@ -136,112 +88,92 @@ export default function RankingMap() {
     .map((r) => ({ ...r, distance: regionStats[r.code]?.distance || 0, count: regionStats[r.code]?.count || 0 }))
     .sort((a, b) => b.distance - a.distance);
 
-  const isReady = !mapLoading && !geoLoading;
+  // 순위 빠른 조회용 맵
+  const rankMap = {};
+  ranked.forEach((r, i) => { rankMap[r.code] = i + 1; });
 
   return (
     <div className="space-y-4">
 
-      {/* ── 지도 영역 ─────────────────────────────────────── */}
+      {/* ── 지도 ─────────────────────────────────────────── */}
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ height: "380px" }}>
-        {!isReady ? (
-          <div className="w-full h-full bg-gray-100 flex flex-col items-center justify-center gap-2">
-            <p className="text-3xl animate-pulse">🗺️</p>
-            <p className="text-sm text-gray-400 animate-pulse">
-              {mapLoading ? "지도 로딩 중..." : "행정구역 경계 로딩 중..."}
-            </p>
-          </div>
-        ) : geoError ? (
-          <div className="w-full h-full bg-gray-50 flex flex-col items-center justify-center gap-2">
-            <p className="text-3xl">⚠️</p>
-            <p className="text-sm text-gray-400">경계 데이터를 불러올 수 없습니다</p>
+        {mapLoading ? (
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            <p className="text-gray-400 animate-pulse text-sm">🗺️ 지도 로딩 중...</p>
           </div>
         ) : (
           <Map
             center={{ lat: 36.5, lng: 127.8 }}
             style={{ width: "100%", height: "100%" }}
             level={13}
-            // 지도 타입: 1=기본, 2=스카이뷰, 3=하이브리드
-            // 기본 로드맵 위에 고불투명도 폴리곤으로 도로/건물 가리기
           >
-            {/* ── 행정구역 폴리곤: 높은 불투명도로 지형 아래 도로/건물 가림 ── */}
-            {polygonEntries.map((entry, idx) => {
-              const stat     = regionStats[entry.code] || { distance: 0 };
-              const color    = getGradeColor(stat.distance);
-              const selected = selectedRegion?.code === entry.code;
-              const region   = REGIONS.find((r) => r.code === entry.code);
-
-              return (
-                <Polygon
-                  key={`${entry.code}-${idx}`}
-                  path={entry.paths}
-                  // ↓ 높은 불투명도: 도로·건물 가리고 지형 윤곽만 경계에서 보임
-                  fillColor={color.fill}
-                  fillOpacity={selected ? 0.72 : 0.88}
-                  strokeColor={selected ? "#1B5E20" : "#ffffff"}
-                  strokeWeight={selected ? 2.5 : 1.5}
-                  strokeOpacity={0.9}
-                  strokeStyle={"solid"}
-                  onClick={() => {
-                    setSelectedRegion(
-                      selected
-                        ? null
-                        : { ...region, distance: stat.distance, count: stat.count, color }
-                    );
-                  }}
-                />
-              );
-            })}
-
-            {/* ── 지역명 + 등급 레이블 ── */}
             {REGIONS.map((region) => {
-              const stat     = regionStats[region.code] || { distance: 0 };
+              const stat     = regionStats[region.code] || { distance: 0, count: 0 };
               const color    = getGradeColor(stat.distance);
               const selected = selectedRegion?.code === region.code;
+              const rank     = rankMap[region.code];
+              const hasData  = stat.distance > 0;
 
               return (
                 <CustomOverlayMap
                   key={region.code}
                   position={{ lat: region.lat, lng: region.lng }}
-                  zIndex={2}
+                  zIndex={selected ? 10 : 1}
                 >
-                  <div
-                    onClick={() => {
-                      setSelectedRegion(
-                        selected
-                          ? null
-                          : { ...region, distance: stat.distance, count: stat.count, color }
-                      );
+                  <button
+                    onClick={() =>
+                      setSelectedRegion(selected ? null : { ...region, ...stat, color })
+                    }
+                    style={{
+                      background: color.bg,
+                      color: color.text,
+                      border: `2px solid ${selected ? "#fff" : color.border}`,
+                      boxShadow: selected
+                        ? `0 0 0 3px ${color.bg}, 0 4px 16px rgba(0,0,0,0.35)`
+                        : "0 2px 8px rgba(0,0,0,0.25)",
+                      transform: selected ? "scale(1.15)" : "scale(1)",
+                      transition: "all 0.15s ease",
+                      borderRadius: "10px",
+                      padding: "5px 8px",
+                      minWidth: "52px",
+                      textAlign: "center",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "1px",
                     }}
-                    style={{ cursor: "pointer", pointerEvents: "auto" }}
-                    className="text-center select-none leading-tight"
                   >
+                    {/* 등급 + 이모지 */}
+                    <div style={{ fontSize: "12px", fontWeight: 900, lineHeight: 1 }}>
+                      {hasData ? color.emoji : "·"} {color.grade}
+                    </div>
                     {/* 지역명 */}
-                    <div
-                      style={{
-                        fontSize: selected ? "11px" : "10px",
-                        fontWeight: selected ? 900 : 700,
-                        color: selected ? "#1B5E20" : color.fill === "#E8F5E9" ? "#666" : "#fff",
-                        textShadow: selected
-                          ? "0 0 4px rgba(255,255,255,0.9), 0 0 4px rgba(255,255,255,0.9)"
-                          : "0 0 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3)",
-                        lineHeight: 1.2,
-                      }}
-                    >
+                    <div style={{ fontSize: "11px", fontWeight: 700, lineHeight: 1.2 }}>
                       {region.name}
                     </div>
-                    {/* 등급 */}
-                    <div
-                      style={{
-                        fontSize: "9px",
+                    {/* 거리 (데이터 있을 때만) */}
+                    {hasData && (
+                      <div style={{ fontSize: "9px", opacity: 0.85, fontWeight: 600, lineHeight: 1 }}>
+                        {stat.distance >= 1
+                          ? `${stat.distance.toFixed(1)}km`
+                          : `${(stat.distance * 1000).toFixed(0)}m`}
+                      </div>
+                    )}
+                    {/* 순위 뱃지 (데이터 있고 상위 3위) */}
+                    {hasData && rank <= 3 && (
+                      <div style={{
+                        fontSize: "8px",
+                        background: "rgba(255,255,255,0.3)",
+                        borderRadius: "4px",
+                        padding: "1px 4px",
                         fontWeight: 800,
-                        color: selected ? "#1B5E20" : color.fill === "#E8F5E9" ? "#aaa" : "rgba(255,255,255,0.85)",
-                        textShadow: selected ? "none" : "0 1px 2px rgba(0,0,0,0.3)",
-                        marginTop: "1px",
-                      }}
-                    >
-                      {color.grade}
-                    </div>
-                  </div>
+                        lineHeight: 1.3,
+                      }}>
+                        {rank}위
+                      </div>
+                    )}
+                  </button>
                 </CustomOverlayMap>
               );
             })}
@@ -249,32 +181,49 @@ export default function RankingMap() {
         )}
       </div>
 
-      {/* ── 선택된 지역 팝업 ─────────────────────────────── */}
+      {/* ── 선택된 지역 상세 팝업 ────────────────────────── */}
       {selectedRegion && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-green-100">
+        <div
+          className="rounded-2xl p-4 shadow-sm"
+          style={{ background: selectedRegion.color.bg, color: selectedRegion.color.text }}
+        >
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="font-bold text-gray-800 text-base flex items-center gap-2">
-                {selectedRegion.name}
-                <span
-                  className="px-2 py-0.5 rounded-lg text-xs font-black"
-                  style={{ background: selectedRegion.color.fill, color: selectedRegion.color.text }}
-                >
-                  {selectedRegion.color.grade}등급
+              <h3 className="font-black text-lg flex items-center gap-2">
+                {selectedRegion.color.emoji} {selectedRegion.name}
+                <span className="text-sm font-bold opacity-80">
+                  {rankMap[selectedRegion.code]}위 · {selectedRegion.color.grade}등급
                 </span>
               </h3>
-              <p className="text-sm text-gray-500 mt-0.5">이번 달 플로깅 현황</p>
+              <p className="text-sm opacity-75 mt-0.5">이번 달 플로깅 현황</p>
             </div>
-            <button onClick={() => setSelectedRegion(null)} className="text-gray-300 text-xl leading-none">×</button>
+            <button
+              onClick={() => setSelectedRegion(null)}
+              style={{ color: selectedRegion.color.text, opacity: 0.6 }}
+              className="text-2xl leading-none font-light"
+            >
+              ×
+            </button>
           </div>
-          <div className="flex gap-4 mt-3">
-            <div className="text-center flex-1 bg-green-50 rounded-xl py-2">
-              <p className="text-lg font-black text-green-700">{selectedRegion.distance.toFixed(1)}km</p>
-              <p className="text-xs text-gray-400">총 거리</p>
+          <div className="flex gap-3 mt-3">
+            <div className="flex-1 rounded-xl py-2.5 text-center"
+              style={{ background: "rgba(255,255,255,0.2)" }}>
+              <p className="text-xl font-black">{selectedRegion.distance.toFixed(1)}km</p>
+              <p className="text-xs opacity-75">총 거리</p>
             </div>
-            <div className="text-center flex-1 bg-blue-50 rounded-xl py-2">
-              <p className="text-lg font-black text-blue-700">{selectedRegion.count}회</p>
-              <p className="text-xs text-gray-400">플로깅 횟수</p>
+            <div className="flex-1 rounded-xl py-2.5 text-center"
+              style={{ background: "rgba(255,255,255,0.2)" }}>
+              <p className="text-xl font-black">{selectedRegion.count}회</p>
+              <p className="text-xs opacity-75">플로깅 횟수</p>
+            </div>
+            <div className="flex-1 rounded-xl py-2.5 text-center"
+              style={{ background: "rgba(255,255,255,0.2)" }}>
+              <p className="text-xl font-black">
+                {selectedRegion.count > 0
+                  ? (selectedRegion.distance / selectedRegion.count).toFixed(1)
+                  : "0"}km
+              </p>
+              <p className="text-xs opacity-75">회당 평균</p>
             </div>
           </div>
         </div>
@@ -282,20 +231,25 @@ export default function RankingMap() {
 
       {/* ── 등급 범례 ─────────────────────────────────────── */}
       <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <h3 className="font-bold text-gray-700 mb-2 text-sm">등급 기준 (이번 달 누적 거리)</h3>
+        <h3 className="font-bold text-gray-600 mb-2 text-xs uppercase tracking-wide">
+          등급 기준 · 이번 달 누적 거리
+        </h3>
         <div className="flex gap-1.5 flex-wrap">
           {[
-            { grade: "S", label: "500km+",    fill: "#1B5E20", text: "#fff" },
-            { grade: "A", label: "200km+",    fill: "#388E3C", text: "#fff" },
-            { grade: "B", label: "100km+",    fill: "#66BB6A", text: "#fff" },
-            { grade: "C", label: "50km+",     fill: "#A5D6A7", text: "#1B5E20" },
-            { grade: "D", label: "10km+",     fill: "#C8E6C9", text: "#388E3C" },
-            { grade: "-", label: "10km 미만", fill: "#E8F5E9", text: "#9E9E9E" },
+            { grade: "S", label: "500km+", bg: "#1B5E20", text: "#fff", emoji: "🏆" },
+            { grade: "A", label: "200km+", bg: "#2E7D32", text: "#fff", emoji: "🥇" },
+            { grade: "B", label: "100km+", bg: "#4CAF50", text: "#fff", emoji: "🥈" },
+            { grade: "C", label: "50km+",  bg: "#81C784", text: "#1B5E20", emoji: "🥉" },
+            { grade: "D", label: "10km+",  bg: "#C8E6C9", text: "#2E7D32", emoji: "🌱" },
+            { grade: "-", label: "미활동", bg: "#F1F8E9", text: "#9E9E9E", emoji: "·" },
           ].map((g) => (
-            <div key={g.grade}
-              style={{ background: g.fill, color: g.text }}
-              className="px-2 py-1 rounded-lg text-xs font-bold">
-              {g.grade} {g.label}
+            <div
+              key={g.grade}
+              style={{ background: g.bg, color: g.text, border: "1px solid rgba(0,0,0,0.08)" }}
+              className="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1"
+            >
+              <span>{g.emoji}</span>
+              <span>{g.grade} {g.label}</span>
             </div>
           ))}
         </div>
@@ -303,36 +257,50 @@ export default function RankingMap() {
 
       {/* ── 지역 순위 리스트 ──────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b">
+        <div className="px-4 py-3 border-b flex items-center justify-between">
           <h3 className="font-bold text-gray-700">지역별 순위 (이번 달)</h3>
+          {loading && <span className="text-xs text-gray-400 animate-pulse">집계 중...</span>}
         </div>
         {loading ? (
-          <p className="text-center py-6 text-gray-400 animate-pulse">집계 중...</p>
+          <p className="text-center py-8 text-gray-400 animate-pulse text-sm">🌿 집계 중...</p>
         ) : (
           ranked.map((r, idx) => {
             const color = getGradeColor(r.distance);
             return (
               <div
                 key={r.code}
-                className={`flex items-center gap-3 px-4 py-2.5 border-b last:border-0 cursor-pointer transition-colors ${
+                className={`flex items-center gap-3 px-4 py-3 border-b last:border-0 cursor-pointer transition-colors ${
                   selectedRegion?.code === r.code ? "bg-green-50" : "hover:bg-gray-50"
                 }`}
                 onClick={() =>
                   setSelectedRegion(selectedRegion?.code === r.code ? null : { ...r, color })
                 }
               >
-                <span className="text-sm font-bold text-gray-400 w-5 text-center">{idx + 1}</span>
+                {/* 순위 */}
+                <span className={`text-sm font-black w-6 text-center ${
+                  idx === 0 ? "text-yellow-500" :
+                  idx === 1 ? "text-gray-400" :
+                  idx === 2 ? "text-orange-400" : "text-gray-300"
+                }`}>
+                  {idx + 1}
+                </span>
+                {/* 등급 원 */}
                 <div
-                  style={{ background: color.fill, color: color.text }}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
+                  style={{ background: color.bg, color: color.text }}
+                  className="w-9 h-9 rounded-full flex flex-col items-center justify-center flex-shrink-0"
                 >
-                  {color.grade}
+                  <span className="text-[10px] leading-none">{color.emoji}</span>
+                  <span className="text-[10px] font-black leading-none">{color.grade}</span>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-700">{r.name}</p>
+                {/* 지역명 + 횟수 */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-700">{r.name}</p>
                   <p className="text-xs text-gray-400">{r.count}회 플로깅</p>
                 </div>
-                <span className="text-sm font-bold text-green-600">{r.distance.toFixed(1)}km</span>
+                {/* 거리 */}
+                <span className="text-sm font-bold text-green-600 flex-shrink-0">
+                  {r.distance.toFixed(1)}km
+                </span>
               </div>
             );
           })
