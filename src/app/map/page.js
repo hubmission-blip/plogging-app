@@ -19,9 +19,9 @@ import { calculatePoints } from "@/lib/pointCalc";
 import { getWeekNumber, getExpiresAt, isExpired, getRouteColor } from "@/lib/routeUtils";
 
 // ─── 인증 조건 상수 ───────────────────────────────────────
-const MIN_DISTANCE_KM  = 0.5;   // ② 최소 거리 500m
-const MIN_DURATION_SEC = 600;   // ② 최소 시간 10분
-const MIN_STOPS        = 3;     // ③ 최소 정지(줍기) 횟수
+const MIN_DISTANCE_KM  = 0.5;   // 최소 거리 500m
+const MIN_DURATION_SEC = 600;   // 최소 시간 10분
+const MIN_STOPS        = 3;     // 최소 정지(줍기) 횟수
 
 // ─── 시간 포맷 (초 → MM:SS) ──────────────────────────────
 function formatDuration(sec) {
@@ -58,10 +58,7 @@ function SpeedViolationModal({ onClose }) {
           플로깅은 걷거나 뛰는 활동이에요. 🚶‍♂️<br />
           이번 기록은 포인트가 지급되지 않아요.
         </p>
-        <button
-          onClick={onClose}
-          className="w-full bg-red-500 text-white py-3 rounded-xl font-bold"
-        >
+        <button onClick={onClose} className="w-full bg-red-500 text-white py-3 rounded-xl font-bold">
           확인
         </button>
       </div>
@@ -79,7 +76,6 @@ function ValidationFailModal({ errors, onRetry, onForceStop }) {
           <h2 className="text-xl font-bold text-orange-600">플로깅 인증 조건 미달</h2>
           <p className="text-gray-500 text-sm mt-1">아래 조건을 충족해야 포인트가 지급돼요</p>
         </div>
-
         <div className="space-y-2 mb-5">
           {errors.map((e, i) => (
             <div key={i} className="flex items-start gap-2 bg-orange-50 rounded-xl px-3 py-2">
@@ -88,18 +84,11 @@ function ValidationFailModal({ errors, onRetry, onForceStop }) {
             </div>
           ))}
         </div>
-
         <div className="space-y-2">
-          <button
-            onClick={onRetry}
-            className="w-full bg-green-500 text-white py-3 rounded-xl font-bold"
-          >
+          <button onClick={onRetry} className="w-full bg-green-500 text-white py-3 rounded-xl font-bold">
             🚶 계속 플로깅하기
           </button>
-          <button
-            onClick={onForceStop}
-            className="w-full bg-gray-100 text-gray-500 py-2.5 rounded-xl text-sm"
-          >
+          <button onClick={onForceStop} className="w-full bg-gray-100 text-gray-500 py-2.5 rounded-xl text-sm">
             그냥 종료하기 (포인트 없음)
           </button>
         </div>
@@ -128,25 +117,17 @@ function PhotoRequiredModal({ onConfirm, onSkip, uploading }) {
           <div className="text-4xl mb-2">📸</div>
           <h2 className="text-lg font-bold text-gray-800">수거 사진 인증</h2>
           <p className="text-gray-500 text-sm mt-1">
-            플로깅 포인트 지급을 위해<br />
-            수거한 쓰레기 사진을 촬영해주세요
+            플로깅 포인트 지급을 위해<br />수거한 쓰레기 사진을 촬영해주세요
           </p>
         </div>
 
-        {/* 사진 미리보기 or 촬영 버튼 */}
         {preview ? (
           <div className="relative mb-4">
-            <img
-              src={preview}
-              alt="인증 사진"
-              className="w-full h-48 object-cover rounded-2xl"
-            />
+            <img src={preview} alt="인증 사진" className="w-full h-48 object-cover rounded-2xl" />
             <button
               onClick={() => { setFile(null); setPreview(null); }}
               className="absolute top-2 right-2 bg-black/50 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm"
-            >
-              ✕
-            </button>
+            >✕</button>
           </div>
         ) : (
           <button
@@ -158,7 +139,6 @@ function PhotoRequiredModal({ onConfirm, onSkip, uploading }) {
           </button>
         )}
 
-        {/* 숨겨진 파일 입력 (카메라 우선) */}
         <input
           ref={inputRef}
           type="file"
@@ -168,7 +148,6 @@ function PhotoRequiredModal({ onConfirm, onSkip, uploading }) {
           className="hidden"
         />
 
-        {/* 버튼 */}
         <div className="space-y-2">
           <button
             onClick={() => file && onConfirm(file)}
@@ -205,47 +184,29 @@ function MapPageInner() {
   const groupSize    = parseInt(searchParams.get("groupSize") || "1");
   const { user }     = useAuth();
 
-  const [result, setResult]                     = useState(null);
-  const [pastRoutes, setPastRoutes]             = useState([]);
-  const [savedRouteId, setSavedRouteId]         = useState(null);
+  const [result, setResult]         = useState(null);
+  const [pastRoutes, setPastRoutes] = useState([]);
+  const [savedRouteId, setSavedRouteId] = useState(null);
 
-  // 속도 위반 자동종료
   const [speedViolationStop, setSpeedViolationStop] = useState(false);
-
-  // 조건 미달 모달
   const [showValidationFail, setShowValidationFail] = useState(false);
   const [validationErrors, setValidationErrors]     = useState([]);
+  const [showPhotoModal, setShowPhotoModal]         = useState(false);
+  const [uploading, setUploading]                   = useState(false);
 
-  // 사진 인증 모달
-  const [showPhotoModal, setShowPhotoModal]     = useState(false);
-  const [pendingData, setPendingData]           = useState(null); // 조건 통과 후 임시 저장
-  const [uploading, setUploading]               = useState(false);
-
-  const savedPathRef     = useRef([]);
-  const savedDistanceRef = useRef(0);
+  // ✅ 핵심 수정: pendingData를 state 대신 ref로 관리
+  // → 비동기 타이밍 문제 없이 항상 최신값 참조 가능
+  const pendingDataRef = useRef(null);
 
   const handleSpeedViolation = useCallback(() => {
     setSpeedViolationStop(true);
   }, []);
 
   const {
-    path,
-    distance,
-    isTracking,
-    currentSpeed,
-    isSpeedWarning,
-    duration,    // ② 경과 시간 (초)
-    stopCount,   // ③ 정지 횟수
-    startTracking,
-    stopTracking,
+    path, distance, isTracking, currentSpeed,
+    isSpeedWarning, duration, stopCount,
+    startTracking, stopTracking,
   } = useLocation({ onSpeedViolation: handleSpeedViolation });
-
-  useEffect(() => {
-    if (isTracking) {
-      savedPathRef.current     = path;
-      savedDistanceRef.current = distance;
-    }
-  }, [path, distance, isTracking]);
 
   const fetchPastRoutes = useCallback(async () => {
     if (!user) return;
@@ -261,11 +222,11 @@ function MapPageInner() {
           expiredIds.push(docSnap.id);
         } else {
           routes.push({
-            id:         data.id,
-            coords:     data.coords,
-            color:      getRouteColor(data.weekNumber),
+            id: data.id,
+            coords: data.coords,
+            color: getRouteColor(data.weekNumber),
             weekNumber: data.weekNumber,
-            distance:   data.distance,
+            distance: data.distance,
           });
         }
       });
@@ -284,25 +245,25 @@ function MapPageInner() {
     fetchPastRoutes();
   }, [user, loading, fetchPastRoutes]);
 
-  // ─── Firestore 저장 + 포인트 지급 ──────────────────────
-  const saveRoute = useCallback(async ({ points, photoUrl = null }) => {
-    if (!pendingData) return;
-    const { path: savedPath, distance: savedDist, duration: savedDur, stopCount: savedStops, groupSz } = pendingData;
+  // ─── ✅ saveRoute: 데이터를 직접 파라미터로 받음 (state 의존 제거) ──
+  const saveRoute = useCallback(async ({
+    routePath, routeDistance, routeDuration, routeStopCount,
+    points, photoUrl = null,
+  }) => {
     const weekNumber = getWeekNumber();
     const expiresAt  = getExpiresAt();
-
     try {
       const routeDoc = await addDoc(collection(db, "routes"), {
         userId:    user?.uid || "anonymous",
-        coords:    savedPath,
-        distance:  savedDist,
-        points:    points,
-        duration:  savedDur,
-        stopCount: savedStops,
-        photoUrl:  photoUrl,
+        coords:    routePath,
+        distance:  routeDistance,
+        points,
+        duration:  routeDuration,
+        stopCount: routeStopCount,
+        photoUrl,
         weekNumber,
         expiresAt,
-        verified:  !!photoUrl,   // 사진 인증 여부
+        verified:  !!photoUrl,
         createdAt: serverTimestamp(),
       });
       setSavedRouteId(routeDoc.id);
@@ -311,126 +272,124 @@ function MapPageInner() {
         const userRef = doc(db, "users", user.uid);
         await updateDoc(userRef, {
           totalPoints:   increment(points),
-          totalDistance: increment(savedDist),
+          totalDistance: increment(routeDistance),
           ploggingCount: increment(1),
         }).catch(async () => {
           await setDoc(doc(db, "users", user.uid), {
             uid:           user.uid,
             email:         user.email || "",
             totalPoints:   points,
-            totalDistance: savedDist,
+            totalDistance: routeDistance,
             ploggingCount: 1,
             createdAt:     serverTimestamp(),
           });
         });
       }
 
-      notifyPloggingComplete(savedDist, points);
+      notifyPloggingComplete(routeDistance, points);
       fetchPastRoutes();
     } catch (e) {
       console.error("저장 실패:", e);
       alert("저장 중 오류가 발생했습니다");
     }
-  }, [pendingData, user, fetchPastRoutes]);
+  }, [user, fetchPastRoutes]);
 
-  // ─── 종료 버튼 핸들러 ──────────────────────────────────
-  const handleStop = async () => {
+  // ─── 종료 버튼 ────────────────────────────────────────
+  const handleStop = () => {
     stopTracking();
     if (path.length < 2) return;
 
-    // ── 조건 ② ③ 검증 ──────────────────────────────────
     const errors = [];
-
-    if (distance < MIN_DISTANCE_KM) {
-      errors.push(
-        `최소 거리 부족: ${(distance * 1000).toFixed(0)}m 이동 (최소 500m 필요)`
-      );
-    }
-    if (duration < MIN_DURATION_SEC) {
-      errors.push(
-        `최소 시간 부족: ${formatDuration(duration)} 활동 (최소 10분 필요)`
-      );
-    }
-    if (stopCount < MIN_STOPS) {
-      errors.push(
-        `쓰레기 줍기 횟수 부족: ${stopCount}회 감지 (최소 3회 필요)`
-      );
-    }
+    if (distance < MIN_DISTANCE_KM)
+      errors.push(`최소 거리 부족: ${(distance * 1000).toFixed(0)}m 이동 (최소 500m 필요)`);
+    if (duration < MIN_DURATION_SEC)
+      errors.push(`최소 시간 부족: ${formatDuration(duration)} 활동 (최소 10분 필요)`);
+    if (stopCount < MIN_STOPS)
+      errors.push(`쓰레기 줍기 횟수 부족: ${stopCount}회 감지 (최소 3회 필요)`);
 
     if (errors.length > 0) {
       setValidationErrors(errors);
       setShowValidationFail(true);
-      return; // 포인트 미지급, 사진 모달 안 띄움
+      return;
     }
 
-    // ── 조건 통과 → 사진 인증 단계로 ──────────────────
+    // 조건 통과 → ref에 저장 후 사진 모달
     const { total, breakdown } = calculatePoints({ distanceKm: distance, groupSize });
-    setPendingData({
-      path:       [...path],
-      distance,
-      duration,
-      stopCount,
-      groupSz:    groupSize,
+    pendingDataRef.current = {
+      routePath:      [...path],
+      routeDistance:  distance,
+      routeDuration:  duration,
+      routeStopCount: stopCount,
       total,
       breakdown,
-    });
+    };
     setShowPhotoModal(true);
   };
 
   // ─── 사진 인증 완료 → 포인트 지급 ─────────────────────
   const handlePhotoConfirm = async (file) => {
+    const pending = pendingDataRef.current;
+    if (!pending) return;
     setUploading(true);
     try {
       const photoUrl = await uploadToCloudinary(file);
-      const { total, breakdown } = pendingData;
-
-      await saveRoute({ points: total, photoUrl });
+      await saveRoute({ ...pending, points: pending.total, photoUrl });
       setShowPhotoModal(false);
-      setResult({ distance: pendingData.distance, total, breakdown, verified: true });
+      setResult({
+        distance: pending.routeDistance,
+        total:    pending.total,
+        breakdown: pending.breakdown,
+        verified: true,
+      });
     } catch (e) {
       alert("사진 업로드 실패: " + e.message);
     } finally {
       setUploading(false);
+      pendingDataRef.current = null;
     }
   };
 
   // ─── 사진 건너뛰기 → 포인트 0 ─────────────────────────
   const handlePhotoSkip = async () => {
-    const { distance: d, breakdown } = pendingData;
-    await saveRoute({ points: 0, photoUrl: null });
+    const pending = pendingDataRef.current;
+    if (!pending) return;
+    await saveRoute({ ...pending, points: 0, photoUrl: null });
     setShowPhotoModal(false);
     setResult({
-      distance: d,
+      distance: pending.routeDistance,
       total:    0,
       breakdown: [{ label: "사진 미인증 (포인트 미지급)", points: 0 }],
       verified: false,
     });
-    setPendingData(null);
+    pendingDataRef.current = null;
   };
 
-  // ─── 조건 미달 → 계속 플로깅 ──────────────────────────
+  // ─── 계속 플로깅 ──────────────────────────────────────
   const handleRetryPlogging = () => {
     setShowValidationFail(false);
-    // 다시 트래킹 시작 (기존 거리·경로 유지 불가 → 새로 시작)
     startTracking();
   };
 
-  // ─── 조건 미달 → 강제 종료 (포인트 없음) ──────────────
+  // ─── 강제 종료 (포인트 없음) ──────────────────────────
   const handleForceStop = async () => {
     setShowValidationFail(false);
-    // 경로 저장은 하되 points=0
     if (path.length >= 2) {
-      setPendingData({
-        path:       [...path],
+      // ✅ ref에 직접 데이터 넣고 바로 saveRoute 호출 (state 타이밍 문제 없음)
+      const forceData = {
+        routePath:      [...path],
+        routeDistance:  distance,
+        routeDuration:  duration,
+        routeStopCount: stopCount,
+        points:         0,
+        photoUrl:       null,
+      };
+      await saveRoute(forceData);
+      setResult({
         distance,
-        duration,
-        stopCount,
-        groupSz:    groupSize,
-        total:      0,
-        breakdown:  [{ label: "인증 조건 미달 (포인트 미지급)", points: 0 }],
+        total:    0,
+        breakdown: [{ label: "인증 조건 미달 (포인트 미지급)", points: 0 }],
+        verified: false,
       });
-      await saveRoute({ points: 0, photoUrl: null });
-      setResult({ distance, total: 0, breakdown: [{ label: "인증 조건 미달", points: 0 }], verified: false });
     }
   };
 
@@ -465,38 +424,28 @@ function MapPageInner() {
       {/* ── 상단 정보바 ─────────────────────────────────── */}
       <div className="absolute top-4 left-0 right-0 flex justify-center z-10 px-4">
         <div className="bg-white rounded-2xl px-4 py-2.5 shadow-lg flex items-center gap-2.5 flex-wrap justify-center">
-          {/* 거리 */}
-          <span className="text-sm font-bold text-green-700">
-            📍 {distance.toFixed(2)} km
-          </span>
-
+          <span className="text-sm font-bold text-green-700">📍 {distance.toFixed(2)} km</span>
           {isTracking && (
             <>
-              {/* 경과 시간 */}
               <span className="text-gray-300">|</span>
               <span className={`text-sm font-bold ${duration >= MIN_DURATION_SEC ? "text-green-500" : "text-gray-600"}`}>
                 ⏱ {formatDuration(duration)}
               </span>
-
-              {/* 줍기 횟수 */}
               <span className="text-gray-300">|</span>
               <span className={`text-sm font-bold ${stopCount >= MIN_STOPS ? "text-green-500" : "text-orange-500"}`}>
                 🗑️ {stopCount}회
               </span>
-
-              {/* 현재 속도 */}
               <span className="text-gray-300">|</span>
               <span className={`text-sm font-bold ${isSpeedWarning ? "text-red-500" : "text-blue-500"}`}>
                 🚀 {currentSpeed} km/h
               </span>
-
               <span className="text-xs text-red-500 animate-pulse">● 기록 중</span>
             </>
           )}
         </div>
       </div>
 
-      {/* ── 인증 조건 진행 상황 (추적 중에만) ─────────────── */}
+      {/* ── 인증 조건 진행 상황 ─────────────────────────── */}
       {isTracking && (
         <div className="absolute top-20 left-4 right-4 z-10">
           <div className="bg-white/90 rounded-2xl px-3 py-2 shadow flex items-center justify-around text-xs">
@@ -534,7 +483,7 @@ function MapPageInner() {
         </div>
       )}
 
-      {/* ── 그룹 플로깅 표시 ────────────────────────────── */}
+      {/* ── 그룹 플로깅 표시 ─────────────────────────────── */}
       {groupId && !isSpeedWarning && !isTracking && (
         <div className="absolute top-36 left-0 right-0 flex justify-center z-10">
           <div className="bg-purple-500 text-white rounded-full px-4 py-1 text-xs font-bold shadow">
@@ -583,10 +532,7 @@ function MapPageInner() {
       {/* ── 이동수단 자동종료 모달 ──────────────────────── */}
       {speedViolationStop && (
         <SpeedViolationModal
-          onClose={() => {
-            setSpeedViolationStop(false);
-            fetchPastRoutes();
-          }}
+          onClose={() => { setSpeedViolationStop(false); fetchPastRoutes(); }}
         />
       )}
 
@@ -650,7 +596,7 @@ function MapPageInner() {
 
             <div className="flex gap-2">
               <button
-                onClick={() => { setResult(null); setPendingData(null); }}
+                onClick={() => setResult(null)}
                 className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold"
               >
                 닫기
