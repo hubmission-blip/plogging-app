@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { Map, CustomOverlayMap, Polygon } from "react-kakao-maps-sdk";
+import { useKakaoLoader } from "react-kakao-maps-sdk";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
@@ -43,40 +45,18 @@ function getGradeColor(distance) {
   if (distance >= 100)  return { fill: "#66BB6A", stroke: "#43A047", text: "#ffffff", grade: "B" };
   if (distance >= 50)   return { fill: "#A5D6A7", stroke: "#66BB6A", text: "#1B5E20", grade: "C" };
   if (distance >= 10)   return { fill: "#C8E6C9", stroke: "#A5D6A7", text: "#388E3C", grade: "D" };
-  return                        { fill: "#EDF7ED", stroke: "#C8E6C9", text: "#9E9E9E", grade: "-" };
-}
-
-// ─── SVG 투영 설정 (한반도 범위) ─────────────────────────────
-const SVG_W   = 400;
-const SVG_H   = 480;
-const LON_MIN = 124.2;
-const LON_MAX = 130.2;
-const LAT_MIN = 33.0;
-const LAT_MAX = 38.9;
-
-function project(lng, lat) {
-  const x = ((lng - LON_MIN) / (LON_MAX - LON_MIN)) * SVG_W;
-  const y = ((LAT_MAX - lat) / (LAT_MAX - LAT_MIN)) * SVG_H; // y 반전 (위도↑ = y↓)
-  return [x, y];
-}
-
-// {lat, lng} 배열 → SVG path d 문자열
-function ringToPath(ring) {
-  return (
-    ring
-      .map(({ lat, lng }, i) => {
-        const [x, y] = project(lng, lat);
-        return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(" ") + " Z"
-  );
+  return                        { fill: "#E8F5E9", stroke: "#C8E6C9", text: "#9E9E9E", grade: "-" };
 }
 
 export default function RankingMap() {
+  const [mapLoading] = useKakaoLoader({
+    appkey: process.env.NEXT_PUBLIC_KAKAO_MAP_KEY,
+  });
+
   const [regionStats, setRegionStats]       = useState({});
   const [loading, setLoading]               = useState(true);
   const [selectedRegion, setSelectedRegion] = useState(null);
-  const [polygonEntries, setPolygonEntries] = useState([]); // [{code, paths}]
+  const [polygonEntries, setPolygonEntries] = useState([]);
   const [geoLoading, setGeoLoading]         = useState(true);
   const [geoError, setGeoError]             = useState(false);
 
@@ -91,12 +71,14 @@ export default function RankingMap() {
         const entries = [];
         geoJson.features.forEach((feature) => {
           const props = feature.properties;
-          const code  = props.CTPRVN_CD || NAME_TO_CODE[props.CTP_KOR_NM] || NAME_TO_CODE[props.name];
+          const code  =
+            props.CTPRVN_CD ||
+            NAME_TO_CODE[props.CTP_KOR_NM] ||
+            NAME_TO_CODE[props.name];
           if (!code || !REGIONS.find((r) => r.code === code)) return;
 
-          const geom = feature.geometry;
-          // GeoJSON [lng, lat] → {lat, lng}
           const toLatlng = ([lng, lat]) => ({ lat, lng });
+          const geom = feature.geometry;
 
           if (geom.type === "Polygon") {
             entries.push({ code, paths: geom.coordinates.map((ring) => ring.map(toLatlng)) });
@@ -132,12 +114,9 @@ export default function RankingMap() {
         const coords = data.coords;
         if (!coords || coords.length === 0) return;
         const firstCoord = coords[0];
-        let minDist = Infinity;
-        let closestCode = "11";
+        let minDist = Infinity, closestCode = "11";
         REGIONS.forEach((r) => {
-          const d = Math.sqrt(
-            (r.lat - firstCoord.lat) ** 2 + (r.lng - firstCoord.lng) ** 2
-          );
+          const d = Math.sqrt((r.lat - firstCoord.lat) ** 2 + (r.lng - firstCoord.lng) ** 2);
           if (d < minDist) { minDist = d; closestCode = r.code; }
         });
         stats[closestCode].distance += data.distance || 0;
@@ -157,73 +136,54 @@ export default function RankingMap() {
     .map((r) => ({ ...r, distance: regionStats[r.code]?.distance || 0, count: regionStats[r.code]?.count || 0 }))
     .sort((a, b) => b.distance - a.distance);
 
-  // ── 지역명 레이블 위치 계산 ──────────────────────────────
-  const labelPositions = REGIONS.map((r) => {
-    const [x, y] = project(r.lng, r.lat);
-    return { ...r, svgX: x, svgY: y };
-  });
+  const isReady = !mapLoading && !geoLoading;
 
   return (
     <div className="space-y-4">
 
-      {/* ── SVG 코로플레스 지도 ───────────────────────────── */}
-      <div className="rounded-2xl overflow-hidden shadow-sm bg-white border border-gray-100">
-
-        {/* 지도 제목 */}
-        <div className="px-4 pt-3 pb-1 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-gray-600">🇰🇷 이번 달 지역별 플로깅 현황</h3>
-          {loading && (
-            <span className="text-xs text-gray-400 animate-pulse">집계 중...</span>
-          )}
-        </div>
-
-        {geoLoading ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-2">
-            <div className="text-3xl animate-pulse">🗺️</div>
-            <p className="text-sm text-gray-400 animate-pulse">행정구역 데이터 로딩 중...</p>
+      {/* ── 지도 영역 ─────────────────────────────────────── */}
+      <div className="rounded-2xl overflow-hidden shadow-sm" style={{ height: "380px" }}>
+        {!isReady ? (
+          <div className="w-full h-full bg-gray-100 flex flex-col items-center justify-center gap-2">
+            <p className="text-3xl animate-pulse">🗺️</p>
+            <p className="text-sm text-gray-400 animate-pulse">
+              {mapLoading ? "지도 로딩 중..." : "행정구역 경계 로딩 중..."}
+            </p>
           </div>
         ) : geoError ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-2">
-            <div className="text-3xl">⚠️</div>
-            <p className="text-sm text-gray-400">지도 데이터를 불러올 수 없습니다</p>
-            <button
-              onClick={() => { setGeoError(false); setGeoLoading(true); }}
-              className="text-xs text-green-600 underline mt-1"
-            >
-              다시 시도
-            </button>
+          <div className="w-full h-full bg-gray-50 flex flex-col items-center justify-center gap-2">
+            <p className="text-3xl">⚠️</p>
+            <p className="text-sm text-gray-400">경계 데이터를 불러올 수 없습니다</p>
           </div>
         ) : (
-          <svg
-            viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-            width="100%"
-            style={{ display: "block", background: "#f8faf8" }}
+          <Map
+            center={{ lat: 36.5, lng: 127.8 }}
+            style={{ width: "100%", height: "100%" }}
+            level={13}
+            // 지도 타입: 1=기본, 2=스카이뷰, 3=하이브리드
+            // 기본 로드맵 위에 고불투명도 폴리곤으로 도로/건물 가리기
           >
-            {/* 배경 */}
-            <rect width={SVG_W} height={SVG_H} fill="#f0f4f0" />
-
-            {/* ── 행정구역 폴리곤 ── */}
+            {/* ── 행정구역 폴리곤: 높은 불투명도로 지형 아래 도로/건물 가림 ── */}
             {polygonEntries.map((entry, idx) => {
               const stat     = regionStats[entry.code] || { distance: 0 };
               const color    = getGradeColor(stat.distance);
               const selected = selectedRegion?.code === entry.code;
-              // paths[0] = 외곽선, paths[1]+ = 홀(구멍) → 하나의 d 문자열로 합침
-              const d = entry.paths.map(ringToPath).join(" ");
+              const region   = REGIONS.find((r) => r.code === entry.code);
 
               return (
-                <path
+                <Polygon
                   key={`${entry.code}-${idx}`}
-                  d={d}
-                  fill={color.fill}
-                  fillOpacity={selected ? 0.95 : 0.75}
-                  stroke={selected ? "#1B5E20" : "#ffffff"}
-                  strokeWidth={selected ? 2.5 : 1.2}
-                  strokeLinejoin="round"
-                  style={{ cursor: "pointer", transition: "fill-opacity 0.15s" }}
+                  path={entry.paths}
+                  // ↓ 높은 불투명도: 도로·건물 가리고 지형 윤곽만 경계에서 보임
+                  fillColor={color.fill}
+                  fillOpacity={selected ? 0.72 : 0.88}
+                  strokeColor={selected ? "#1B5E20" : "#ffffff"}
+                  strokeWeight={selected ? 2.5 : 1.5}
+                  strokeOpacity={0.9}
+                  strokeStyle={"solid"}
                   onClick={() => {
-                    const region = REGIONS.find((r) => r.code === entry.code);
                     setSelectedRegion(
-                      selectedRegion?.code === entry.code
+                      selected
                         ? null
                         : { ...region, distance: stat.distance, count: stat.count, color }
                     );
@@ -233,59 +193,59 @@ export default function RankingMap() {
             })}
 
             {/* ── 지역명 + 등급 레이블 ── */}
-            {labelPositions.map((r) => {
-              const stat     = regionStats[r.code] || { distance: 0 };
+            {REGIONS.map((region) => {
+              const stat     = regionStats[region.code] || { distance: 0 };
               const color    = getGradeColor(stat.distance);
-              const selected = selectedRegion?.code === r.code;
+              const selected = selectedRegion?.code === region.code;
+
               return (
-                <g key={r.code} style={{ pointerEvents: "none", userSelect: "none" }}>
-                  {/* 텍스트 배경 (가독성) */}
-                  <text
-                    x={r.svgX}
-                    y={r.svgY - 1}
-                    textAnchor="middle"
-                    dominantBaseline="auto"
-                    fontSize={selected ? 10 : 9}
-                    fontWeight="bold"
-                    stroke="#fff"
-                    strokeWidth="3"
-                    strokeLinejoin="round"
-                    paintOrder="stroke"
-                    fill={selected ? "#1B5E20" : "#333"}
+                <CustomOverlayMap
+                  key={region.code}
+                  position={{ lat: region.lat, lng: region.lng }}
+                  zIndex={2}
+                >
+                  <div
+                    onClick={() => {
+                      setSelectedRegion(
+                        selected
+                          ? null
+                          : { ...region, distance: stat.distance, count: stat.count, color }
+                      );
+                    }}
+                    style={{ cursor: "pointer", pointerEvents: "auto" }}
+                    className="text-center select-none leading-tight"
                   >
-                    {r.name}
-                  </text>
-                  {/* 지역명 */}
-                  <text
-                    x={r.svgX}
-                    y={r.svgY - 1}
-                    textAnchor="middle"
-                    dominantBaseline="auto"
-                    fontSize={selected ? 10 : 9}
-                    fontWeight="bold"
-                    fill={selected ? "#1B5E20" : "#333"}
-                  >
-                    {r.name}
-                  </text>
-                  {/* 등급 배지 */}
-                  <text
-                    x={r.svgX}
-                    y={r.svgY + 10}
-                    textAnchor="middle"
-                    dominantBaseline="auto"
-                    fontSize={8}
-                    fontWeight="black"
-                    fill={color.fill === "#EDF7ED" ? "#9E9E9E" : color.fill}
-                    stroke="#fff"
-                    strokeWidth="2.5"
-                    paintOrder="stroke"
-                  >
-                    {color.grade}
-                  </text>
-                </g>
+                    {/* 지역명 */}
+                    <div
+                      style={{
+                        fontSize: selected ? "11px" : "10px",
+                        fontWeight: selected ? 900 : 700,
+                        color: selected ? "#1B5E20" : color.fill === "#E8F5E9" ? "#666" : "#fff",
+                        textShadow: selected
+                          ? "0 0 4px rgba(255,255,255,0.9), 0 0 4px rgba(255,255,255,0.9)"
+                          : "0 0 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3)",
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {region.name}
+                    </div>
+                    {/* 등급 */}
+                    <div
+                      style={{
+                        fontSize: "9px",
+                        fontWeight: 800,
+                        color: selected ? "#1B5E20" : color.fill === "#E8F5E9" ? "#aaa" : "rgba(255,255,255,0.85)",
+                        textShadow: selected ? "none" : "0 1px 2px rgba(0,0,0,0.3)",
+                        marginTop: "1px",
+                      }}
+                    >
+                      {color.grade}
+                    </div>
+                  </div>
+                </CustomOverlayMap>
               );
             })}
-          </svg>
+          </Map>
         )}
       </div>
 
@@ -330,10 +290,11 @@ export default function RankingMap() {
             { grade: "B", label: "100km+",    fill: "#66BB6A", text: "#fff" },
             { grade: "C", label: "50km+",     fill: "#A5D6A7", text: "#1B5E20" },
             { grade: "D", label: "10km+",     fill: "#C8E6C9", text: "#388E3C" },
-            { grade: "-", label: "10km 미만", fill: "#EDF7ED", text: "#9E9E9E" },
+            { grade: "-", label: "10km 미만", fill: "#E8F5E9", text: "#9E9E9E" },
           ].map((g) => (
-            <div key={g.grade} style={{ background: g.fill, color: g.text }}
-              className="px-2 py-1 rounded-lg text-xs font-bold border border-white/50">
+            <div key={g.grade}
+              style={{ background: g.fill, color: g.text }}
+              className="px-2 py-1 rounded-lg text-xs font-bold">
               {g.grade} {g.label}
             </div>
           ))}
