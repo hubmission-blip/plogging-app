@@ -273,7 +273,8 @@ function MapPageInner() {
 
   // C. 타인 최근 경로
   const [nearbyRoutes, setNearbyRoutes] = useState([]);
-  const [showNearby, setShowNearby]     = useState(true); // 토글 가능
+  const [showNearby, setShowNearby]         = useState(true); // 타인 경로 토글
+  const [showPastRoutes, setShowPastRoutes] = useState(true); // 내 지난 경로 토글
 
   // 사진/검증
   const [speedViolationStop, setSpeedViolationStop] = useState(false);
@@ -567,7 +568,7 @@ function MapPageInner() {
       {/* ── 지도 (nearbyRoutes, partnerMarkers 전달) ──── */}
       <MapView
         currentPath={path}
-        pastRoutes={pastRoutes}
+        pastRoutes={showPastRoutes ? pastRoutes : []}
         nearbyRoutes={showNearby ? nearbyRoutes : []}
         partnerMarkers={partnerMarkers}
         onPartnerClick={(partner) => setSelectedPartner(partner)}
@@ -638,9 +639,10 @@ function MapPageInner() {
         </div>
       )}
 
-      {/* ── 주차별 색상 범례 + C. 타인 경로 토글 ────────── */}
+      {/* ── 주차별 색상 범례 + 경로 토글 ────────────────── */}
       {!isTracking && (
-        <div className="absolute top-20 right-3 bg-white rounded-xl p-2 shadow-lg z-10 min-w-[80px]">
+        <div className="absolute top-20 right-3 bg-white rounded-xl p-2 shadow-lg z-10 min-w-[88px]">
+          {/* 내 동선 색상 범례 */}
           <p className="text-xs font-bold text-gray-500 mb-1">내 동선</p>
           {[
             { color: "#4CAF50", label: "이번 주" },
@@ -653,16 +655,36 @@ function MapPageInner() {
               <span className="text-xs text-gray-600">{item.label}</span>
             </div>
           ))}
-          {/* C. 타인 경로 토글 */}
-          <div className="border-t mt-1.5 pt-1.5">
+
+          {/* 토글 버튼 그룹 */}
+          <div className="border-t mt-1.5 pt-1.5 flex flex-col gap-1">
+
+            {/* 내 지난 경로 토글 */}
+            <button
+              onClick={() => setShowPastRoutes((v) => !v)}
+              className={`flex items-center gap-1.5 text-xs font-medium w-full rounded-lg px-1 py-0.5 transition-colors
+                ${showPastRoutes ? "text-green-600 bg-green-50" : "text-gray-300 bg-gray-50"}`}
+            >
+              <div
+                className="w-4 h-1.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: showPastRoutes ? "#4CAF50" : "#D1D5DB" }}
+              />
+              <span>{showPastRoutes ? "내경로 ON" : "내경로 OFF"}</span>
+            </button>
+
+            {/* 타인 경로 토글 */}
             <button
               onClick={() => setShowNearby((v) => !v)}
-              className={`flex items-center gap-1 text-xs font-medium w-full
-                ${showNearby ? "text-slate-500" : "text-gray-300"}`}
+              className={`flex items-center gap-1.5 text-xs font-medium w-full rounded-lg px-1 py-0.5 transition-colors
+                ${showNearby ? "text-slate-600 bg-slate-50" : "text-gray-300 bg-gray-50"}`}
             >
-              <div className="w-4 h-1.5 rounded-full bg-slate-400" style={{ opacity: showNearby ? 0.4 : 0.15 }} />
+              <div
+                className="w-4 h-1.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: showNearby ? "#94A3B8" : "#D1D5DB" }}
+              />
               <span>{showNearby ? "타인경로 ON" : "타인경로 OFF"}</span>
             </button>
+
           </div>
         </div>
       )}
