@@ -118,7 +118,7 @@ export default function RankingMap() {
                 <CustomOverlayMap
                   key={region.code}
                   position={{ lat: region.lat, lng: region.lng }}
-                  zIndex={selected ? 10 : 1}
+                  zIndex={selected ? 100 : (REGIONS.length + 2 - rankMap[region.code])}
                 >
                   <button
                     onClick={() =>
