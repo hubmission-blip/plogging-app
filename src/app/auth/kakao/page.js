@@ -2,13 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
+import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 
 export default function KakaoCallbackPage() {
   const router = useRouter();
   const [status, setStatus] = useState("처리 중...");
-  const [errorMsg, setErrorMsg] = useState(""); // ✅ 에러 표시용
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get("code");
@@ -22,18 +27,18 @@ export default function KakaoCallbackPage() {
         setStatus("카카오 인증 중...");
 
         const redirectUri = `${window.location.origin}/auth/kakao`;
-        console.log("📌 redirectUri:", redirectUri); // ← 콘솔 확인용
-        console.log("📌 code:", code.substring(0, 10) + "..."); // ← 콘솔 확인용
+        console.log("📌 redirectUri:", redirectUri);
+        console.log("📌 code:", code.substring(0, 10) + "...");
 
+        // ─── 1단계: 카카오 토큰 → 사용자 정보 받기 ───────────────
         const res = await fetch("/api/kakao-token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code, redirectUri }),
         });
 
-        // ✅ 응답 상태 확인
         const text = await res.text();
-        console.log("📌 API 응답:", text); // ← 콘솔 확인용
+        console.log("📌 API 응답:", text);
 
         let kakaoUser;
         try {
@@ -46,31 +51,89 @@ export default function KakaoCallbackPage() {
           throw new Error(kakaoUser.error || `HTTP ${res.status}`);
         }
 
-        setStatus("사용자 정보 저장 중...");
+        const kakaoUid = String(kakaoUser.uid);
+        console.log("📌 카카오 UID:", kakaoUid);
 
-        const uid = String(kakaoUser.uid);
-        const userRef = doc(db, "kakaoUsers", uid);
-        const userSnap = await getDoc(userRef);
+        // ─── 2단계: Firebase Auth 로그인 (이메일/비번 브릿지) ──────
+        // 카카오 UID로 Firebase Auth 전용 계정 생성/로그인
+        // (Firebase Custom Token 없이도 작동하는 방식)
+        setStatus("Firebase 인증 중...");
 
-        if (!userSnap.exists()) {
-          await setDoc(userRef, {
-            uid,
-            email: kakaoUser.email || "",
-            nickname: kakaoUser.nickname || "카카오유저",
-            provider: "kakao",
-            totalPoints: 0,
-            totalDistance: 0,
-            ploggingCount: 0,
-            createdAt: serverTimestamp(),
-          });
+        const fakeEmail    = `kakao_${kakaoUid}@kakao-auth.plogging.app`;
+        const fakePassword = `kakao_${kakaoUid}_plogging2024!`;
+        const displayName  = kakaoUser.nickname || "카카오유저";
+
+        let firebaseUser;
+        try {
+          // 기존 계정이면 로그인
+          const cred = await signInWithEmailAndPassword(auth, fakeEmail, fakePassword);
+          firebaseUser = cred.user;
+          console.log("📌 Firebase 기존 로그인 성공:", firebaseUser.uid);
+        } catch (loginErr) {
+          if (
+            loginErr.code === "auth/user-not-found" ||
+            loginErr.code === "auth/invalid-credential" ||
+            loginErr.code === "auth/wrong-password"
+          ) {
+            // 신규 계정 생성
+            const cred = await createUserWithEmailAndPassword(auth, fakeEmail, fakePassword);
+            await updateProfile(cred.user, { displayName });
+            firebaseUser = cred.user;
+            console.log("📌 Firebase 신규 계정 생성:", firebaseUser.uid);
+          } else {
+            throw loginErr;
+          }
         }
 
+        // ─── 3단계: Firestore에 사용자 정보 저장 ──────────────────
+        // Firebase UID가 request.auth.uid가 되므로 규칙 통과
+        setStatus("사용자 정보 저장 중...");
+
+        // users 컬렉션: Firebase UID 기준 (앱 전체에서 사용하는 기본 컬렉션)
+        const userRef  = doc(db, "users", firebaseUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            uid:          firebaseUser.uid,
+            kakaoUid,                              // 카카오 원본 UID도 저장
+            email:        kakaoUser.email || "",
+            nickname:     displayName,
+            displayName,
+            provider:     "kakao",
+            totalPoints:  0,
+            totalDistance: 0,
+            ploggingCount: 0,
+            createdAt:    serverTimestamp(),
+          });
+          console.log("📌 users 컬렉션 문서 생성 완료");
+        }
+
+        // kakaoUsers 컬렉션: 카카오 UID → Firebase UID 매핑
+        const kakaoRef  = doc(db, "kakaoUsers", kakaoUid);
+        const kakaoSnap = await getDoc(kakaoRef);
+        if (!kakaoSnap.exists()) {
+          await setDoc(kakaoRef, {
+            kakaoUid,
+            firebaseUid:  firebaseUser.uid,        // Firebase UID 매핑
+            email:        kakaoUser.email || "",
+            nickname:     displayName,
+            provider:     "kakao",
+            totalPoints:  0,
+            totalDistance: 0,
+            ploggingCount: 0,
+            createdAt:    serverTimestamp(),
+          });
+          console.log("📌 kakaoUsers 컬렉션 문서 생성 완료");
+        }
+
+        // localStorage: AuthContext가 카카오 로그인 여부를 감지하는 데 사용
         localStorage.setItem(
           "kakaoUser",
           JSON.stringify({
-            uid,
-            email: kakaoUser.email || "",
-            nickname: kakaoUser.nickname || "카카오유저",
+            uid:        firebaseUser.uid,   // Firebase UID 사용 (앱 전체 통일)
+            kakaoUid,                       // 카카오 원본 UID
+            email:      kakaoUser.email || "",
+            nickname:   displayName,
           })
         );
 
@@ -79,7 +142,6 @@ export default function KakaoCallbackPage() {
 
       } catch (e) {
         console.error("❌ 카카오 로그인 실패:", e);
-        // ✅ 에러를 화면에 표시 (조용히 redirect 안 함)
         setErrorMsg(e.message || "알 수 없는 오류");
         setStatus("오류 발생");
       }
@@ -100,7 +162,6 @@ export default function KakaoCallbackPage() {
           <>
             <div className="text-4xl mb-3">❌</div>
             <p className="text-red-600 font-bold mb-2">로그인 실패</p>
-            {/* ✅ 에러 메시지 화면에 표시 */}
             <p className="text-sm text-red-400 bg-red-50 p-3 rounded-xl mb-4 break-all">
               {errorMsg}
             </p>
