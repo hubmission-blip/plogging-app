@@ -1,10 +1,106 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
 import CharacterGuide from "@/components/CharacterGuide";
+
+// ─── PWA 홈화면 추가 안내 모달 ───────────────────────────────
+function InstallModal({ onClose }) {
+  // iOS Safari 감지
+  const isIOS = /iphone|ipad|ipod/i.test(
+    typeof navigator !== "undefined" ? navigator.userAgent : ""
+  );
+  const isAndroid = /android/i.test(
+    typeof navigator !== "undefined" ? navigator.userAgent : ""
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-[300] flex items-end">
+      <div className="w-full bg-white rounded-t-3xl p-6 shadow-2xl animate-slide-up">
+        {/* 핸들 */}
+        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+
+        <div className="text-center mb-5">
+          <div className="text-4xl mb-2">📲</div>
+          <h2 className="text-lg font-black text-gray-800">홈 화면에 추가하기</h2>
+          <p className="text-sm text-gray-500 mt-1">앱처럼 빠르게 접근할 수 있어요</p>
+        </div>
+
+        {/* iOS 안내 */}
+        {isIOS && (
+          <div className="space-y-3 mb-6">
+            {[
+              { step: "1", icon: "⬆️", text: "하단의 공유 버튼을 탭하세요" },
+              { step: "2", icon: "➕", text: '"홈 화면에 추가"를 선택하세요' },
+              { step: "3", icon: "✅", text: '"추가"를 탭하면 완료!' },
+            ].map((s) => (
+              <div key={s.step} className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3">
+                <div className="w-7 h-7 rounded-full bg-green-500 text-white text-xs font-black flex items-center justify-center flex-shrink-0">
+                  {s.step}
+                </div>
+                <span className="text-xl">{s.icon}</span>
+                <p className="text-sm text-gray-700 font-medium">{s.text}</p>
+              </div>
+            ))}
+            {/* iOS 공유 버튼 위치 안내 이미지 */}
+            <div className="bg-blue-50 rounded-2xl px-4 py-3 flex items-center gap-2">
+              <span className="text-xl">💡</span>
+              <p className="text-xs text-blue-700">
+                공유 버튼은 Safari 하단 가운데에 있는 <strong>□↑</strong> 모양 아이콘이에요
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Android 안내 */}
+        {isAndroid && (
+          <div className="space-y-3 mb-6">
+            {[
+              { step: "1", icon: "⋮",  text: "브라우저 우측 상단 메뉴(⋮)를 탭하세요" },
+              { step: "2", icon: "➕", text: '"홈 화면에 추가"를 선택하세요' },
+              { step: "3", icon: "✅", text: '"추가"를 탭하면 완료!' },
+            ].map((s) => (
+              <div key={s.step} className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3">
+                <div className="w-7 h-7 rounded-full bg-green-500 text-white text-xs font-black flex items-center justify-center flex-shrink-0">
+                  {s.step}
+                </div>
+                <span className="text-xl font-bold">{s.icon}</span>
+                <p className="text-sm text-gray-700 font-medium">{s.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* PC / 기타 */}
+        {!isIOS && !isAndroid && (
+          <div className="space-y-3 mb-6">
+            {[
+              { step: "1", icon: "🖥️", text: "브라우저 주소창 오른쪽 설치 아이콘(⊕)을 클릭하세요" },
+              { step: "2", icon: "✅", text: '"설치"를 클릭하면 완료!' },
+            ].map((s) => (
+              <div key={s.step} className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3">
+                <div className="w-7 h-7 rounded-full bg-green-500 text-white text-xs font-black flex items-center justify-center flex-shrink-0">
+                  {s.step}
+                </div>
+                <span className="text-xl">{s.icon}</span>
+                <p className="text-sm text-gray-700 font-medium">{s.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button
+          onClick={onClose}
+          className="w-full bg-green-500 text-white py-3.5 rounded-2xl font-bold text-base"
+        >
+          확인했어요 ✓
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const HOW_TO = [
   { step: 1, icon: "📍", title: "위치 허용",   desc: "앱 첫 실행 시 위치 권한을 허용해주세요" },
@@ -18,7 +114,9 @@ const GUIDE_KEY = "plogging_guide_shown";
 
 export default function HomePage() {
   const { user } = useAuth();
-  const [showGuide, setShowGuide] = useState(false);
+  const [showGuide,   setShowGuide]   = useState(false);
+  const [showInstall, setShowInstall] = useState(false);  // 홈화면 추가 모달
+  const [deferredPrompt, setDeferredPrompt] = useState(null); // Android 네이티브 프롬프트
 
   // 첫 방문 시에만 캐릭터 가이드 표시
   useEffect(() => {
@@ -29,6 +127,29 @@ export default function HomePage() {
       // localStorage 미지원 환경 무시
     }
   }, []);
+
+  // Android/Desktop: beforeinstallprompt 이벤트 캐치
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault(); // 자동 배너 막기
+      setDeferredPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  // 홈화면 추가 버튼 클릭 처리
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      // Android/Desktop: 네이티브 설치 프롬프트 실행
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") setDeferredPrompt(null);
+    } else {
+      // iOS or 이미 설치됨: 수동 안내 모달 표시
+      setShowInstall(true);
+    }
+  };
 
   const handleGuideComplete = () => {
     try { localStorage.setItem(GUIDE_KEY, "1"); } catch {}
@@ -56,6 +177,9 @@ export default function HomePage() {
     <>
       {/* ── 캐릭터 가이드 (첫 방문) ── */}
       {showGuide && <CharacterGuide onComplete={handleGuideComplete} />}
+
+      {/* ── 홈화면 추가 안내 모달 ── */}
+      {showInstall && <InstallModal onClose={() => setShowInstall(false)} />}
 
       <div
         className="min-h-screen bg-gray-50 overflow-y-auto"
@@ -159,17 +283,28 @@ export default function HomePage() {
             </Link>
           )}
 
-          {/* ── 친구 초대 ── */}
-          <button
-            onClick={handleShare}
-            className="w-full bg-white rounded-2xl p-4 shadow-sm flex items-center gap-3 active:scale-98 transition-transform"
-          >
-            <div className="flex-1 text-left">
-              <p className="font-bold text-gray-700">친구에게 앱 소개하기 📤</p>
-              <p className="text-xs text-gray-400 mt-0.5">함께 플로깅하면 그룹 보너스!</p>
-            </div>
-            <span className="text-3xl">🌍</span>
-          </button>
+          {/* ── 홈화면 추가 + 친구 초대 ── */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* 홈화면 추가 버튼 */}
+            <button
+              onClick={handleInstallClick}
+              className="bg-green-500 text-white rounded-2xl p-4 flex flex-col items-start gap-1 shadow-sm active:scale-95 transition-transform"
+            >
+              <span className="text-2xl">📲</span>
+              <p className="font-bold text-sm leading-tight">홈 화면에 추가</p>
+              <p className="text-xs text-green-100">앱처럼 사용하기</p>
+            </button>
+
+            {/* 친구 초대 */}
+            <button
+              onClick={handleShare}
+              className="bg-white rounded-2xl p-4 flex flex-col items-start gap-1 shadow-sm active:scale-95 transition-transform"
+            >
+              <span className="text-2xl">📤</span>
+              <p className="font-bold text-sm text-gray-700 leading-tight">친구 초대</p>
+              <p className="text-xs text-gray-400">그룹 보너스!</p>
+            </button>
+          </div>
 
           {/* ── 이용 방법 ── */}
           <div>

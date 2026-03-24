@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { getWeekLabel } from "@/lib/routeUtils";
 import Link from "next/link";
 
 // ─── 관리자 이메일 목록 ────────────────────────────────────
@@ -226,15 +227,20 @@ export default function ProfilePage() {
           ) : (
             <div className="space-y-2">
               {recentRoutes.map((route) => {
-                const date    = route.createdAt?.toDate?.();
-                const dateStr = date
+                const date      = route.createdAt?.toDate?.();
+                const dateStr   = date
                   ? `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`
                   : "날짜 없음";
+                // ✅ createdAt 기준 주차 텍스트 (정확한 7일 단위)
+                const weekLabel = getWeekLabel(route.createdAt);
                 return (
                   <div key={route.id} className="flex justify-between items-center py-2 border-b last:border-0">
                     <div>
                       <p className="text-sm font-medium text-gray-700">📍 {(route.distance || 0).toFixed(2)} km</p>
-                      <p className="text-xs text-gray-400">{dateStr}</p>
+                      <p className="text-xs text-gray-400">
+                        <span className="text-green-600 font-medium">{weekLabel}</span>
+                        {" · "}{dateStr}
+                      </p>
                     </div>
                     <span className="text-sm font-bold text-green-600">+{route.points || 0}P</span>
                   </div>
