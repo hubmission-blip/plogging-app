@@ -152,7 +152,7 @@ export default function BannerSlider({ autoInterval = 4000 }) {
   return (
     <div
       className="relative w-full rounded-2xl overflow-hidden select-none"
-      style={{ height: "140px" }}
+      style={{ aspectRatio: "5/2", minHeight: "160px", maxHeight: "220px" }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={() => setPaused(true)}

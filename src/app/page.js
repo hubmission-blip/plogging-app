@@ -89,9 +89,10 @@ export default function HomePage() {
               </div>
               <Link
                 href="/map"
-                className="bg-white text-green-600 px-4 py-2 rounded-full text-sm font-black shadow"
+                className="bg-white text-green-600 w-11 h-11 rounded-full flex items-center justify-center shadow text-2xl flex-shrink-0"
+                title="플로깅 시작"
               >
-                🚶 지금 시작
+                🚶
               </Link>
             </div>
           ) : (

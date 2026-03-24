@@ -339,25 +339,41 @@ function MapPageInner() {
   const fetchNearbyRoutes = useCallback(async () => {
     if (!user) return;
     try {
+      // 현재 위치 취득 (10km 필터용)
+      let userLat = null, userLng = null;
+      try {
+        const pos = await new Promise((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+        );
+        userLat = pos.coords.latitude;
+        userLng = pos.coords.longitude;
+      } catch {
+        // GPS 권한 없거나 타임아웃 시 필터 없이 전체 조회
+      }
+
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+      // 여유있게 불러온 후 클라이언트에서 거리 필터
       const q = query(
         collection(db, "routes"),
         where("createdAt", ">=", sevenDaysAgo),
-        limit(60)
+        limit(150)
       );
       const snap = await getDocs(q);
+      const RADIUS_KM = 10; // ← 반경 10km 이내만 표시
       const routes = [];
       snap.forEach((d) => {
         const data = d.data();
-        // 타인 경로만, 유효한 coords가 있는 것만
-        if (data.userId !== user.uid && data.coords?.length > 1) {
-          routes.push({
-            id:     d.id,
-            coords: data.coords,
-          });
+        if (data.userId === user.uid || !data.coords || data.coords.length < 2) return;
+
+        // 10km 반경 필터 (GPS 위치 있을 때만 적용)
+        if (userLat !== null && data.coords[0]) {
+          const dist = haversineKm(userLat, userLng, data.coords[0].lat, data.coords[0].lng);
+          if (dist > RADIUS_KM) return;
         }
+
+        routes.push({ id: d.id, coords: data.coords });
       });
       setNearbyRoutes(routes);
     } catch (e) {
@@ -378,9 +394,17 @@ function MapPageInner() {
         if (isExpired(data.expiresAt)) {
           expiredIds.push(docSnap.id);
         } else {
+          // ── 주차 색상: createdAt 기준 실제 경과 일수로 계산 ──
+          // (weekNumber 저장값은 ISO주 기준이라 불일치 발생 → 직접 계산)
+          const WEEK_COLORS = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0"];
+          const createdMs   = data.createdAt?.toMillis?.() || Date.now();
+          const daysAgo     = Math.floor((Date.now() - createdMs) / (1000 * 60 * 60 * 24));
+          const weeksAgo    = Math.min(Math.floor(daysAgo / 7), 3); // 0~3
+          const routeColor  = WEEK_COLORS[weeksAgo];
+
           routes.push({
             id: data.id, coords: data.coords,
-            color: getRouteColor(data.weekNumber),
+            color: routeColor,
             weekNumber: data.weekNumber, distance: data.distance,
           });
         }
@@ -645,10 +669,10 @@ function MapPageInner() {
           {/* 내 동선 색상 범례 */}
           <p className="text-xs font-bold text-gray-500 mb-1">내 동선</p>
           {[
-            { color: "#4CAF50", label: "이번 주" },
-            { color: "#2196F3", label: "2주 전" },
-            { color: "#FF9800", label: "3주 전" },
-            { color: "#9C27B0", label: "4주 전" },
+            { color: "#4CAF50", label: "이번 주 (0~6일)" },
+            { color: "#2196F3", label: "1주 전 (7~13일)" },
+            { color: "#FF9800", label: "2주 전 (14~20일)" },
+            { color: "#9C27B0", label: "3주+ (21일~)" },
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-1.5 mb-0.5">
               <div className="w-4 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
