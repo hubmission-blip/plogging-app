@@ -20,7 +20,7 @@ const BANNERS = [
     emoji: "♻️",
     title: "감탄소 파트너",
     sub: "탄소 절감 인증 파트너사",
-    link: "https://example.com",
+    link: "https://www.gamtanso.com/",
     tag: "파트너",
   },
   {
@@ -92,7 +92,7 @@ const BANNERS = [
     emoji: "💧",
     title: "깨끗한 수질 보호",
     sub: "하천 주변 플로깅 캠페인",
-    link: null,
+    link: "https://www.youtube.com/watch?v=55kCOkQlleU",
     tag: "캠페인",
   },
   {
