@@ -4,11 +4,9 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { getRouteColor, getRelativeWeek } from "@/lib/routeUtils";
+import { getRouteColorByDate, getWeekLabel } from "@/lib/routeUtils";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
-const WEEK_LABELS = ["이번 주", "2주 전", "3주 전", "4주 전"];
 
 export default function HistoryPage() {
   const { user } = useAuth();
@@ -144,9 +142,9 @@ export default function HistoryPage() {
         ) : (
           <div className="space-y-3">
             {records.map((record) => {
-              const relWeek = getRelativeWeek(record.weekNumber);
-              const color = getRouteColor(record.weekNumber);
-              const weekLabel = WEEK_LABELS[relWeek] || "4주 전";
+              // ✅ createdAt 기준으로 정확한 색상·텍스트 계산 (7일 단위)
+              const color     = getRouteColorByDate(record.createdAt);
+              const weekLabel = getWeekLabel(record.createdAt);
               return (
                 <div key={record.id} className="bg-white rounded-2xl shadow-sm p-4">
                   <div className="flex items-start justify-between">
