@@ -77,6 +77,28 @@ const REWARDS = [
     badge: "NEW",
     badgeColor: "bg-blue-100 text-blue-700",
   },
+    {
+    id: "donate_product",
+    category: "환경",
+    icon: "🌊",
+    title: "교정밴드 교환권",
+    desc: "지능형, 교정밴드를 드립니다(소진시까지)",
+    cost: 1000,
+    stock: 999,
+    badge: null,
+    badgeColor: "",
+  },
+  {
+    id: "bonus_points",
+    category: "기부",
+    icon: "⚡",
+    title: "독도 프로젝트 기부",
+    desc: "독도,수중정화 & 플로깅 프로젝트 후원",
+    cost: 500,
+    stock: 50,
+    badge: "NEW",
+    badgeColor: "bg-blue-100 text-blue-700",
+  },
 ];
 
 const CATEGORIES = ["전체", "환경", "음료", "기부", "포인트"];
