@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
 import CharacterGuide from "@/components/CharacterGuide";
+import versionData from "@/lib/version.json";
 
 // ─── PWA 홈화면 추가 안내 모달 ───────────────────────────────
 function InstallModal({ onClose }) {
@@ -347,10 +348,35 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* ── 최신 업데이트 ── */}
+          {(() => {
+            const latest = versionData.changelog[0];
+            return (
+              <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-green-400">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="font-bold text-gray-700 text-sm">🆕 최신 업데이트</h2>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
+                    {latest.version}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 mb-1">{latest.date}</p>
+                <p className="text-sm font-semibold text-gray-700">
+                  {latest.emoji} {latest.title}
+                </p>
+                <ul className="mt-1.5 space-y-0.5">
+                  {latest.items.map((item, i) => (
+                    <li key={i} className="text-xs text-gray-500">· {item}</li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })()}
+
           {/* ── 푸터 ── */}
           <div className="text-center py-2">
             <p className="text-xs text-gray-400">사단법인 국제청년환경연합회 (GYEA)</p>
             <p className="text-xs text-gray-300 mt-0.5">hubmission@gmail.com</p>
+            <p className="text-xs text-gray-300 mt-0.5">{versionData.version}</p>
           </div>
         </div>
       </div>
