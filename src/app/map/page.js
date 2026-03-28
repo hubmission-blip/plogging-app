@@ -612,7 +612,7 @@ function MapPageInner() {
               <span className={`text-sm font-bold ${isSpeedWarning ? "text-red-500" : "text-blue-500"}`}>
                 🚀 {currentSpeed} km/h
               </span>
-              <span className="text-xs text-red-500 animate-pulse">● 기록 중</span>
+              <span className="text-xs text-red-500 animate-pulse basis-full text-center">● 기록 중</span>
             </>
           )}
         </div>
