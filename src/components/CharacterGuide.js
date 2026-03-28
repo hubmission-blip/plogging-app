@@ -159,15 +159,13 @@ export default function CharacterGuide({ onComplete }) {
           </button>
         </div>
 
-        {/* ── 건너뛰기 (마지막 페이지 제외) ── */}
-        {!isLast && (
-          <button
-            onClick={() => { if (onComplete) onComplete(); }}
-            className="w-full text-center text-xs text-gray-300 pb-3 flex-shrink-0"
-          >
-            건너뛰기
-          </button>
-        )}
+        {/* ── 건너뛰기 / 시작하기 (전 페이지 공통) ── */}
+        <button
+          onClick={() => { if (onComplete) onComplete(); }}
+          className="w-full text-center text-xs text-gray-300 pb-3 flex-shrink-0"
+        >
+          {isLast ? "🌿 지금 바로 시작하기" : "건너뛰기"}
+        </button>
       </div>
     </div>
   );

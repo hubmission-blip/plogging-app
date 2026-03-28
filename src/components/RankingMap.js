@@ -65,6 +65,7 @@ export default function RankingMap() {
         const data   = docSnap.data();
         const coords = data.coords;
         if (!coords || coords.length === 0) return;
+        if (!data.points || data.points === 0) return; // 0점 기록 랭킹 제외
         const firstCoord = coords[0];
         let minDist = Infinity, closestCode = "11";
         REGIONS.forEach((r) => {

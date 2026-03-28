@@ -539,7 +539,7 @@ function MapPageInner() {
   const handlePhotoSkip = async () => {
     const p = pendingDataRef.current;
     if (!p) return;
-    await saveRoute({ ...p, points: 0, photoUrl: null });
+    // 사진 미인증 → Firestore 저장 안 함 (DB 순수성 유지)
     setShowPhotoModal(false);
     setResult({ distance: p.routeDistance, total: 0,
       breakdown: [{ label: "사진 미인증 (포인트 미지급)", points: 0 }], verified: false });
@@ -551,15 +551,11 @@ function MapPageInner() {
     startTracking(false); // false = 거리·시간·줍기 횟수 유지하고 재개
   };
 
-  const handleForceStop = async () => {
+  const handleForceStop = () => {
     setShowValidationFail(false);
-    if (path.length >= 2) {
-      const fd = { routePath: [...path], routeDistance: distance,
-        routeDuration: duration, routeStopCount: stopCount, points: 0, photoUrl: null };
-      await saveRoute(fd);
-      setResult({ distance, total: 0,
-        breakdown: [{ label: "인증 조건 미달 (포인트 미지급)", points: 0 }], verified: false });
-    }
+    // 조건 미달 기록 → Firestore 저장 안 함 (DB 순수성 유지)
+    setResult({ distance, total: 0,
+      breakdown: [{ label: "인증 조건 미달 (포인트 미지급)", points: 0 }], verified: false });
   };
 
   // ─── Early returns ─────────────────────────────────────

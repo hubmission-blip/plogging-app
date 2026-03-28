@@ -1,7 +1,18 @@
 {
-  "version": "v1.06",
-  "build": 6,
+  "version": "v1.07",
+  "build": 7,
   "changelog": [
+    {
+      "version": "v1.07",
+      "build": 7,
+      "date": "2026-03-29",
+      "emoji": "🏆",
+      "title": "신규 기능 추가",
+      "items": [
+        "그룹 채팅 기능",
+        "푸시 알림 지원"
+      ]
+    },
     {
       "version": "v1.06",
       "build": 6,
