@@ -48,6 +48,8 @@ export function useLocation({ onSpeedViolation } = {}) {
   // ② 타이머 ref
   const trackingStartRef    = useRef(null);
   const durationIntervalRef = useRef(null);
+  // 계속 플로깅하기 재개를 위해 현재 duration을 ref로 미러링
+  const durationRef         = useRef(0);
 
   // ─── stopTracking ─────────────────────────────────────
   const stopTracking = useCallback(() => {
@@ -69,25 +71,37 @@ export function useLocation({ onSpeedViolation } = {}) {
   }, []);
 
   // ─── startTracking ────────────────────────────────────
-  const startTracking = useCallback(() => {
-    // 초기화
-    setPath([]);
-    setDistance(0);
+  // reset=true  → 처음 시작 (모든 값 초기화)
+  // reset=false → 계속 플로깅하기 (거리·시간·줍기 횟수 유지하고 재개)
+  const startTracking = useCallback((reset = true) => {
+    if (reset) {
+      // 처음 시작: 전체 초기화
+      setPath([]);
+      setDistance(0);
+      setDuration(0);
+      durationRef.current        = 0;
+      setStopCount(0);
+      lastPositionRef.current    = null;
+      trackingStartRef.current   = Date.now();
+    } else {
+      // 재개: 누적값 유지, 타이머 시작 시각만 보정
+      // (이미 경과한 시간을 빼서 타이머가 이어서 올라가도록)
+      lastPositionRef.current    = null;
+      trackingStartRef.current   = Date.now() - (durationRef.current * 1000);
+    }
+
     setCurrentSpeed(0);
     setIsSpeedWarning(false);
-    setDuration(0);
-    setStopCount(0);
-
-    lastPositionRef.current    = null;
     violationStartRef.current  = null;
     autoStopCalledRef.current  = false;
     wasMovingRef.current       = false;
 
     // ② 1초 타이머 시작
-    trackingStartRef.current   = Date.now();
     durationIntervalRef.current = setInterval(() => {
       if (trackingStartRef.current) {
-        setDuration(Math.floor((Date.now() - trackingStartRef.current) / 1000));
+        const d = Math.floor((Date.now() - trackingStartRef.current) / 1000);
+        durationRef.current = d;
+        setDuration(d);
       }
     }, 1000);
 

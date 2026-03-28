@@ -548,7 +548,7 @@ function MapPageInner() {
 
   const handleRetryPlogging = () => {
     setShowValidationFail(false);
-    startTracking();
+    startTracking(false); // false = 거리·시간·줍기 횟수 유지하고 재개
   };
 
   const handleForceStop = async () => {
@@ -607,10 +607,6 @@ function MapPageInner() {
               <span className="text-gray-300">|</span>
               <span className={`text-sm font-bold ${duration >= MIN_DURATION_SEC ? "text-green-500" : "text-gray-600"}`}>
                 ⏱ {formatDuration(duration)}
-              </span>
-              <span className="text-gray-300">|</span>
-              <span className={`text-sm font-bold ${stopCount >= MIN_STOPS ? "text-green-500" : "text-orange-500"}`}>
-                🗑️ {stopCount}회
               </span>
               <span className="text-gray-300">|</span>
               <span className={`text-sm font-bold ${isSpeedWarning ? "text-red-500" : "text-blue-500"}`}>
