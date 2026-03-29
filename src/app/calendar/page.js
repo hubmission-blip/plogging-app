@@ -11,13 +11,22 @@ import {
 // ─── 관리자 이메일 ────────────────────────────────────────────
 const ADMIN_EMAILS = ["hubmission@gmail.com"];
 
-// ─── 17개 시도 목록 ───────────────────────────────────────────
-const REGIONS = [
-  "서울", "부산", "대구", "인천", "광주",
-  "대전", "울산", "세종", "경기", "강원",
-  "충북", "충남", "전북", "전남", "경북",
-  "경남", "제주",
+// ─── 17개 시도 (권역별 그룹) ──────────────────────────────────
+const REGION_GROUPS = [
+  { name: "수도권",  color: "bg-blue-500",   light: "bg-blue-50   border-blue-200   text-blue-700",   icon: "🏙️", regions: ["서울", "인천", "경기"] },
+  { name: "충청권",  color: "bg-yellow-500", light: "bg-yellow-50 border-yellow-200 text-yellow-700", icon: "🌾", regions: ["대전", "세종", "충북", "충남"] },
+  { name: "강원권",  color: "bg-cyan-500",   light: "bg-cyan-50   border-cyan-200   text-cyan-700",   icon: "⛰️", regions: ["강원"] },
+  { name: "호남권",  color: "bg-green-500",  light: "bg-green-50  border-green-200  text-green-700",  icon: "🌊", regions: ["광주", "전북", "전남"] },
+  { name: "영남권",  color: "bg-red-500",    light: "bg-red-50    border-red-200    text-red-700",    icon: "🏔️", regions: ["부산", "대구", "울산", "경북", "경남"] },
+  { name: "제주권",  color: "bg-orange-500", light: "bg-orange-50 border-orange-200 text-orange-700", icon: "🍊", regions: ["제주"] },
 ];
+
+// 평탄화된 전체 지역 목록 (기존 코드 호환용)
+const REGIONS = REGION_GROUPS.flatMap((g) => g.regions);
+
+// 지역 → 권역 색상 매핑
+const REGION_COLOR_MAP = {};
+REGION_GROUPS.forEach((g) => g.regions.forEach((r) => { REGION_COLOR_MAP[r] = g; }));
 
 // ─── 이벤트 유형 ──────────────────────────────────────────────
 const EVENT_TYPE = {
@@ -41,6 +50,62 @@ function isSameDay(a, b) {
   return a.getFullYear() === b.getFullYear() &&
          a.getMonth()    === b.getMonth()    &&
          a.getDate()     === b.getDate();
+}
+
+// ─── 지역 선택 바텀시트 ───────────────────────────────────────
+function RegionSheet({ current, onSelect, onClose }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[200] flex items-end" onClick={onClose}>
+      <div
+        className="w-full bg-white rounded-t-3xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 핸들 */}
+        <div className="pt-3 pb-2 flex justify-center">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
+
+        {/* 헤더 */}
+        <div className="flex items-center justify-between px-5 pb-3 border-b border-gray-100">
+          <p className="font-black text-gray-800 text-base">🗺️ 지역 선택</p>
+          <button onClick={onClose} className="text-gray-400 text-sm px-2 py-1">닫기</button>
+        </div>
+
+        {/* 권역별 그룹 */}
+        <div className="px-4 py-4 space-y-4 max-h-[70vh] overflow-y-auto pb-8">
+          {REGION_GROUPS.map((group) => (
+            <div key={group.name}>
+              {/* 권역 헤더 */}
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-base">{group.icon}</span>
+                <span className={`text-xs font-black px-2 py-0.5 rounded-full text-white ${group.color}`}>
+                  {group.name}
+                </span>
+              </div>
+              {/* 지역 버튼 그리드 */}
+              <div className="grid grid-cols-4 gap-2">
+                {group.regions.map((region) => {
+                  const isSelected = current === region;
+                  return (
+                    <button
+                      key={region}
+                      onClick={() => { onSelect(region); onClose(); }}
+                      className={`py-3 rounded-2xl text-sm font-bold border transition-all active:scale-95
+                        ${isSelected
+                          ? `${group.color} text-white border-transparent shadow-md`
+                          : `${group.light} border`}`}
+                    >
+                      {region}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─── 이벤트 상세 모달 ─────────────────────────────────────────
@@ -364,7 +429,8 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(null); // "YYYY-MM-DD"
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showCreate,  setShowCreate]  = useState(false);
-  const [editingEvent, setEditingEvent] = useState(null); // 수정 중인 이벤트
+  const [editingEvent, setEditingEvent]   = useState(null); // 수정 중인 이벤트
+  const [showRegionSheet, setShowRegionSheet] = useState(false); // 지역 선택 시트
   const [loading,    setLoading]    = useState(false);
   const [msg,        setMsg]        = useState("");
 
@@ -536,22 +602,27 @@ export default function CalendarPage() {
         <p className="text-green-200 text-xs">지역별 일정 · 참여 신청</p>
       </div>
 
-      {/* ── 지역 선택 ── */}
-      <div className="bg-white border-b px-4 py-3">
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
-          {REGIONS.map((region) => (
-            <button
-              key={region}
-              onClick={() => { setSelectedRegion(region); setSelectedDate(null); }}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-colors
-                ${selectedRegion === region
-                  ? "bg-green-500 text-white"
-                  : "bg-gray-100 text-gray-500"}`}
-            >
-              {region}
-            </button>
-          ))}
-        </div>
+      {/* ── 지역 선택 바 ── */}
+      <div className="bg-white border-b px-4 py-2.5">
+        <button
+          onClick={() => setShowRegionSheet(true)}
+          className="w-full flex items-center justify-between bg-gray-50 rounded-2xl px-4 py-2.5 active:bg-gray-100 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-base">{REGION_COLOR_MAP[selectedRegion]?.icon || "📍"}</span>
+            <div className="text-left">
+              <p className="text-[10px] text-gray-400 leading-none mb-0.5">선택된 지역</p>
+              <p className="text-sm font-black text-gray-800">{selectedRegion}</p>
+            </div>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold text-white ml-1 ${REGION_COLOR_MAP[selectedRegion]?.color || "bg-gray-400"}`}>
+              {REGION_COLOR_MAP[selectedRegion]?.name}
+            </span>
+          </div>
+          <div className="flex items-center gap-1 text-gray-400">
+            <span className="text-xs">지역 변경</span>
+            <span className="text-sm">›</span>
+          </div>
+        </button>
       </div>
 
       {/* ── 메시지 ── */}
@@ -844,6 +915,15 @@ export default function CalendarPage() {
           onClose={() => setEditingEvent(null)}
           onCreate={handleCreate}
           onSave={handleSaveEdit}
+        />
+      )}
+
+      {/* ── 지역 선택 바텀시트 ── */}
+      {showRegionSheet && (
+        <RegionSheet
+          current={selectedRegion}
+          onSelect={(region) => { setSelectedRegion(region); setSelectedDate(null); }}
+          onClose={() => setShowRegionSheet(false)}
         />
       )}
     </div>
