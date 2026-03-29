@@ -7,7 +7,7 @@ import BannerSlider from "@/components/BannerSlider";
 import CharacterGuide from "@/components/CharacterGuide";
 import versionData from "@/lib/version.json";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
+import { collection, query, where, orderBy, getDocs, getCountFromServer } from "firebase/firestore";
 
 // ─── PWA 홈화면 추가 안내 모달 ───────────────────────────────
 function InstallModal({ onClose }) {
@@ -129,6 +129,7 @@ export default function HomePage() {
   const [deferredPrompt, setDeferredPrompt] = useState(null); // Android 네이티브 프롬프트
   const [notices, setNotices] = useState([]); // 활성 공지사항
   const [expandedNotice, setExpandedNotice] = useState(null); // 펼친 공지 id
+  const [communityStats, setCommunityStats] = useState({ users: null, distance: null }); // 커뮤니티 통계
 
   // 첫 방문 시에만 캐릭터 가이드 표시
   useEffect(() => {
@@ -157,6 +158,34 @@ export default function HomePage() {
       }
     };
     fetchNotices();
+  }, []);
+
+  // 커뮤니티 통계 (총 가입자 수 + 총 이동 거리)
+  useEffect(() => {
+    const fetchCommunityStats = async () => {
+      try {
+        // 총 가입자 수
+        const usersSnap = await getCountFromServer(collection(db, "users"));
+        const totalUsers = usersSnap.data().count;
+
+        // 총 이동 거리 (포인트 > 0인 유효 기록만)
+        const routesSnap = await getDocs(
+          query(collection(db, "routes"), where("points", ">", 0))
+        );
+        let totalDistance = 0;
+        routesSnap.forEach((d) => {
+          totalDistance += d.data().distance || 0;
+        });
+
+        setCommunityStats({
+          users: totalUsers,
+          distance: totalDistance,
+        });
+      } catch (e) {
+        console.warn("커뮤니티 통계 로드 실패:", e.message);
+      }
+    };
+    fetchCommunityStats();
   }, []);
 
   // Android/Desktop: beforeinstallprompt 이벤트 캐치
@@ -327,28 +356,28 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* ── 이번 주 내 현황 (로그인 시) ── */}
-          {user && (
-            <Link href="/profile" className="block">
-              <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-4 text-white shadow">
-                <p className="text-xs text-green-100 mb-2">내 프로필 보기 →</p>
-                <div className="flex gap-4">
-                  <div className="text-center">
-                    <p className="text-xl font-black">📊</p>
-                    <p className="text-xs text-green-100 mt-0.5">통계 확인</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xl font-black">🏅</p>
-                    <p className="text-xs text-green-100 mt-0.5">뱃지 수집</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xl font-black">⭐</p>
-                    <p className="text-xs text-green-100 mt-0.5">레벨업</p>
-                  </div>
-                </div>
+          {/* ── 커뮤니티 현황 ── */}
+          <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-4 text-white shadow">
+            <p className="text-xs text-green-100 mb-3 font-medium">🌍 오백원의 행복 커뮤니티 현황</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white/20 rounded-xl px-4 py-3 text-center">
+                <p className="text-2xl font-black">
+                  {communityStats.users === null
+                    ? "…"
+                    : `${communityStats.users.toLocaleString()}명`}
+                </p>
+                <p className="text-xs text-green-100 mt-0.5">👥 총 가입자</p>
               </div>
-            </Link>
-          )}
+              <div className="bg-white/20 rounded-xl px-4 py-3 text-center">
+                <p className="text-2xl font-black">
+                  {communityStats.distance === null
+                    ? "…"
+                    : `${communityStats.distance.toFixed(1)}km`}
+                </p>
+                <p className="text-xs text-green-100 mt-0.5">🚶 총 이동 거리</p>
+              </div>
+            </div>
+          </div>
 
           {/* ── 홈화면 추가 + 친구 초대 ── */}
           <div className="grid grid-cols-2 gap-2">
@@ -442,6 +471,7 @@ export default function HomePage() {
           <div className="text-center py-2">
             <p className="text-xs text-gray-400">사단법인 국제청년환경연합회 (GYEA)</p>
             <p className="text-xs text-gray-300 mt-0.5">hubmission@gmail.com</p>
+            <p className="text-xs text-gray-300 mt-0.5">개발 : 이상민 &nbsp;·&nbsp; 자문 : 박정석</p>
             <p className="text-xs text-gray-300 mt-0.5">{versionData.version}</p>
           </div>
         </div>
