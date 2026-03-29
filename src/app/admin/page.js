@@ -6,20 +6,23 @@ import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
   collection, query, getDocs, orderBy, limit,
-  doc, updateDoc, where, getCountFromServer
+  doc, updateDoc, where, getCountFromServer,
+  deleteDoc, addDoc, setDoc, getDoc,
+  serverTimestamp, writeBatch, Timestamp,
 } from "firebase/firestore";
 
-// ─── 관리자 UID 목록 (Firebase UID로 교체) ──────────────────
-// .env.local에 NEXT_PUBLIC_ADMIN_UIDS=uid1,uid2 형태로 설정 가능
-const ADMIN_UIDS = (process.env.NEXT_PUBLIC_ADMIN_UIDS || "").split(",").filter(Boolean);
+// ─── 관리자 이메일 ────────────────────────────────────────
+const ADMIN_EMAILS = ["hubmission@gmail.com"];
 
-// ─── 통계 카드 ────────────────────────────────────────────
+// ─── 공통 컴포넌트 ────────────────────────────────────────
 function StatCard({ icon, label, value, sub, color = "green" }) {
   const colors = {
-    green:  "bg-green-50 text-green-700",
-    blue:   "bg-blue-50 text-blue-700",
+    green:  "bg-green-50  text-green-700",
+    blue:   "bg-blue-50   text-blue-700",
     orange: "bg-orange-50 text-orange-700",
     purple: "bg-purple-50 text-purple-700",
+    red:    "bg-red-50    text-red-700",
+    gray:   "bg-gray-100  text-gray-700",
   };
   return (
     <div className={`rounded-2xl p-4 ${colors[color]}`}>
@@ -31,262 +34,815 @@ function StatCard({ icon, label, value, sub, color = "green" }) {
   );
 }
 
+function SectionTitle({ children }) {
+  return <h2 className="font-bold text-gray-700 text-sm mb-2">{children}</h2>;
+}
+
+// ─── 메인 페이지 ──────────────────────────────────────────
 export default function AdminPage() {
   const { user } = useAuth();
   const router   = useRouter();
 
-  const [stats, setStats]           = useState(null);
-  const [recentUsers, setRecentUsers] = useState([]);
-  const [rewards, setRewards]       = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [activeTab, setActiveTab]   = useState("dashboard"); // dashboard | users | rewards
+  const isAdmin = user && ADMIN_EMAILS.includes(user.email);
 
-  // ── 권한 체크 ────────────────────────────────────────────
-  const isAdmin = user && (
-    ADMIN_UIDS.includes(user.uid) ||
-    user.email === "hubmission@gmail.com" // 감독님 이메일
-  );
+  // ── 공통 상태 ──────────────────────────────────────────
+  const [activeTab,  setActiveTab]  = useState("dashboard");
+  const [loading,    setLoading]    = useState(true);
+  const [actionMsg,  setActionMsg]  = useState("");
 
-  const fetchAll = useCallback(async () => {
+  // ── 대시보드 ───────────────────────────────────────────
+  const [stats,    setStats]    = useState(null);
+  const [today,    setToday]    = useState(null);
+  const [topUsers, setTopUsers] = useState([]);
+
+  // ── 유저 ──────────────────────────────────────────────
+  const [users,        setUsers]        = useState([]);
+  const [userSearch,   setUserSearch]   = useState("");
+  const [expandedUid,  setExpandedUid]  = useState(null);
+  const [pointInput,   setPointInput]   = useState("");
+  const [pointReason,  setPointReason]  = useState("");
+
+  // ── 리워드 ────────────────────────────────────────────
+  const [rewards,      setRewards]      = useState([]);
+  const [rewardFilter, setRewardFilter] = useState("pending");
+
+  // ── 유지관리 ──────────────────────────────────────────
+  const [appSettings,   setAppSettings]   = useState(null);
+  const [settingsDirty, setSettingsDirty] = useState(false);
+  const [confirmInput,  setConfirmInput]  = useState("");
+
+  // ── 공지사항 ──────────────────────────────────────────
+  const [notices,    setNotices]    = useState([]);
+  const [newNotice,  setNewNotice]  = useState({ title: "", content: "", type: "info" });
+  const [noticeMode, setNoticeMode] = useState(false); // 작성 모드
+
+  // ── 메시지 표시 ───────────────────────────────────────
+  const showMsg = (msg) => {
+    setActionMsg(msg);
+    setTimeout(() => setActionMsg(""), 3000);
+  };
+
+  // ──────────────────────────────────────────────────────
+  //  Fetch: 대시보드
+  // ──────────────────────────────────────────────────────
+  const fetchDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      // ── 통계 집계 ──
-      const [usersSnap, routesSnap, rewardsSnap] = await Promise.all([
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const weekStart  = new Date(); weekStart.setDate(weekStart.getDate() - 7);
+
+      const [usersCount, routesCount, rewardsCount] = await Promise.all([
         getCountFromServer(collection(db, "users")),
         getCountFromServer(collection(db, "routes")),
         getCountFromServer(collection(db, "reward_history")),
       ]);
 
-      // 총 거리·포인트 합계
-      const routesDocs = await getDocs(collection(db, "routes"));
-      let totalDist = 0, totalPts = 0;
-      routesDocs.forEach((d) => {
-        totalDist += d.data().distance || 0;
-        totalPts  += d.data().points   || 0;
+      // 전체 경로 집계
+      const allRoutes = await getDocs(collection(db, "routes"));
+      let totalDist = 0, totalPts = 0, todayDist = 0, todayCount = 0, weekCount = 0;
+      allRoutes.forEach((d) => {
+        const r = d.data();
+        totalDist += r.distance || 0;
+        totalPts  += r.points   || 0;
+        const t = r.createdAt?.toDate?.();
+        if (t && t >= todayStart) { todayDist  += r.distance || 0; todayCount++; }
+        if (t && t >= weekStart)  { weekCount++; }
       });
+
+      // 대기 중 리워드 수
+      const pendingSnap = await getCountFromServer(
+        query(collection(db, "reward_history"), where("status", "==", "pending"))
+      );
+
+      // 상위 5명 (totalDistance 기준)
+      const usersSnap = await getDocs(collection(db, "users"));
+      const topArr = usersSnap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (b.totalDistance || 0) - (a.totalDistance || 0))
+        .slice(0, 5);
 
       setStats({
-        userCount:    usersSnap.data().count,
-        routeCount:   routesSnap.data().count,
-        rewardCount:  rewardsSnap.data().count,
-        totalDist:    totalDist,
-        totalPoints:  totalPts,
+        userCount:    usersCount.data().count,
+        routeCount:   routesCount.data().count,
+        rewardCount:  rewardsCount.data().count,
+        pendingCount: pendingSnap.data().count,
+        totalDist, totalPts,
       });
-
-      // ── 최근 가입 유저 10명 ──
-      const usersQ = query(collection(db, "users"), limit(10));
-      const usersDocSnap = await getDocs(usersQ);
-      const usersArr = usersDocSnap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => {
-          const at = a.createdAt?.toMillis?.() || 0;
-          const bt = b.createdAt?.toMillis?.() || 0;
-          return bt - at;
-        });
-      setRecentUsers(usersArr);
-
-      // ── 처리 대기 리워드 신청 ──
-      const rewardsQ = query(
-        collection(db, "reward_history"),
-        where("status", "==", "pending"),
-        limit(20)
-      );
-      const rewardsDocSnap = await getDocs(rewardsQ);
-      setRewards(rewardsDocSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setToday({ todayCount, todayDist: todayDist.toFixed(2), weekCount });
+      setTopUsers(topArr);
     } catch (e) {
-      console.error("관리자 데이터 로드 실패:", e);
+      console.error("대시보드 로드 실패:", e);
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // ──────────────────────────────────────────────────────
+  //  Fetch: 유저
+  // ──────────────────────────────────────────────────────
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const snap = await getDocs(collection(db, "users"));
+      const arr  = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      setUsers(arr);
+    } catch (e) { console.error("유저 로드 실패:", e); }
+    finally { setLoading(false); }
+  }, []);
+
+  // ──────────────────────────────────────────────────────
+  //  Fetch: 리워드
+  // ──────────────────────────────────────────────────────
+  const fetchRewards = useCallback(async () => {
+    setLoading(true);
+    try {
+      const snap = await getDocs(collection(db, "reward_history"));
+      const arr  = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      setRewards(arr);
+    } catch (e) { console.error("리워드 로드 실패:", e); }
+    finally { setLoading(false); }
+  }, []);
+
+  // ──────────────────────────────────────────────────────
+  //  Fetch: 유지관리 (앱 설정)
+  // ──────────────────────────────────────────────────────
+  const fetchMaintenance = useCallback(async () => {
+    setLoading(true);
+    try {
+      const snap = await getDoc(doc(db, "settings", "app"));
+      if (snap.exists()) {
+        setAppSettings(snap.data());
+      } else {
+        // 기본값 초기화
+        const defaults = { minDistanceKm: 0.5, minDurationSec: 600, minStops: 3, dailyMax: 3 };
+        setAppSettings(defaults);
+      }
+    } catch (e) { console.error("설정 로드 실패:", e); }
+    finally { setLoading(false); }
+  }, []);
+
+  // ──────────────────────────────────────────────────────
+  //  Fetch: 공지사항
+  // ──────────────────────────────────────────────────────
+  const fetchNotices = useCallback(async () => {
+    setLoading(true);
+    try {
+      const snap = await getDocs(collection(db, "notices"));
+      const arr  = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      setNotices(arr);
+    } catch (e) { console.error("공지사항 로드 실패:", e); }
+    finally { setLoading(false); }
+  }, []);
+
+  // ── 탭 전환 시 데이터 로드 ─────────────────────────────
+  useEffect(() => {
+    if (!user || !isAdmin) return;
+    if (activeTab === "dashboard")   fetchDashboard();
+    if (activeTab === "users")       fetchUsers();
+    if (activeTab === "rewards")     fetchRewards();
+    if (activeTab === "maintenance") fetchMaintenance();
+    if (activeTab === "notices")     fetchNotices();
+  }, [activeTab, user, isAdmin]);
+
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
-    if (!isAdmin) { router.push("/"); return; }
-    fetchAll();
-  }, [user, isAdmin, fetchAll, router]);
+    if (user && !isAdmin) { router.push("/"); return; }
+  }, [user, isAdmin, router]);
 
-  // ── 리워드 처리 ─────────────────────────────────────────
-  const handleRewardStatus = async (rewardId, status) => {
+  // ──────────────────────────────────────────────────────
+  //  Action: 포인트 조정
+  // ──────────────────────────────────────────────────────
+  const handlePointAdjust = async (uid, displayName) => {
+    const delta = parseInt(pointInput, 10);
+    if (isNaN(delta) || delta === 0) { showMsg("❌ 올바른 포인트 값을 입력하세요"); return; }
     try {
-      await updateDoc(doc(db, "reward_history", rewardId), { status });
-      setRewards((prev) => prev.filter((r) => r.id !== rewardId));
-    } catch (e) {
-      alert("처리 실패: " + e.message);
-    }
+      const userRef  = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
+      const current  = userSnap.data()?.totalPoints || 0;
+      const newPts   = Math.max(0, current + delta);
+      await updateDoc(userRef, { totalPoints: newPts });
+      setUsers((prev) => prev.map((u) => u.id === uid ? { ...u, totalPoints: newPts } : u));
+      setPointInput(""); setPointReason(""); setExpandedUid(null);
+      showMsg(`✅ ${displayName} 포인트 ${delta > 0 ? "+" : ""}${delta}P → ${newPts}P`);
+    } catch (e) { showMsg("❌ 포인트 조정 실패: " + e.message); }
   };
 
+  // ──────────────────────────────────────────────────────
+  //  Action: 리워드 상태 처리
+  // ──────────────────────────────────────────────────────
+  const handleRewardStatus = async (rewardId, status) => {
+    try {
+      await updateDoc(doc(db, "reward_history", rewardId), { status, processedAt: serverTimestamp() });
+      setRewards((prev) => prev.map((r) => r.id === rewardId ? { ...r, status } : r));
+      showMsg(`✅ ${status === "completed" ? "처리 완료" : "반려"} 처리되었습니다`);
+    } catch (e) { showMsg("❌ 처리 실패: " + e.message); }
+  };
+
+  // ──────────────────────────────────────────────────────
+  //  Action: 앱 설정 저장
+  // ──────────────────────────────────────────────────────
+  const handleSaveSettings = async () => {
+    try {
+      await setDoc(doc(db, "settings", "app"), { ...appSettings, updatedAt: serverTimestamp() });
+      setSettingsDirty(false);
+      showMsg("✅ 앱 설정이 저장되었습니다");
+    } catch (e) { showMsg("❌ 설정 저장 실패: " + e.message); }
+  };
+
+  // ──────────────────────────────────────────────────────
+  //  Action: 테스트 데이터 삭제
+  // ──────────────────────────────────────────────────────
+  const handleCleanTestData = async () => {
+    if (confirmInput !== "삭제확인") { showMsg("❌ '삭제확인'을 정확히 입력하세요"); return; }
+    try {
+      const snap = await getDocs(
+        query(collection(db, "routes"), where("isTestData", "==", true))
+      );
+      const batch = writeBatch(db);
+      snap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+      setConfirmInput("");
+      showMsg(`✅ 테스트 데이터 ${snap.size}개 삭제 완료`);
+    } catch (e) { showMsg("❌ 삭제 실패: " + e.message); }
+  };
+
+  // ──────────────────────────────────────────────────────
+  //  Action: 만료 경로 삭제
+  // ──────────────────────────────────────────────────────
+  const handleCleanExpired = async () => {
+    try {
+      const now  = Timestamp.now();
+      const snap = await getDocs(
+        query(collection(db, "routes"), where("expiresAt", "<", now))
+      );
+      const batch = writeBatch(db);
+      snap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+      showMsg(`✅ 만료된 경로 ${snap.size}개 삭제 완료`);
+    } catch (e) { showMsg("❌ 삭제 실패: " + e.message); }
+  };
+
+  // ──────────────────────────────────────────────────────
+  //  Action: 공지사항 생성
+  // ──────────────────────────────────────────────────────
+  const handleCreateNotice = async () => {
+    if (!newNotice.title.trim() || !newNotice.content.trim()) {
+      showMsg("❌ 제목과 내용을 입력하세요"); return;
+    }
+    try {
+      const docRef = await addDoc(collection(db, "notices"), {
+        ...newNotice,
+        active:    true,
+        createdAt: serverTimestamp(),
+        createdBy: user.uid,
+      });
+      setNotices((prev) => [{ id: docRef.id, ...newNotice, active: true }, ...prev]);
+      setNewNotice({ title: "", content: "", type: "info" });
+      setNoticeMode(false);
+      showMsg("✅ 공지사항이 등록되었습니다");
+    } catch (e) { showMsg("❌ 등록 실패: " + e.message); }
+  };
+
+  // ──────────────────────────────────────────────────────
+  //  Action: 공지사항 토글/삭제
+  // ──────────────────────────────────────────────────────
+  const handleToggleNotice = async (id, current) => {
+    try {
+      await updateDoc(doc(db, "notices", id), { active: !current });
+      setNotices((prev) => prev.map((n) => n.id === id ? { ...n, active: !current } : n));
+    } catch (e) { showMsg("❌ 수정 실패: " + e.message); }
+  };
+
+  const handleDeleteNotice = async (id) => {
+    if (!confirm("공지사항을 삭제할까요?")) return;
+    try {
+      await deleteDoc(doc(db, "notices", id));
+      setNotices((prev) => prev.filter((n) => n.id !== id));
+      showMsg("✅ 공지사항이 삭제되었습니다");
+    } catch (e) { showMsg("❌ 삭제 실패: " + e.message); }
+  };
+
+  // ──────────────────────────────────────────────────────
+  //  Guard
+  // ──────────────────────────────────────────────────────
   if (!user || !isAdmin) return (
     <div className="flex items-center justify-center h-screen">
       <p className="text-gray-400">접근 권한이 없습니다.</p>
     </div>
   );
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-screen">
-      <p className="animate-pulse text-lg">🔧 관리자 데이터 로딩 중...</p>
-    </div>
+  // ──────────────────────────────────────────────────────
+  //  필터
+  // ──────────────────────────────────────────────────────
+  const filteredUsers   = users.filter((u) =>
+    !userSearch || (u.displayName || u.email || "").toLowerCase().includes(userSearch.toLowerCase())
   );
+  const filteredRewards = rewardFilter === "all"
+    ? rewards
+    : rewards.filter((r) => r.status === rewardFilter);
+
+  const TAB_LIST = [
+    { id: "dashboard",   label: "📊",  name: "통계" },
+    { id: "users",       label: "👥",  name: "유저" },
+    { id: "rewards",     label: "🎁",  name: `리워드${rewards.filter(r=>r.status==="pending").length > 0 ? ` (${rewards.filter(r=>r.status==="pending").length})` : ""}` },
+    { id: "maintenance", label: "🔧",  name: "유지관리" },
+    { id: "notices",     label: "📢",  name: "공지" },
+  ];
+
+  const noticeTypeStyle = {
+    info:    { bg: "bg-blue-50",   text: "text-blue-700",   label: "📌 안내" },
+    warning: { bg: "bg-orange-50", text: "text-orange-700", label: "⚠️ 주의" },
+    event:   { bg: "bg-green-50",  text: "text-green-700",  label: "🎉 이벤트" },
+  };
 
   return (
-    <div
-      className="min-h-screen bg-gray-50"
-      style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
-    >
+    <div className="min-h-screen bg-gray-50" style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}>
+
       {/* ── 헤더 ── */}
-      <div className="bg-gray-900 text-white px-4 pt-12 pb-5">
+      <div className="bg-gray-900 text-white px-4 pt-12 pb-4">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold">🔧 관리자 대시보드</h1>
+            <h1 className="text-lg font-bold">🔧 관리자 대시보드</h1>
             <p className="text-gray-400 text-xs mt-0.5">{user.email}</p>
           </div>
           <button
-            onClick={fetchAll}
+            onClick={() => {
+              if (activeTab === "dashboard")   fetchDashboard();
+              if (activeTab === "users")       fetchUsers();
+              if (activeTab === "rewards")     fetchRewards();
+              if (activeTab === "maintenance") fetchMaintenance();
+              if (activeTab === "notices")     fetchNotices();
+            }}
             className="bg-gray-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
           >
-            새로고침
+            🔄 새로고침
           </button>
         </div>
       </div>
 
-      {/* ── 탭 ── */}
-      <div className="flex bg-white border-b">
-        {[
-          { id: "dashboard", label: "📊 통계" },
-          { id: "users",     label: "👥 유저" },
-          { id: "rewards",   label: `🎁 리워드 ${rewards.length > 0 ? `(${rewards.length})` : ""}` },
-        ].map((tab) => (
+      {/* ── 액션 메시지 ── */}
+      {actionMsg && (
+        <div className="mx-4 mt-3 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+          <p className="text-sm text-green-700 font-medium">{actionMsg}</p>
+        </div>
+      )}
+
+      {/* ── 탭 바 ── */}
+      <div className="flex bg-white border-b overflow-x-auto no-scrollbar">
+        {TAB_LIST.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors
-              ${activeTab === tab.id
-                ? "border-green-500 text-green-600"
-                : "border-transparent text-gray-400"
-              }`}
+            className={`flex-shrink-0 flex-1 py-3 text-xs font-medium border-b-2 transition-colors min-w-[56px]
+              ${activeTab === tab.id ? "border-green-500 text-green-600" : "border-transparent text-gray-400"}`}
           >
-            {tab.label}
+            <span className="block text-base">{tab.label}</span>
+            <span>{tab.name}</span>
           </button>
         ))}
       </div>
 
-      <div className="px-4 py-4 space-y-4">
+      {loading && (
+        <div className="text-center py-8 text-gray-400 animate-pulse text-sm">로딩 중...</div>
+      )}
 
-        {/* ─────── 대시보드 탭 ─────── */}
-        {activeTab === "dashboard" && stats && (
-          <>
-            <div className="grid grid-cols-2 gap-3">
-              <StatCard icon="👤" label="총 가입자" value={`${stats.userCount}명`}  color="blue"   />
-              <StatCard icon="🏃" label="총 플로깅" value={`${stats.routeCount}회`} color="green"  />
-              <StatCard icon="📍" label="총 거리"   value={`${stats.totalDist.toFixed(0)}km`} color="orange" />
-              <StatCard icon="🎁" label="리워드 신청" value={`${stats.rewardCount}건`} color="purple" />
-            </div>
+      {!loading && (
+        <div className="px-4 py-4 space-y-4">
 
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <h2 className="font-bold text-gray-700 mb-2">📈 운영 현황 요약</h2>
-              {[
-                { label: "총 적립 포인트", value: `${stats.totalPoints.toLocaleString()}P` },
-                { label: "유저당 평균 거리", value: `${stats.userCount ? (stats.totalDist / stats.userCount).toFixed(1) : 0}km` },
-                { label: "유저당 평균 플로깅", value: `${stats.userCount ? (stats.routeCount / stats.userCount).toFixed(1) : 0}회` },
-                { label: "대기 중 리워드", value: `${rewards.length}건`, highlight: rewards.length > 0 },
-              ].map((item) => (
-                <div key={item.label} className="flex justify-between py-2 border-b last:border-0 text-sm">
-                  <span className="text-gray-500">{item.label}</span>
-                  <span className={`font-bold ${item.highlight ? "text-red-500" : "text-gray-700"}`}>
-                    {item.value}
-                  </span>
+          {/* ══════════════════════════════════════
+              📊 대시보드 탭
+          ══════════════════════════════════════ */}
+          {activeTab === "dashboard" && stats && today && (
+            <>
+              {/* 오늘 현황 */}
+              <div>
+                <SectionTitle>📅 오늘 현황</SectionTitle>
+                <div className="grid grid-cols-3 gap-2">
+                  <StatCard icon="🏃" label="오늘 플로깅"  value={`${today.todayCount}회`}       color="green" />
+                  <StatCard icon="📍" label="오늘 거리"    value={`${today.todayDist}km`}         color="blue"  />
+                  <StatCard icon="📆" label="이번주 전체"  value={`${today.weekCount}회`}          color="orange" />
                 </div>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* ─────── 유저 탭 ─────── */}
-        {activeTab === "users" && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b">
-              <h2 className="font-bold text-gray-700">최근 가입 유저 (최대 10명)</h2>
-            </div>
-            {recentUsers.map((u) => {
-              const date = u.createdAt?.toDate?.();
-              const dateStr = date
-                ? `${date.getMonth() + 1}/${date.getDate()}`
-                : "-";
-              return (
-                <div key={u.id} className="flex items-center gap-3 px-4 py-3 border-b last:border-0">
-                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm flex-shrink-0">
-                    {u.photoURL
-                      ? <img src={u.photoURL} alt="" className="w-full h-full rounded-full object-cover" />
-                      : "👤"
-                    }
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-700 truncate">
-                      {u.displayName || u.email || "익명"}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {u.provider || "email"} · {dateStr} 가입
-                    </p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-xs font-bold text-green-600">{u.totalPoints || 0}P</p>
-                    <p className="text-xs text-gray-400">{u.ploggingCount || 0}회</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* ─────── 리워드 탭 ─────── */}
-        {activeTab === "rewards" && (
-          <>
-            {rewards.length === 0 ? (
-              <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
-                <div className="text-4xl mb-2">✅</div>
-                <p className="text-gray-500">처리 대기 중인 리워드 신청이 없어요</p>
               </div>
-            ) : (
-              rewards.map((r) => {
-                const date = r.createdAt?.toDate?.();
-                const dateStr = date
-                  ? `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`
-                  : "-";
-                return (
-                  <div key={r.id} className="bg-white rounded-2xl p-4 shadow-sm">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <p className="font-bold text-gray-800 text-sm">{r.rewardTitle}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {dateStr} · {r.cost}P 차감
-                        </p>
-                        <p className="text-xs text-gray-400">UID: {r.userId?.slice(0, 8)}...</p>
-                      </div>
-                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">
-                        처리 대기
-                      </span>
+
+              {/* 전체 누적 */}
+              <div>
+                <SectionTitle>📈 전체 누적</SectionTitle>
+                <div className="grid grid-cols-2 gap-3">
+                  <StatCard icon="👤" label="총 가입자"    value={`${stats.userCount}명`}          color="blue"   />
+                  <StatCard icon="🏃" label="총 플로깅"    value={`${stats.routeCount}회`}          color="green"  />
+                  <StatCard icon="📍" label="총 거리"      value={`${stats.totalDist.toFixed(0)}km`} color="orange" />
+                  <StatCard icon="🎁" label="리워드 신청"  value={`${stats.rewardCount}건`}         color="purple" />
+                </div>
+              </div>
+
+              {/* 운영 요약 */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <SectionTitle>💡 운영 지표</SectionTitle>
+                {[
+                  { label: "총 적립 포인트",       value: `${stats.totalPoints.toLocaleString()}P` },
+                  { label: "유저 1인당 평균 거리",  value: `${stats.userCount ? (stats.totalDist / stats.userCount).toFixed(1) : 0}km` },
+                  { label: "유저 1인당 평균 횟수",  value: `${stats.userCount ? (stats.routeCount / stats.userCount).toFixed(1) : 0}회` },
+                  { label: "처리 대기 리워드",      value: `${stats.pendingCount}건`, highlight: stats.pendingCount > 0 },
+                ].map((item) => (
+                  <div key={item.label} className="flex justify-between py-2 border-b last:border-0 text-sm">
+                    <span className="text-gray-500">{item.label}</span>
+                    <span className={`font-bold ${item.highlight ? "text-red-500 animate-pulse" : "text-gray-700"}`}>
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* 누적 거리 TOP 5 */}
+              <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                <div className="px-4 py-3 border-b">
+                  <SectionTitle>🏆 누적 거리 TOP 5</SectionTitle>
+                </div>
+                {topUsers.map((u, i) => (
+                  <div key={u.id} className="flex items-center gap-3 px-4 py-3 border-b last:border-0">
+                    <span className={`text-base font-black w-6 text-center
+                      ${i === 0 ? "text-yellow-400" : i === 1 ? "text-gray-400" : i === 2 ? "text-orange-400" : "text-gray-300"}`}>
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-700 truncate">
+                        {u.displayName || u.email || "익명"}
+                      </p>
+                      <p className="text-xs text-gray-400">{u.ploggingCount || 0}회</p>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleRewardStatus(r.id, "rejected")}
-                        className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl text-sm font-medium"
-                      >
-                        반려
-                      </button>
-                      <button
-                        onClick={() => handleRewardStatus(r.id, "completed")}
-                        className="flex-1 bg-green-500 text-white py-2 rounded-xl text-sm font-bold"
-                      >
-                        ✅ 처리 완료
-                      </button>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-green-600">{(u.totalDistance || 0).toFixed(1)}km</p>
+                      <p className="text-xs text-gray-400">{(u.totalPoints || 0).toLocaleString()}P</p>
                     </div>
                   </div>
-                );
-              })
-            )}
-          </>
-        )}
-      </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* ══════════════════════════════════════
+              👥 유저 탭
+          ══════════════════════════════════════ */}
+          {activeTab === "users" && (
+            <>
+              {/* 검색 */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  placeholder="이름 또는 이메일 검색..."
+                  className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm outline-none focus:border-green-400"
+                />
+                {userSearch && (
+                  <button onClick={() => setUserSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">
+                    ✕
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-gray-400">총 {filteredUsers.length}명</p>
+
+              {/* 유저 목록 */}
+              <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                {filteredUsers.map((u) => {
+                  const isExpanded = expandedUid === u.id;
+                  const date = u.createdAt?.toDate?.();
+                  const dateStr = date ? `${date.getFullYear()}.${date.getMonth()+1}.${date.getDate()}` : "-";
+                  return (
+                    <div key={u.id} className="border-b last:border-0">
+                      {/* 유저 행 */}
+                      <button
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-gray-50"
+                        onClick={() => { setExpandedUid(isExpanded ? null : u.id); setPointInput(""); setPointReason(""); }}
+                      >
+                        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm flex-shrink-0 overflow-hidden">
+                          {u.photoURL ? <img src={u.photoURL} alt="" className="w-full h-full object-cover" /> : "👤"}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-700 truncate">
+                            {u.displayName || u.email || "익명"}
+                          </p>
+                          <p className="text-xs text-gray-400">{dateStr} 가입 · {u.provider || "email"}</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs font-bold text-green-600">{(u.totalPoints || 0).toLocaleString()}P</p>
+                          <p className="text-xs text-gray-400">{u.ploggingCount || 0}회 · {(u.totalDistance || 0).toFixed(1)}km</p>
+                        </div>
+                        <span className={`text-gray-400 text-sm transition-transform ${isExpanded ? "rotate-180" : ""}`}>▾</span>
+                      </button>
+
+                      {/* 확장: 포인트 조정 패널 */}
+                      {isExpanded && (
+                        <div className="bg-gray-50 px-4 py-3 border-t space-y-2">
+                          <p className="text-xs text-gray-500 font-medium">🔧 포인트 수동 조정</p>
+                          <p className="text-xs text-gray-400">UID: {u.id}</p>
+                          <div className="flex gap-2">
+                            <input
+                              type="number"
+                              value={pointInput}
+                              onChange={(e) => setPointInput(e.target.value)}
+                              placeholder="예: +500 또는 -200"
+                              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white outline-none focus:border-green-400"
+                            />
+                            <button
+                              onClick={() => handlePointAdjust(u.id, u.displayName || u.email || "유저")}
+                              className="bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold"
+                            >
+                              적용
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-400">현재 {(u.totalPoints || 0).toLocaleString()}P · 조정 후: {((u.totalPoints || 0) + (parseInt(pointInput) || 0)).toLocaleString()}P</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {/* ══════════════════════════════════════
+              🎁 리워드 탭
+          ══════════════════════════════════════ */}
+          {activeTab === "rewards" && (
+            <>
+              {/* 상태 필터 */}
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                {[
+                  { id: "pending",   label: `대기 (${rewards.filter(r=>r.status==="pending").length})` },
+                  { id: "completed", label: `완료 (${rewards.filter(r=>r.status==="completed").length})` },
+                  { id: "rejected",  label: `반려 (${rewards.filter(r=>r.status==="rejected").length})` },
+                  { id: "all",       label: `전체 (${rewards.length})` },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setRewardFilter(f.id)}
+                    className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-medium border transition-colors
+                      ${rewardFilter === f.id ? "bg-green-500 text-white border-green-500" : "bg-white text-gray-500 border-gray-200"}`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* 리워드 목록 */}
+              {filteredRewards.length === 0 ? (
+                <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+                  <div className="text-4xl mb-2">✅</div>
+                  <p className="text-gray-400 text-sm">해당하는 리워드 신청이 없어요</p>
+                </div>
+              ) : (
+                filteredRewards.map((r) => {
+                  const date    = r.createdAt?.toDate?.();
+                  const dateStr = date ? `${date.getMonth()+1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2,"0")}` : "-";
+                  const statusStyle = {
+                    pending:   "bg-yellow-100 text-yellow-700",
+                    completed: "bg-green-100 text-green-700",
+                    rejected:  "bg-red-100 text-red-600",
+                  };
+                  return (
+                    <div key={r.id} className="bg-white rounded-2xl p-4 shadow-sm">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-gray-800 text-sm">{r.rewardTitle}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{dateStr} · {(r.cost||0).toLocaleString()}P</p>
+                          <p className="text-xs text-gray-300 mt-0.5 truncate">UID: {r.userId}</p>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ml-2 ${statusStyle[r.status] || statusStyle.pending}`}>
+                          {r.status === "pending" ? "대기" : r.status === "completed" ? "완료" : "반려"}
+                        </span>
+                      </div>
+                      {r.status === "pending" && (
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={() => handleRewardStatus(r.id, "rejected")}
+                            className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl text-xs font-medium"
+                          >
+                            반려
+                          </button>
+                          <button
+                            onClick={() => handleRewardStatus(r.id, "completed")}
+                            className="flex-1 bg-green-500 text-white py-2 rounded-xl text-xs font-bold"
+                          >
+                            ✅ 처리 완료
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </>
+          )}
+
+          {/* ══════════════════════════════════════
+              🔧 유지관리 탭
+          ══════════════════════════════════════ */}
+          {activeTab === "maintenance" && appSettings && (
+            <>
+              {/* 앱 인증 조건 설정 */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <SectionTitle>⚙️ 플로깅 인증 조건 설정</SectionTitle>
+                <p className="text-xs text-gray-400 mb-3">변경 시 앱 재배포 없이 즉시 반영됩니다</p>
+                {[
+                  { key: "minDistanceKm", label: "최소 이동 거리 (km)", step: "0.1", min: 0.1 },
+                  { key: "minDurationSec", label: "최소 진행 시간 (초)", step: "60", min: 60 },
+                  { key: "minStops", label: "최소 줍기 횟수 (회)", step: "1", min: 1 },
+                  { key: "dailyMax", label: "하루 최대 포인트 지급 횟수", step: "1", min: 1 },
+                ].map(({ key, label, step, min }) => (
+                  <div key={key} className="flex items-center justify-between py-2.5 border-b last:border-0">
+                    <label className="text-sm text-gray-600 flex-1">{label}</label>
+                    <input
+                      type="number"
+                      step={step}
+                      min={min}
+                      value={appSettings[key]}
+                      onChange={(e) => {
+                        setAppSettings((prev) => ({ ...prev, [key]: parseFloat(e.target.value) }));
+                        setSettingsDirty(true);
+                      }}
+                      className="w-20 border border-gray-200 rounded-lg px-2 py-1 text-sm text-right outline-none focus:border-green-400"
+                    />
+                  </div>
+                ))}
+                {settingsDirty && (
+                  <button
+                    onClick={handleSaveSettings}
+                    className="w-full mt-3 bg-green-500 text-white py-3 rounded-xl font-bold text-sm"
+                  >
+                    💾 설정 저장
+                  </button>
+                )}
+              </div>
+
+              {/* 데이터 정리 */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <SectionTitle>🧹 데이터 정리</SectionTitle>
+
+                {/* 만료 경로 삭제 */}
+                <div className="bg-blue-50 rounded-xl p-3 mb-3">
+                  <p className="text-sm font-medium text-blue-700 mb-1">📍 만료된 경로 삭제</p>
+                  <p className="text-xs text-blue-500 mb-2">expiresAt이 지난 routes 문서를 일괄 삭제합니다</p>
+                  <button
+                    onClick={handleCleanExpired}
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-bold"
+                  >
+                    만료 경로 정리
+                  </button>
+                </div>
+
+                {/* 테스트 데이터 삭제 */}
+                <div className="bg-red-50 rounded-xl p-3">
+                  <p className="text-sm font-medium text-red-600 mb-1">⚠️ 테스트 데이터 삭제</p>
+                  <p className="text-xs text-red-400 mb-2">isTestData=true 인 routes를 모두 삭제합니다. 되돌릴 수 없어요!</p>
+                  <input
+                    type="text"
+                    value={confirmInput}
+                    onChange={(e) => setConfirmInput(e.target.value)}
+                    placeholder="'삭제확인' 입력 후 버튼 클릭"
+                    className="w-full border border-red-200 rounded-lg px-3 py-2 text-xs bg-white mb-2 outline-none"
+                  />
+                  <button
+                    onClick={handleCleanTestData}
+                    className="bg-red-500 text-white px-4 py-2 rounded-lg text-xs font-bold"
+                  >
+                    테스트 데이터 삭제
+                  </button>
+                </div>
+              </div>
+
+              {/* 앱 정보 */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <SectionTitle>ℹ️ 앱 정보</SectionTitle>
+                {[
+                  { label: "Firebase 프로젝트", value: "plogging-app" },
+                  { label: "배포 URL", value: "plogging-app-rose.vercel.app" },
+                  { label: "관리자 이메일", value: ADMIN_EMAILS.join(", ") },
+                ].map((item) => (
+                  <div key={item.label} className="flex justify-between py-2 border-b last:border-0 text-xs">
+                    <span className="text-gray-400">{item.label}</span>
+                    <span className="text-gray-600 font-medium truncate ml-2 max-w-[55%] text-right">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* ══════════════════════════════════════
+              📢 공지사항 탭
+          ══════════════════════════════════════ */}
+          {activeTab === "notices" && (
+            <>
+              {/* 작성 버튼 / 폼 */}
+              {!noticeMode ? (
+                <button
+                  onClick={() => setNoticeMode(true)}
+                  className="w-full bg-green-500 text-white py-3 rounded-2xl font-bold text-sm"
+                >
+                  ✏️ 새 공지사항 작성
+                </button>
+              ) : (
+                <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+                  <SectionTitle>✏️ 공지사항 작성</SectionTitle>
+
+                  {/* 유형 선택 */}
+                  <div className="flex gap-2">
+                    {["info","warning","event"].map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setNewNotice((p) => ({ ...p, type: t }))}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-colors
+                          ${newNotice.type === t ? "bg-green-500 text-white border-green-500" : "text-gray-400 border-gray-200"}`}
+                      >
+                        {noticeTypeStyle[t].label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <input
+                    type="text"
+                    value={newNotice.title}
+                    onChange={(e) => setNewNotice((p) => ({ ...p, title: e.target.value }))}
+                    placeholder="제목"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-green-400"
+                  />
+                  <textarea
+                    value={newNotice.content}
+                    onChange={(e) => setNewNotice((p) => ({ ...p, content: e.target.value }))}
+                    placeholder="내용을 입력하세요"
+                    rows={3}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-green-400 resize-none"
+                  />
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setNoticeMode(false); setNewNotice({ title: "", content: "", type: "info" }); }}
+                      className="flex-1 bg-gray-100 text-gray-500 py-3 rounded-xl text-sm font-medium"
+                    >
+                      취소
+                    </button>
+                    <button
+                      onClick={handleCreateNotice}
+                      className="flex-1 bg-green-500 text-white py-3 rounded-xl text-sm font-bold"
+                    >
+                      등록
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 공지사항 목록 */}
+              {notices.length === 0 ? (
+                <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+                  <div className="text-4xl mb-2">📢</div>
+                  <p className="text-gray-400 text-sm">등록된 공지사항이 없어요</p>
+                </div>
+              ) : (
+                notices.map((n) => {
+                  const style = noticeTypeStyle[n.type] || noticeTypeStyle.info;
+                  const date  = n.createdAt?.toDate?.();
+                  const dateStr = date ? `${date.getFullYear()}.${date.getMonth()+1}.${date.getDate()}` : "-";
+                  return (
+                    <div key={n.id} className={`rounded-2xl p-4 shadow-sm ${style.bg} ${!n.active ? "opacity-50" : ""}`}>
+                      <div className="flex justify-between items-start mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold ${style.text}`}>{style.label}</span>
+                          {!n.active && <span className="text-xs text-gray-400">비활성</span>}
+                        </div>
+                        <p className="text-xs text-gray-400">{dateStr}</p>
+                      </div>
+                      <p className={`font-bold text-sm ${style.text} mb-1`}>{n.title}</p>
+                      <p className="text-xs text-gray-600 mb-3 whitespace-pre-line">{n.content}</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleToggleNotice(n.id, n.active)}
+                          className="flex-1 bg-white/60 text-gray-600 py-1.5 rounded-lg text-xs font-medium"
+                        >
+                          {n.active ? "비활성화" : "활성화"}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteNotice(n.id)}
+                          className="flex-1 bg-red-100 text-red-600 py-1.5 rounded-lg text-xs font-medium"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </>
+          )}
+
+        </div>
+      )}
     </div>
   );
 }

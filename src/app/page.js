@@ -6,6 +6,8 @@ import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
 import CharacterGuide from "@/components/CharacterGuide";
 import versionData from "@/lib/version.json";
+import { db } from "@/lib/firebase";
+import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
 
 // ─── PWA 홈화면 추가 안내 모달 ───────────────────────────────
 function InstallModal({ onClose }) {
@@ -113,11 +115,20 @@ const HOW_TO = [
 // localStorage 키 (첫 방문 가이드)
 const GUIDE_KEY = "plogging_guide_shown";
 
+// 공지사항 유형별 스타일
+const NOTICE_STYLE = {
+  info:    { bg: "bg-blue-50",   border: "border-blue-300",   text: "text-blue-700",   icon: "📌" },
+  warning: { bg: "bg-orange-50", border: "border-orange-300", text: "text-orange-700", icon: "⚠️" },
+  event:   { bg: "bg-purple-50", border: "border-purple-300", text: "text-purple-700", icon: "🎉" },
+};
+
 export default function HomePage() {
   const { user } = useAuth();
   const [showGuide,   setShowGuide]   = useState(false);
   const [showInstall, setShowInstall] = useState(false);  // 홈화면 추가 모달
   const [deferredPrompt, setDeferredPrompt] = useState(null); // Android 네이티브 프롬프트
+  const [notices, setNotices] = useState([]); // 활성 공지사항
+  const [expandedNotice, setExpandedNotice] = useState(null); // 펼친 공지 id
 
   // 첫 방문 시에만 캐릭터 가이드 표시
   useEffect(() => {
@@ -127,6 +138,25 @@ export default function HomePage() {
     } catch {
       // localStorage 미지원 환경 무시
     }
+  }, []);
+
+  // 활성 공지사항 불러오기
+  useEffect(() => {
+    const fetchNotices = async () => {
+      try {
+        const q = query(
+          collection(db, "notices"),
+          where("active", "==", true),
+          orderBy("createdAt", "desc")
+        );
+        const snap = await getDocs(q);
+        setNotices(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      } catch (e) {
+        // 공지사항 로드 실패 무시 (인덱스 미생성 등)
+        console.warn("공지사항 로드 실패:", e.message);
+      }
+    };
+    fetchNotices();
   }, []);
 
   // Android/Desktop: beforeinstallprompt 이벤트 캐치
@@ -241,6 +271,42 @@ export default function HomePage() {
         <div className="px-4 mt-4 space-y-4">
           {/* ── 광고 배너 슬라이더 ── */}
           <BannerSlider />
+
+          {/* ── 공지사항 배너 ── */}
+          {notices.length > 0 && (
+            <div className="space-y-2">
+              {notices.map((notice) => {
+                const style = NOTICE_STYLE[notice.type] || NOTICE_STYLE.info;
+                const isExpanded = expandedNotice === notice.id;
+                return (
+                  <div
+                    key={notice.id}
+                    className={`${style.bg} border ${style.border} rounded-2xl px-4 py-3`}
+                  >
+                    <button
+                      className="w-full text-left"
+                      onClick={() => setExpandedNotice(isExpanded ? null : notice.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">{style.icon}</span>
+                          <p className={`text-sm font-bold ${style.text}`}>{notice.title}</p>
+                        </div>
+                        <span className={`text-xs ${style.text} opacity-70`}>
+                          {isExpanded ? "▲" : "▼"}
+                        </span>
+                      </div>
+                    </button>
+                    {isExpanded && (
+                      <p className={`text-xs ${style.text} mt-2 leading-relaxed whitespace-pre-line`}>
+                        {notice.content}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* ── 빠른 메뉴 ── */}
           <div className="grid grid-cols-4 gap-2">
