@@ -210,9 +210,9 @@ export default function RewardPage() {
       style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
     >
       {/* ── 헤더 ── */}
-      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 pt-12 pb-8">
-        <h1 className="text-2xl font-bold mb-1">🎁 포인트 교환</h1>
-        <p className="text-yellow-100 text-sm mb-4">모은 포인트로 리워드를 받아보세요</p>
+      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 pt-8 pb-5">
+        <h1 className="text-xl font-bold mb-0.5">🎁 포인트 교환</h1>
+        <p className="text-yellow-100 text-sm mb-3">모은 포인트로 리워드를 받아보세요</p>
         <div className="bg-white/20 rounded-2xl p-4 flex items-center justify-between">
           <div>
             <p className="text-yellow-100 text-xs">내 보유 포인트</p>

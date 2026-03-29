@@ -124,9 +124,9 @@ function RankingPageInner() {
       style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
     >
       {/* ── 헤더 ── */}
-      <div className="bg-green-600 text-white px-4 pt-12 pb-4">
-        <h1 className="text-2xl font-bold mb-0.5">🏆 랭킹</h1>
-        <p className="text-green-200 text-sm mb-3">함께하는 플로깅, 더 깨끗한 지구</p>
+      <div className="bg-green-600 text-white px-4 pt-8 pb-3">
+        <h1 className="text-xl font-bold mb-0.5">🏆 랭킹</h1>
+        <p className="text-green-200 text-sm mb-2">함께하는 플로깅, 더 깨끗한 지구</p>
 
         {/* 행정구역 랭킹지도 바로가기 배너 버튼 */}
         <button

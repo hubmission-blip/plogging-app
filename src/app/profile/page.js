@@ -127,7 +127,7 @@ export default function ProfilePage() {
       style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
     >
       {/* ── 헤더 (그린 배경) ── */}
-      <div className="bg-green-600 text-white px-4 pt-12 pb-8">
+      <div className="bg-green-600 text-white px-4 pt-8 pb-5">
         <div className="flex items-center gap-4 mb-4">
           <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-3xl overflow-hidden shadow">
             {stats.photoURL

@@ -246,10 +246,10 @@ export default function HomePage() {
         style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
       >
         {/* ── 상단 헤더 ── */}
-        <div className="bg-gradient-to-b from-green-600 to-green-500 text-white px-4 pt-12 pb-8">
-          <div className="flex justify-between items-start mb-2">
+        <div className="bg-gradient-to-b from-green-600 to-green-500 text-white px-4 pt-8 pb-5">
+          <div className="flex justify-between items-start mb-1.5">
             <div>
-              <h1 className="text-2xl font-black">🌿 오백원의 행복</h1>
+              <h1 className="text-xl font-black">🌿 오백원의 행복</h1>
               <p className="text-green-200 text-sm mt-0.5">즐거운 플로깅, 깨끗한 지구</p>
             </div>
             {user && (
