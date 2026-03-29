@@ -445,7 +445,7 @@ export default function AdminPage() {
               <div className="bg-white rounded-2xl p-4 shadow-sm">
                 <SectionTitle>💡 운영 지표</SectionTitle>
                 {[
-                  { label: "총 적립 포인트",       value: `${stats.totalPoints.toLocaleString()}P` },
+                  { label: "총 적립 포인트",       value: `${(stats.totalPts || 0).toLocaleString()}P` },
                   { label: "유저 1인당 평균 거리",  value: `${stats.userCount ? (stats.totalDist / stats.userCount).toFixed(1) : 0}km` },
                   { label: "유저 1인당 평균 횟수",  value: `${stats.userCount ? (stats.routeCount / stats.userCount).toFixed(1) : 0}회` },
                   { label: "처리 대기 리워드",      value: `${stats.pendingCount}건`, highlight: stats.pendingCount > 0 },

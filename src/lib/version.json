@@ -1,7 +1,19 @@
 {
-  "version": "v1.07",
-  "build": 7,
+  "version": "v1.08",
+  "build": 8,
   "changelog": [
+    {
+      "version": "v1.08",
+      "build": 8,
+      "date": "2026-03-29",
+      "emoji": "📱",
+      "title": "홈화면 개선",
+      "items": [
+        "커뮤니티 현황 카드 추가",
+        "공지사항 홈 연동",
+        "개발자 정보 추가"
+      ]
+    },
     {
       "version": "v1.07",
       "build": 7,
