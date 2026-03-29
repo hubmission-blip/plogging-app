@@ -4,9 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-  collection, query, where, getDocs, addDoc, updateDoc,
-  doc, arrayUnion, arrayRemove, serverTimestamp, orderBy, Timestamp,
+  collection, query, where, getDocs, addDoc, updateDoc, deleteDoc,
+  doc, arrayUnion, arrayRemove, serverTimestamp, orderBy,
 } from "firebase/firestore";
+
+// ─── 관리자 이메일 ────────────────────────────────────────────
+const ADMIN_EMAILS = ["hubmission@gmail.com"];
 
 // ─── 17개 시도 목록 ───────────────────────────────────────────
 const REGIONS = [
@@ -41,12 +44,14 @@ function isSameDay(a, b) {
 }
 
 // ─── 이벤트 상세 모달 ─────────────────────────────────────────
-function EventModal({ event, user, onClose, onJoin, onLeave }) {
+function EventModal({ event, user, onClose, onJoin, onLeave, onEdit, onDelete }) {
   const isJoined    = event.participants?.includes(user?.uid);
   const isFull      = event.maxParticipants > 0 &&
                       (event.participants?.length || 0) >= event.maxParticipants;
   const isPast      = new Date(event.date) < new Date(new Date().toDateString());
   const isHost      = event.hostUid === user?.uid;
+  const isAdmin     = user && ADMIN_EMAILS.includes(user.email);
+  const canManage   = isHost || isAdmin;
   const typeStyle   = EVENT_TYPE[event.type] || EVENT_TYPE.group;
 
   return (
@@ -157,6 +162,24 @@ function EventModal({ event, user, onClose, onJoin, onLeave }) {
           <p className="text-center text-sm text-gray-400 mt-2">로그인 후 참여할 수 있습니다</p>
         )}
 
+        {/* 수정/삭제 버튼 (관리자 또는 주최자만) */}
+        {canManage && (
+          <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+            <button
+              onClick={() => onEdit(event)}
+              className="flex-1 py-2.5 rounded-2xl text-sm font-bold bg-blue-50 text-blue-600 active:scale-95 transition-transform"
+            >
+              ✏️ 수정
+            </button>
+            <button
+              onClick={() => onDelete(event)}
+              className="flex-1 py-2.5 rounded-2xl text-sm font-bold bg-red-50 text-red-500 active:scale-95 transition-transform"
+            >
+              🗑 삭제
+            </button>
+          </div>
+        )}
+
         <button
           onClick={onClose}
           className="w-full mt-3 py-2.5 rounded-2xl text-sm text-gray-400 border border-gray-100"
@@ -168,41 +191,62 @@ function EventModal({ event, user, onClose, onJoin, onLeave }) {
   );
 }
 
-// ─── 이벤트 등록 모달 ─────────────────────────────────────────
-function CreateEventModal({ user, selectedDate, defaultRegion, onClose, onCreate }) {
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    type: "group",
-    region: defaultRegion || "서울",
-    date: selectedDate || toDateStr(new Date()),
-    time: "",
-    location: "",
-    maxParticipants: 10,
-  });
+// ─── 이벤트 등록 / 수정 모달 ────────────────────────────────────
+// editEvent가 있으면 수정 모드, 없으면 등록 모드
+function CreateEventModal({ user, selectedDate, defaultRegion, onClose, onCreate, editEvent, onSave }) {
+  const isEditMode = !!editEvent;
+  const [form, setForm] = useState(
+    isEditMode
+      ? {
+          title:           editEvent.title           || "",
+          description:     editEvent.description     || "",
+          type:            editEvent.type            || "group",
+          region:          editEvent.region          || defaultRegion || "서울",
+          date:            editEvent.date            || toDateStr(new Date()),
+          time:            editEvent.time            || "",
+          location:        editEvent.location        || "",
+          maxParticipants: editEvent.maxParticipants || 10,
+        }
+      : {
+          title: "",
+          description: "",
+          type: "group",
+          region: defaultRegion || "서울",
+          date: selectedDate || toDateStr(new Date()),
+          time: "",
+          location: "",
+          maxParticipants: 10,
+        }
+  );
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!form.title.trim()) { alert("제목을 입력하세요"); return; }
     setSubmitting(true);
     try {
-      await onCreate(form);
+      if (isEditMode) {
+        await onSave(editEvent.id, form);
+      } else {
+        await onCreate(form);
+      }
       onClose();
     } catch (e) {
-      alert("등록 실패: " + e.message);
+      alert((isEditMode ? "수정" : "등록") + " 실패: " + e.message);
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-[200] flex items-end" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 z-[300] flex items-end" onClick={onClose}>
       <div
         className="w-full bg-white rounded-t-3xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
-        <h2 className="text-base font-black text-gray-800 mb-4">📅 플로깅 일정 등록</h2>
+        <h2 className="text-base font-black text-gray-800 mb-4">
+          {isEditMode ? "✏️ 플로깅 일정 수정" : "📅 플로깅 일정 등록"}
+        </h2>
 
         <div className="space-y-3">
           {/* 유형 */}
@@ -298,7 +342,9 @@ function CreateEventModal({ user, selectedDate, defaultRegion, onClose, onCreate
             disabled={submitting}
             className="flex-2 flex-grow-[2] py-3 rounded-2xl text-sm font-bold bg-green-500 text-white disabled:opacity-50"
           >
-            {submitting ? "등록 중..." : "✅ 등록하기"}
+            {submitting
+              ? (isEditMode ? "저장 중..." : "등록 중...")
+              : (isEditMode ? "💾 저장하기" : "✅ 등록하기")}
           </button>
         </div>
       </div>
@@ -317,9 +363,12 @@ export default function CalendarPage() {
   const [events,     setEvents]     = useState([]); // 해당 월 이벤트
   const [selectedDate, setSelectedDate] = useState(null); // "YYYY-MM-DD"
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [showCreate, setShowCreate] = useState(false);
+  const [showCreate,  setShowCreate]  = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null); // 수정 중인 이벤트
   const [loading,    setLoading]    = useState(false);
   const [msg,        setMsg]        = useState("");
+
+  const isAdmin = user && ADMIN_EMAILS.includes(user.email);
 
   // 메시지 표시
   const showMsg = (m) => { setMsg(m); setTimeout(() => setMsg(""), 2500); };
@@ -429,6 +478,39 @@ export default function CalendarPage() {
     });
     showMsg("✅ 일정이 등록되었습니다!");
     fetchEvents();
+  };
+
+  // ── 이벤트 수정 ────────────────────────────────────────────
+  const handleSaveEdit = async (eventId, form) => {
+    await updateDoc(doc(db, "events", eventId), {
+      ...form,
+      updatedAt: serverTimestamp(),
+    });
+    // 로컬 상태 갱신
+    setEvents((prev) => prev.map((ev) => ev.id === eventId ? { ...ev, ...form } : ev));
+    setSelectedEvent(null);
+    setEditingEvent(null);
+    showMsg("✅ 일정이 수정되었습니다!");
+  };
+
+  // ── 이벤트 삭제 ────────────────────────────────────────────
+  const handleDelete = async (event) => {
+    const confirmMsg = event.participants?.length > 1
+      ? `참여자 ${event.participants.length}명이 있는 일정입니다.\n정말 삭제할까요?`
+      : "이 일정을 삭제할까요?";
+    if (!confirm(confirmMsg)) return;
+    try {
+      await deleteDoc(doc(db, "events", event.id));
+      setEvents((prev) => prev.filter((ev) => ev.id !== event.id));
+      setSelectedEvent(null);
+      showMsg("🗑 일정이 삭제되었습니다");
+    } catch (e) { showMsg("❌ 삭제 실패: " + e.message); }
+  };
+
+  // ── 수정 모달 열기 ─────────────────────────────────────────
+  const handleOpenEdit = (event) => {
+    setSelectedEvent(null);      // 상세 모달 닫기
+    setEditingEvent(event);      // 수정 모달 열기
   };
 
   // ── 월 이동 ────────────────────────────────────────────────
@@ -737,6 +819,8 @@ export default function CalendarPage() {
           onClose={() => setSelectedEvent(null)}
           onJoin={handleJoin}
           onLeave={handleLeave}
+          onEdit={handleOpenEdit}
+          onDelete={handleDelete}
         />
       )}
 
@@ -748,6 +832,18 @@ export default function CalendarPage() {
           defaultRegion={selectedRegion}
           onClose={() => setShowCreate(false)}
           onCreate={handleCreate}
+        />
+      )}
+
+      {/* ── 일정 수정 모달 ── */}
+      {editingEvent && (
+        <CreateEventModal
+          user={user}
+          defaultRegion={selectedRegion}
+          editEvent={editingEvent}
+          onClose={() => setEditingEvent(null)}
+          onCreate={handleCreate}
+          onSave={handleSaveEdit}
         />
       )}
     </div>
