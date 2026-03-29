@@ -26,8 +26,12 @@ const EVENT_TYPE = {
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
 
 // ─── 날짜 유틸 ────────────────────────────────────────────────
+// toISOString()은 UTC 기준이라 한국(UTC+9)에서 하루 밀림 → 로컬 날짜 사용
 function toDateStr(date) {
-  return date.toISOString().split("T")[0]; // "YYYY-MM-DD"
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 function isSameDay(a, b) {
