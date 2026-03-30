@@ -597,9 +597,15 @@ export default function CalendarPage() {
       style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
     >
       {/* ── 헤더 ── */}
-      <div className="bg-gradient-to-b from-green-600 to-green-500 text-white px-4 pt-12 pb-5">
-        <h1 className="text-xl font-black mb-1">📅 플로깅 캘린더</h1>
-        <p className="text-green-200 text-xs">지역별 일정 · 참여 신청</p>
+      <div className="bg-gray-50 px-4 pt-4 pb-1 flex justify-between items-center">
+        {/* 로고 */}
+        <img
+          src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+          alt="오백원의 행복"
+          className="h-9 w-auto object-contain"
+        />
+        {/* 페이지 타이틀 */}
+        <p className="text-sm font-black text-gray-700">📅 플로깅 캘린더</p>
       </div>
 
       {/* ── 지역 선택 바 ── */}
