@@ -124,29 +124,39 @@ function RankingPageInner() {
       style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
     >
       {/* ── 헤더 ── */}
-      <div className="bg-green-600 text-white px-4 pt-8 pb-3">
-        <h1 className="text-xl font-bold mb-0.5">🏆 랭킹</h1>
-        <p className="text-green-200 text-sm mb-2">함께하는 플로깅, 더 깨끗한 지구</p>
+      <div className="bg-gray-50 px-4 pt-4 pb-1 flex justify-between items-center">
+        <img
+          src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+          alt="오백원의 행복"
+          className="h-9 w-auto object-contain"
+        />
+        <p className="text-sm font-black text-gray-700">🏆 랭킹</p>
+      </div>
 
-        {/* 행정구역 랭킹지도 바로가기 배너 버튼 */}
+      {/* ── 행정구역 랭킹지도 바로가기 카드 ── */}
+      <div className="px-4 pt-3 pb-1">
         <button
           onClick={() => setView("map")}
-          className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all
+          className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl shadow-sm transition-all active:opacity-90
             ${view === "map"
-              ? "bg-white text-green-700 shadow-inner"
-              : "bg-white/20 text-white border border-white/30 active:bg-white/30"
+              ? "bg-gradient-to-r from-teal-500 to-green-500"
+              : "bg-gradient-to-r from-green-500 to-teal-500"
             }`}
         >
           <div className="flex items-center gap-2">
             <span className="text-xl">🗺️</span>
             <div className="text-left">
-              <p className="font-bold text-sm">행정구역별 랭킹지도</p>
-              <p className={`text-xs ${view === "map" ? "text-green-500" : "text-green-200"}`}>
-                시·도별 플로깅 현황을 지도로 확인
-              </p>
+              <p className="text-[10px] text-green-100 leading-none mb-0.5">지역별 현황</p>
+              <p className="font-black text-sm text-white">행정구역별 랭킹지도</p>
             </div>
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/25 text-white ml-1">
+              시·도별 확인
+            </span>
           </div>
-          <span className="text-lg">{view === "map" ? "✅" : "›"}</span>
+          <div className="flex items-center gap-1 text-white/80">
+            <span className="text-xs">{view === "map" ? "보는 중" : "바로가기"}</span>
+            <span className="text-base">{view === "map" ? "✅" : "›"}</span>
+          </div>
         </button>
       </div>
 
