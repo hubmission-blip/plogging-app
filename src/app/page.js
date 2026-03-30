@@ -246,7 +246,7 @@ export default function HomePage() {
         style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
       >
         {/* ── 상단 헤더 ── */}
-        <div className="bg-gray-50 px-4 pt-7 pb-2">
+        <div className="bg-gray-50 px-4 pt-4 pb-1">
           <div className="flex justify-between items-center">
             {/* 로고 이미지 */}
             <img
