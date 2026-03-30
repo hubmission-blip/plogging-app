@@ -247,11 +247,13 @@ export default function HomePage() {
       >
         {/* ── 상단 헤더 ── */}
         <div className="bg-gradient-to-b from-green-600 to-green-500 text-white px-4 pt-8 pb-5">
-          <div className="flex justify-between items-start mb-1.5">
-            <div>
-              <h1 className="text-xl font-black">🌿 오백원의 행복</h1>
-              <p className="text-green-200 text-sm mt-0.5">즐거운 플로깅, 깨끗한 지구</p>
-            </div>
+          <div className="flex justify-between items-center mb-1.5">
+            {/* 로고 이미지 */}
+            <img
+              src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+              alt="오백원의 행복"
+              className="h-10 w-auto object-contain"
+            />
             {user && (
               <Link href="/profile">
                 <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-lg">
