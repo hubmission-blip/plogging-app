@@ -609,24 +609,24 @@ export default function CalendarPage() {
       </div>
 
       {/* ── 지역 선택 바 ── */}
-      <div className="bg-white border-b px-4 py-2.5">
+      <div className="px-4 pt-3 pb-1">
         <button
           onClick={() => setShowRegionSheet(true)}
-          className="w-full flex items-center justify-between bg-gray-50 rounded-2xl px-4 py-2.5 active:bg-gray-100 transition-colors"
+          className="w-full bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl px-4 py-3 flex items-center justify-between text-white shadow-sm active:opacity-90 transition-opacity"
         >
           <div className="flex items-center gap-2">
-            <span className="text-base">{REGION_COLOR_MAP[selectedRegion]?.icon || "📍"}</span>
+            <span className="text-xl">{REGION_COLOR_MAP[selectedRegion]?.icon || "📍"}</span>
             <div className="text-left">
-              <p className="text-[10px] text-gray-400 leading-none mb-0.5">선택된 지역</p>
-              <p className="text-sm font-black text-gray-800">{selectedRegion}</p>
+              <p className="text-[10px] text-green-100 leading-none mb-0.5">선택된 지역</p>
+              <p className="text-sm font-black text-white">{selectedRegion}</p>
             </div>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold text-white ml-1 ${REGION_COLOR_MAP[selectedRegion]?.color || "bg-gray-400"}`}>
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/25 text-white ml-1">
               {REGION_COLOR_MAP[selectedRegion]?.name}
             </span>
           </div>
-          <div className="flex items-center gap-1 text-gray-400">
+          <div className="flex items-center gap-1 text-white/80">
             <span className="text-xs">지역 변경</span>
-            <span className="text-sm">›</span>
+            <span className="text-base">›</span>
           </div>
         </button>
       </div>
