@@ -126,58 +126,85 @@ export default function ProfilePage() {
       className="min-h-screen bg-gray-50"
       style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
     >
-      {/* ── 헤더 (그린 배경) ── */}
-      <div className="bg-green-600 text-white px-4 pt-8 pb-5">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-3xl overflow-hidden shadow">
-            {stats.photoURL
-              ? <img src={stats.photoURL} alt="프로필" className="w-full h-full object-cover" />
-              : <span>{levelInfo.icon}</span>
-            }
+      {/* ── 헤더 ── */}
+      <div className="bg-gray-50 px-4 pt-4 pb-1 flex justify-between items-center">
+        <img
+          src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+          alt="오백원의 행복"
+          className="h-9 w-auto object-contain"
+        />
+        <div className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-lg overflow-hidden shadow-sm">
+          {stats.photoURL
+            ? <img src={stats.photoURL} alt="프로필" className="w-full h-full object-cover" />
+            : <span>{levelInfo.icon}</span>
+          }
+        </div>
+      </div>
+
+      {/* ── 프로필 & 레벨 카드 ── */}
+      <div className="px-4 pt-3 pb-1">
+        <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl px-4 py-4 text-white shadow-sm">
+
+          {/* 프로필 정보 행 */}
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl overflow-hidden shadow border-2 border-white/40 flex-shrink-0">
+              {stats.photoURL
+                ? <img src={stats.photoURL} alt="프로필" className="w-full h-full object-cover" />
+                : <span>{levelInfo.icon}</span>
+              }
+            </div>
+            <div className="flex-1 min-w-0">
+              {editingName ? (
+                <div className="flex gap-2 items-center">
+                  <input
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="text-black rounded-lg px-3 py-1 text-sm flex-1 max-w-[140px]"
+                    maxLength={12}
+                    autoFocus
+                  />
+                  <button onClick={handleSaveName} disabled={saving}
+                    className="bg-white text-green-600 px-3 py-1 rounded-lg text-xs font-bold">
+                    {saving ? "..." : "저장"}
+                  </button>
+                  <button onClick={() => setEditingName(false)} className="text-white/70 text-xs">취소</button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="font-black text-base text-white truncate">{stats.displayName}</p>
+                  <button onClick={() => setEditingName(true)}
+                    className="text-white/70 text-[10px] border border-white/40 rounded px-1.5 py-0.5 flex-shrink-0">
+                    ✏️ 수정
+                  </button>
+                </div>
+              )}
+              <p className="text-green-100 text-xs mt-0.5">
+                {levelInfo.icon} Lv.{levelInfo.level} {levelInfo.name}
+              </p>
+            </div>
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/25 text-white flex-shrink-0">
+              내 정보
+            </span>
           </div>
-          <div className="flex-1">
-            {editingName ? (
-              <div className="flex gap-2 items-center">
-                <input
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  className="text-black rounded-lg px-3 py-1 text-sm flex-1 max-w-[160px]"
-                  maxLength={12}
-                  autoFocus
-                />
-                <button onClick={handleSaveName} disabled={saving}
-                  className="bg-white text-green-600 px-3 py-1 rounded-lg text-sm font-bold">
-                  {saving ? "..." : "저장"}
-                </button>
-                <button onClick={() => setEditingName(false)} className="text-white/70 text-sm">취소</button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold">{stats.displayName}</h1>
-                <button onClick={() => setEditingName(true)}
-                  className="text-white/70 text-xs border border-white/40 rounded px-1.5 py-0.5">
-                  ✏️ 수정
-                </button>
-              </div>
-            )}
-            <p className="text-green-200 text-sm mt-0.5">
-              {levelInfo.icon} Lv.{levelInfo.level} {levelInfo.name}
+
+          {/* 레벨 진행바 */}
+          <div className="bg-white/20 rounded-full h-2 mb-1.5">
+            <div className="bg-white rounded-full h-2 transition-all" style={{ width: `${progressPct}%` }} />
+          </div>
+          <div className="flex justify-between items-center">
+            <p className="text-xs text-green-100">
+              {levelInfo.next
+                ? `다음 레벨까지 ${levelInfo.next - stats.totalPoints}P 남았어요`
+                : "최고 레벨 달성! 🎉"}
+            </p>
+            <p className="text-xs font-bold text-white">
+              {stats.totalPoints.toLocaleString()}P
             </p>
           </div>
         </div>
-
-        {/* 레벨 진행바 */}
-        <div className="bg-white/20 rounded-full h-2 mb-1">
-          <div className="bg-white rounded-full h-2 transition-all" style={{ width: `${progressPct}%` }} />
-        </div>
-        <p className="text-xs text-green-200">
-          {levelInfo.next
-            ? `다음 레벨까지 ${levelInfo.next - stats.totalPoints}P 남았어요`
-            : "최고 레벨 달성! 🎉"}
-        </p>
       </div>
 
-      <div className="px-4 mt-4 space-y-4">
+      <div className="px-4 mt-3 space-y-4">
 
         {/* ── 핵심 통계 3가지 ── */}
         <div className="grid grid-cols-3 gap-3">

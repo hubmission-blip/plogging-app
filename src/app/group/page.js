@@ -158,9 +158,13 @@ export default function GroupPage() {
       style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
     >
       {/* ── 헤더 ── */}
-      <div className="bg-purple-600 text-white px-4 pt-12 pb-6">
-        <h1 className="text-2xl font-bold mb-1">👥 그룹 플로깅</h1>
-        <p className="text-purple-200 text-sm">함께하면 보너스 포인트! 인원 × 5P 추가</p>
+      <div className="bg-gray-50 px-4 pt-4 pb-1 flex justify-between items-center">
+        <img
+          src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+          alt="오백원의 행복"
+          className="h-9 w-auto object-contain"
+        />
+        <p className="text-sm font-black text-gray-700">👥 그룹 플로깅</p>
       </div>
 
       <div className="px-4 mt-6 space-y-4">

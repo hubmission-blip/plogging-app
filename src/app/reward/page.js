@@ -210,15 +210,34 @@ export default function RewardPage() {
       style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
     >
       {/* ── 헤더 ── */}
-      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 pt-8 pb-5">
-        <h1 className="text-xl font-bold mb-0.5">🎁 포인트 교환</h1>
-        <p className="text-yellow-100 text-sm mb-3">모은 포인트로 리워드를 받아보세요</p>
-        <div className="bg-white/20 rounded-2xl p-4 flex items-center justify-between">
-          <div>
-            <p className="text-yellow-100 text-xs">내 보유 포인트</p>
-            <p className="text-3xl font-black">{myPoints.toLocaleString()} P</p>
+      <div className="bg-gray-50 px-4 pt-4 pb-1 flex justify-between items-center">
+        <img
+          src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+          alt="오백원의 행복"
+          className="h-9 w-auto object-contain"
+        />
+        <p className="text-sm font-black text-gray-700">🎁 포인트 교환</p>
+      </div>
+
+      {/* ── 내 보유 포인트 카드 ── */}
+      <div className="px-4 pt-3 pb-1">
+        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl px-4 py-3 flex items-center justify-between text-white shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">💰</span>
+            <div className="text-left">
+              <p className="text-[10px] text-yellow-100 leading-none mb-0.5">내 보유 포인트</p>
+              <p className="text-sm font-black text-white">
+                {loading ? "···" : `${myPoints.toLocaleString()} P`}
+              </p>
+            </div>
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/25 text-white ml-1">
+              리워드 교환 가능
+            </span>
           </div>
-          <div className="text-4xl">💰</div>
+          <div className="text-right">
+            <p className="text-[10px] text-yellow-100 leading-none mb-0.5">교환 기준</p>
+            <p className="text-xs font-bold text-white">1,000P ~</p>
+          </div>
         </div>
       </div>
 
