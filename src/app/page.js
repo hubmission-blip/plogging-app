@@ -245,63 +245,67 @@ export default function HomePage() {
         className="min-h-screen bg-gray-50 overflow-y-auto"
         style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
       >
-        {/* ── 상단 헤더 ── */}
-        <div className="bg-gradient-to-b from-green-600 to-green-500 text-white px-4 pt-8 pb-5">
-          <div className="flex justify-between items-center mb-1.5">
+        {/* ── 상단 헤더 (흰색) ── */}
+        <div className="bg-white border-b border-gray-100 px-4 pt-10 pb-3">
+          <div className="flex justify-between items-center">
             {/* 로고 이미지 */}
             <img
               src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
               alt="오백원의 행복"
-              className="h-10 w-auto object-contain"
+              className="h-9 w-auto object-contain"
             />
-            {user && (
+            {user ? (
               <Link href="/profile">
-                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-lg">
+                <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-lg overflow-hidden">
                   {user.photoURL
                     ? <img src={user.photoURL} alt="" className="w-full h-full rounded-full object-cover" />
-                    : "👤"
+                    : <span>👤</span>
                   }
                 </div>
               </Link>
+            ) : (
+              <Link href="/login"
+                className="text-xs font-bold text-green-600 border border-green-300 px-3 py-1.5 rounded-full">
+                로그인
+              </Link>
             )}
           </div>
+        </div>
 
-          {/* 로그인 여부별 */}
+        {/* ── 배너 슬라이더 (헤더 바로 아래, 여백 없음) ── */}
+        <div className="px-4 pt-3">
+          <BannerSlider />
+        </div>
+
+        <div className="px-4 mt-3 space-y-3">
+
+          {/* ── 웰컴 / 로그인 유도 ── */}
           {user ? (
-            <div className="mt-3 bg-white/15 rounded-2xl px-4 py-3 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl px-4 py-3 flex items-center justify-between text-white shadow-sm">
               <div>
-                <p className="text-xs text-green-200">반갑습니다!</p>
+                <p className="text-xs text-green-100">반갑습니다!</p>
                 <p className="font-bold text-sm">{user.displayName || user.email?.split("@")[0]}</p>
               </div>
               <Link
                 href="/map"
-                className="bg-white text-green-600 w-11 h-11 rounded-full flex items-center justify-center shadow text-2xl flex-shrink-0"
+                className="bg-white text-green-600 w-10 h-10 rounded-full flex items-center justify-center shadow text-2xl flex-shrink-0"
                 title="플로깅 시작"
               >
                 🚶
               </Link>
             </div>
           ) : (
-            <div className="mt-3 flex gap-2">
-              <Link
-                href="/login"
-                className="flex-1 bg-white text-green-600 py-3 rounded-2xl font-bold text-center text-sm shadow"
-              >
+            <div className="flex gap-2">
+              <Link href="/login"
+                className="flex-1 bg-green-500 text-white py-3 rounded-2xl font-bold text-center text-sm shadow-sm">
                 로그인
               </Link>
-              <Link
-                href="/register"
-                className="flex-1 bg-green-400 text-white py-3 rounded-2xl font-bold text-center text-sm"
-              >
+              <Link href="/register"
+                className="flex-1 bg-white text-green-600 py-3 rounded-2xl font-bold text-center text-sm border border-green-200">
                 회원가입
               </Link>
             </div>
           )}
-        </div>
-
-        <div className="px-4 mt-4 space-y-4">
-          {/* ── 광고 배너 슬라이더 ── */}
-          <BannerSlider />
 
           {/* ── 공지사항 배너 ── */}
           {notices.length > 0 && (

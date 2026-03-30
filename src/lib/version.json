@@ -1,7 +1,19 @@
 {
-  "version": "v1.09",
-  "build": 9,
+  "version": "v1.10",
+  "build": 10,
   "changelog": [
+    {
+      "version": "v1.10",
+      "build": 10,
+      "date": "2026-03-30",
+      "emoji": "🛠️",
+      "title": "홈화면 개 선",
+      "items": [
+        "관리자페이지 구성",
+        "배너관리 페이지 구성",
+        "캘린더 페이지 추가"
+      ]
+    },
     {
       "version": "v1.09",
       "build": 9,
