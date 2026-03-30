@@ -245,8 +245,8 @@ export default function HomePage() {
         className="min-h-screen bg-gray-50 overflow-y-auto"
         style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
       >
-        {/* ── 상단 헤더 (흰색) ── */}
-        <div className="bg-white border-b border-gray-100 px-4 pt-10 pb-3">
+        {/* ── 상단 헤더 ── */}
+        <div className="bg-gray-50 px-4 pt-7 pb-2">
           <div className="flex justify-between items-center">
             {/* 로고 이미지 */}
             <img
