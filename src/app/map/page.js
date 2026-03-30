@@ -98,6 +98,83 @@ function SpeedViolationModal({ onClose }) {
   );
 }
 
+// ─── 준비 체크 모달 ───────────────────────────────────────
+const READY_CHECKS = [
+  { id: "gloves",  icon: "🧤", text: "쓰레기를 줍기 위한 집게나 장갑을 준비하셨나요?" },
+  { id: "bag",     icon: "🛍️", text: "주운 쓰레기를 담을 봉투를 준비하셨나요?" },
+  { id: "water",   icon: "💧", text: "활동 중 마실 물이나 음료를 챙기셨나요?" },
+  { id: "comfort", icon: "👟", text: "걷기 편한 복장과 신발을 착용하셨나요?" },
+];
+
+function ReadyCheckModal({ onStart, onCancel }) {
+  const [checked, setChecked] = useState({});
+  const toggle = (id) => setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
+  const allChecked = READY_CHECKS.every((c) => checked[c.id]);
+
+  return (
+    <div className="absolute inset-0 bg-black/60 flex items-end justify-center z-20">
+      <div className="bg-white rounded-t-3xl w-full shadow-2xl overflow-hidden">
+        {/* 핸들 */}
+        <div className="pt-3 pb-1 flex justify-center">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
+
+        {/* 헤더 */}
+        <div className="px-5 pt-2 pb-4 border-b border-gray-100 text-center">
+          <div className="text-4xl mb-2">🌿</div>
+          <h2 className="text-lg font-black text-gray-800">플로깅 시작 전 체크리스트</h2>
+          <p className="text-xs text-gray-400 mt-1">준비를 마치고 함께 깨끗한 지구를 만들어요!</p>
+        </div>
+
+        {/* 체크리스트 */}
+        <div className="px-5 py-4 space-y-3">
+          {READY_CHECKS.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => toggle(item.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all active:scale-[0.98]
+                ${checked[item.id]
+                  ? "bg-green-50 border-green-400"
+                  : "bg-gray-50 border-gray-200"}`}
+            >
+              <span className="text-2xl flex-shrink-0">{item.icon}</span>
+              <p className={`text-sm text-left flex-1 font-medium leading-snug
+                ${checked[item.id] ? "text-green-700" : "text-gray-600"}`}>
+                {item.text}
+              </p>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-all
+                ${checked[item.id]
+                  ? "bg-green-500 border-green-500 text-white"
+                  : "border-gray-300"}`}>
+                {checked[item.id] && <span className="text-xs font-black">✓</span>}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* 버튼 */}
+        <div className="px-5 pb-8 pt-2 space-y-2">
+          <button
+            onClick={onStart}
+            className={`w-full py-4 rounded-2xl font-black text-base transition-all
+              ${allChecked
+                ? "bg-gradient-to-r from-green-500 to-teal-500 text-white shadow-md active:scale-95"
+                : "bg-green-500 text-white active:scale-95 shadow-md"}`}
+          >
+            {allChecked ? "✅ 준비 완료! 플로깅 시작" : "🚶 그냥 시작하기"}
+          </button>
+          <button
+            onClick={onCancel}
+            className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-100 active:bg-gray-200"
+          >
+            취소
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── 조건 미달 모달 ───────────────────────────────────────
 function ValidationFailModal({ errors, onRetry, onForceStop }) {
   return (
@@ -261,6 +338,9 @@ function MapPageInner() {
   const [result, setResult]         = useState(null);
   const [pastRoutes, setPastRoutes] = useState([]);
   const [savedRouteId, setSavedRouteId] = useState(null);
+
+  // 준비 체크 모달
+  const [showReadyCheck, setShowReadyCheck] = useState(false);
 
   // A. 중복 방지
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
@@ -708,7 +788,7 @@ function MapPageInner() {
       {/* ── 하단 버튼 ────────────────────────────────────── */}
       <div className="absolute bottom-24 left-0 right-0 flex justify-center z-10">
         {!isTracking ? (
-          <button onClick={handleStart}
+          <button onClick={() => setShowReadyCheck(true)}
             className="bg-green-500 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform">
             🚶 플로깅 시작
           </button>
@@ -721,6 +801,13 @@ function MapPageInner() {
       </div>
 
       {/* ── 모달들 ──────────────────────────────────────── */}
+      {showReadyCheck && (
+        <ReadyCheckModal
+          onStart={() => { setShowReadyCheck(false); handleStart(); }}
+          onCancel={() => setShowReadyCheck(false)}
+        />
+      )}
+
       {showDuplicateWarning && (
         <DuplicateWarningModal
           message={duplicateMsg}
