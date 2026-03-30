@@ -1,7 +1,19 @@
 {
-  "version": "v1.11",
-  "build": 11,
+  "version": "v1.12",
+  "build": 12,
   "changelog": [
+    {
+      "version": "v1.12",
+      "build": 12,
+      "date": "2026-03-31",
+      "emoji": "✨",
+      "title": "홈화면 개선",
+      "items": [
+        "페이지스타일 정리",
+        "페이지 헤드타이틀 정리",
+        "캘린더 페이지 개선"
+      ]
+    },
     {
       "version": "v1.11",
       "build": 11,
