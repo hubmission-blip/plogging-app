@@ -147,12 +147,6 @@ export default function ProfilePage() {
 
           {/* 프로필 정보 행 */}
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl overflow-hidden shadow border-2 border-white/40 flex-shrink-0">
-              {stats.photoURL
-                ? <img src={stats.photoURL} alt="프로필" className="w-full h-full object-cover" />
-                : <span>{levelInfo.icon}</span>
-              }
-            </div>
             <div className="flex-1 min-w-0">
               {editingName ? (
                 <div className="flex gap-2 items-center">

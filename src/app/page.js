@@ -424,7 +424,7 @@ export default function HomePage() {
                 <div key={item.step} className="bg-white rounded-2xl p-4 shadow-sm">
                   <span className="text-xs font-bold text-green-500">STEP {item.step}</span>
                   <div className="text-2xl mt-1">{item.icon}</div>
-                  <p className="font-bold text-sm mt-1">{item.title}</p>
+                  <p className="font-bold text-sm mt-1 text-gray-900">{item.title}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
                 </div>
               ))}
