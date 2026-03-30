@@ -76,6 +76,25 @@ export default function AdminPage() {
   const [newNotice,  setNewNotice]  = useState({ title: "", content: "", type: "info" });
   const [noticeMode, setNoticeMode] = useState(false); // 작성 모드
 
+  // ── 배너 ──────────────────────────────────────────────
+  const [banners,      setBanners]      = useState([]);
+  const [bannerMode,   setBannerMode]   = useState(false);   // 등록 폼 표시
+  const [editingBanner, setEditingBanner] = useState(null);  // 수정 중인 배너
+  const EMPTY_BANNER = {
+    title: "", sub: "", image: "", link: "", tag: "",
+    emoji: "🌿", bg: "from-green-400 to-green-600", active: true,
+  };
+  const [newBanner, setNewBanner] = useState(EMPTY_BANNER);
+
+  const BG_OPTIONS = [
+    "from-green-400 to-green-600",  "from-blue-400 to-blue-600",
+    "from-purple-400 to-purple-600","from-orange-400 to-orange-500",
+    "from-teal-400 to-teal-600",    "from-pink-400 to-pink-600",
+    "from-indigo-400 to-indigo-600","from-yellow-400 to-yellow-500",
+    "from-red-400 to-red-500",      "from-cyan-400 to-cyan-600",
+    "from-lime-400 to-lime-600",    "from-violet-400 to-violet-600",
+  ];
+
   // ── 메시지 표시 ───────────────────────────────────────
   const showMsg = (msg) => {
     setActionMsg(msg);
@@ -186,6 +205,18 @@ export default function AdminPage() {
   }, []);
 
   // ──────────────────────────────────────────────────────
+  //  Fetch: 배너
+  // ──────────────────────────────────────────────────────
+  const fetchBanners = useCallback(async () => {
+    setLoading(true);
+    try {
+      const snap = await getDocs(query(collection(db, "banners"), orderBy("order", "asc")));
+      setBanners(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    } catch (e) { console.error("배너 로드 실패:", e); }
+    finally { setLoading(false); }
+  }, []);
+
+  // ──────────────────────────────────────────────────────
   //  Fetch: 공지사항
   // ──────────────────────────────────────────────────────
   const fetchNotices = useCallback(async () => {
@@ -208,6 +239,7 @@ export default function AdminPage() {
     if (activeTab === "rewards")     fetchRewards();
     if (activeTab === "maintenance") fetchMaintenance();
     if (activeTab === "notices")     fetchNotices();
+    if (activeTab === "banners")     fetchBanners();
   }, [activeTab, user, isAdmin]);
 
   useEffect(() => {
@@ -329,6 +361,78 @@ export default function AdminPage() {
   };
 
   // ──────────────────────────────────────────────────────
+  //  Action: 배너 등록
+  // ──────────────────────────────────────────────────────
+  const handleCreateBanner = async () => {
+    if (!newBanner.title.trim() && !newBanner.image.trim()) {
+      showMsg("❌ 제목 또는 이미지 URL을 입력하세요"); return;
+    }
+    try {
+      const order = banners.length > 0 ? Math.max(...banners.map((b) => b.order || 0)) + 1 : 1;
+      const docRef = await addDoc(collection(db, "banners"), { ...newBanner, order, createdAt: serverTimestamp() });
+      setBanners((prev) => [...prev, { id: docRef.id, ...newBanner, order }]);
+      setNewBanner(EMPTY_BANNER);
+      setBannerMode(false);
+      showMsg("✅ 배너가 등록되었습니다");
+    } catch (e) { showMsg("❌ 등록 실패: " + e.message); }
+  };
+
+  // ──────────────────────────────────────────────────────
+  //  Action: 배너 수정 저장
+  // ──────────────────────────────────────────────────────
+  const handleSaveBanner = async () => {
+    if (!editingBanner) return;
+    try {
+      const { id, ...data } = editingBanner;
+      await updateDoc(doc(db, "banners", id), { ...data, updatedAt: serverTimestamp() });
+      setBanners((prev) => prev.map((b) => b.id === id ? editingBanner : b));
+      setEditingBanner(null);
+      showMsg("✅ 배너가 수정되었습니다");
+    } catch (e) { showMsg("❌ 수정 실패: " + e.message); }
+  };
+
+  // ──────────────────────────────────────────────────────
+  //  Action: 배너 활성/비활성 토글
+  // ──────────────────────────────────────────────────────
+  const handleToggleBanner = async (id, current) => {
+    try {
+      await updateDoc(doc(db, "banners", id), { active: !current });
+      setBanners((prev) => prev.map((b) => b.id === id ? { ...b, active: !current } : b));
+    } catch (e) { showMsg("❌ 수정 실패: " + e.message); }
+  };
+
+  // ──────────────────────────────────────────────────────
+  //  Action: 배너 삭제
+  // ──────────────────────────────────────────────────────
+  const handleDeleteBanner = async (id) => {
+    if (!confirm("이 배너를 삭제할까요?")) return;
+    try {
+      await deleteDoc(doc(db, "banners", id));
+      setBanners((prev) => prev.filter((b) => b.id !== id));
+      showMsg("🗑 배너가 삭제되었습니다");
+    } catch (e) { showMsg("❌ 삭제 실패: " + e.message); }
+  };
+
+  // ──────────────────────────────────────────────────────
+  //  Action: 배너 순서 이동
+  // ──────────────────────────────────────────────────────
+  const handleMoveBanner = async (id, dir) => {
+    const idx = banners.findIndex((b) => b.id === id);
+    const swapIdx = dir === "up" ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= banners.length) return;
+    const newBanners = [...banners];
+    [newBanners[idx], newBanners[swapIdx]] = [newBanners[swapIdx], newBanners[idx]];
+    // order 값 재부여
+    const updates = newBanners.map((b, i) => ({ ...b, order: i + 1 }));
+    setBanners(updates);
+    try {
+      const batch = writeBatch(db);
+      updates.forEach((b) => batch.update(doc(db, "banners", b.id), { order: b.order }));
+      await batch.commit();
+    } catch (e) { showMsg("❌ 순서 변경 실패: " + e.message); }
+  };
+
+  // ──────────────────────────────────────────────────────
   //  Guard
   // ──────────────────────────────────────────────────────
   if (!user || !isAdmin) return (
@@ -351,6 +455,7 @@ export default function AdminPage() {
     { id: "dashboard",   label: "📊",  name: "통계" },
     { id: "users",       label: "👥",  name: "유저" },
     { id: "rewards",     label: "🎁",  name: `리워드${rewards.filter(r=>r.status==="pending").length > 0 ? ` (${rewards.filter(r=>r.status==="pending").length})` : ""}` },
+    { id: "banners",     label: "🖼️",  name: "배너" },
     { id: "maintenance", label: "🔧",  name: "유지관리" },
     { id: "notices",     label: "📢",  name: "공지" },
   ];
@@ -837,6 +942,199 @@ export default function AdminPage() {
                     </div>
                   );
                 })
+              )}
+            </>
+          )}
+
+          {/* ══════════════════════════════════════
+              🖼️ 배너 탭
+          ══════════════════════════════════════ */}
+          {activeTab === "banners" && (
+            <>
+              {/* 등록 버튼 */}
+              <div className="flex justify-between items-center">
+                <SectionTitle>🖼️ 배너 관리 ({banners.length}개)</SectionTitle>
+                <button
+                  onClick={() => { setBannerMode((v) => !v); setEditingBanner(null); }}
+                  className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-full font-bold"
+                >
+                  {bannerMode ? "✕ 닫기" : "+ 배너 등록"}
+                </button>
+              </div>
+
+              {/* 등록 폼 */}
+              {bannerMode && (
+                <div className="bg-white rounded-2xl p-4 shadow-sm space-y-2.5 border-l-4 border-green-400">
+                  <p className="text-xs font-bold text-green-700 mb-1">새 배너 등록</p>
+
+                  {/* 이미지 URL */}
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">🖼 이미지 URL <span className="text-gray-300">(이미지가 없으면 그라디언트 배경 사용)</span></p>
+                    <input className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400"
+                      placeholder="https://example.com/banner.jpg"
+                      value={newBanner.image}
+                      onChange={(e) => setNewBanner((f) => ({ ...f, image: e.target.value }))} />
+                    {newBanner.image && (
+                      <img src={newBanner.image} alt="미리보기" className="mt-2 w-full h-24 object-cover rounded-xl" onError={(e) => e.target.style.display="none"} />
+                    )}
+                  </div>
+
+                  {/* 제목 / 부제목 */}
+                  <input className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400"
+                    placeholder="배너 제목"
+                    value={newBanner.title}
+                    onChange={(e) => setNewBanner((f) => ({ ...f, title: e.target.value }))} />
+                  <input className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400"
+                    placeholder="부제목 (선택)"
+                    value={newBanner.sub}
+                    onChange={(e) => setNewBanner((f) => ({ ...f, sub: e.target.value }))} />
+
+                  {/* 링크 / 태그 */}
+                  <div className="flex gap-2">
+                    <input className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400"
+                      placeholder="링크 URL (예: https://... 또는 /ranking)"
+                      value={newBanner.link}
+                      onChange={(e) => setNewBanner((f) => ({ ...f, link: e.target.value }))} />
+                    <input className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400"
+                      placeholder="태그"
+                      value={newBanner.tag}
+                      onChange={(e) => setNewBanner((f) => ({ ...f, tag: e.target.value }))} />
+                  </div>
+
+                  {/* 이미지 없을 때: 이모지 + 배경색 */}
+                  {!newBanner.image && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input className="w-16 border border-gray-200 rounded-xl px-2 py-2 text-center text-lg focus:outline-none"
+                          placeholder="이모지"
+                          value={newBanner.emoji}
+                          onChange={(e) => setNewBanner((f) => ({ ...f, emoji: e.target.value }))} />
+                        <p className="text-xs text-gray-400">이미지 없을 때 표시할 이모지</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">배경 그라디언트 선택</p>
+                        <div className="grid grid-cols-6 gap-1.5">
+                          {BG_OPTIONS.map((bg) => (
+                            <button key={bg}
+                              onClick={() => setNewBanner((f) => ({ ...f, bg }))}
+                              className={`h-8 rounded-lg bg-gradient-to-r ${bg} ${newBanner.bg === bg ? "ring-2 ring-offset-1 ring-gray-600" : ""}`} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <button onClick={handleCreateBanner}
+                    className="w-full bg-green-500 text-white py-2.5 rounded-xl text-sm font-bold">
+                    ✅ 배너 등록하기
+                  </button>
+                </div>
+              )}
+
+              {/* 배너 목록 */}
+              {banners.length === 0 ? (
+                <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+                  <div className="text-4xl mb-2">🖼️</div>
+                  <p className="text-gray-400 text-sm">등록된 배너가 없어요</p>
+                  <p className="text-xs text-gray-300 mt-1">배너를 등록하면 홈 화면에 자동 표시됩니다</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {banners.map((b, idx) => (
+                    <div key={b.id} className={`bg-white rounded-2xl shadow-sm overflow-hidden ${!b.active ? "opacity-50" : ""}`}>
+                      {/* 미리보기 */}
+                      <div className={`w-full h-20 ${b.image ? "" : `bg-gradient-to-r ${b.bg}`} flex items-center px-4 relative`}>
+                        {b.image
+                          ? <img src={b.image} alt={b.title} className="w-full h-full object-cover absolute inset-0" />
+                          : <>
+                              <span className="text-3xl mr-3">{b.emoji}</span>
+                              <div>
+                                <p className="text-white font-bold text-sm">{b.title}</p>
+                                <p className="text-white/70 text-xs">{b.sub}</p>
+                              </div>
+                            </>
+                        }
+                        {b.tag && <span className="absolute top-2 right-2 bg-white/30 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{b.tag}</span>}
+                        {!b.active && <span className="absolute bottom-2 left-2 bg-black/40 text-white text-xs px-2 py-0.5 rounded-full">비활성</span>}
+                      </div>
+
+                      {/* 수정 폼 (인라인) */}
+                      {editingBanner?.id === b.id ? (
+                        <div className="p-3 space-y-2 border-t">
+                          <input className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-green-400"
+                            placeholder="이미지 URL"
+                            value={editingBanner.image}
+                            onChange={(e) => setEditingBanner((f) => ({ ...f, image: e.target.value }))} />
+                          {editingBanner.image && (
+                            <img src={editingBanner.image} alt="" className="w-full h-20 object-cover rounded-lg" onError={(e) => e.target.style.display="none"} />
+                          )}
+                          <div className="flex gap-2">
+                            <input className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-green-400"
+                              placeholder="제목" value={editingBanner.title}
+                              onChange={(e) => setEditingBanner((f) => ({ ...f, title: e.target.value }))} />
+                            <input className="w-16 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-green-400"
+                              placeholder="태그" value={editingBanner.tag}
+                              onChange={(e) => setEditingBanner((f) => ({ ...f, tag: e.target.value }))} />
+                          </div>
+                          <input className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-green-400"
+                            placeholder="부제목" value={editingBanner.sub}
+                            onChange={(e) => setEditingBanner((f) => ({ ...f, sub: e.target.value }))} />
+                          <input className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-green-400"
+                            placeholder="링크 URL" value={editingBanner.link}
+                            onChange={(e) => setEditingBanner((f) => ({ ...f, link: e.target.value }))} />
+                          {!editingBanner.image && (
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <input className="w-12 border border-gray-200 rounded-lg px-1 py-1 text-center text-sm focus:outline-none"
+                                  value={editingBanner.emoji}
+                                  onChange={(e) => setEditingBanner((f) => ({ ...f, emoji: e.target.value }))} />
+                                <p className="text-xs text-gray-400">이모지</p>
+                              </div>
+                              <div className="grid grid-cols-6 gap-1">
+                                {BG_OPTIONS.map((bg) => (
+                                  <button key={bg} onClick={() => setEditingBanner((f) => ({ ...f, bg }))}
+                                    className={`h-7 rounded-md bg-gradient-to-r ${bg} ${editingBanner.bg === bg ? "ring-2 ring-offset-1 ring-gray-600" : ""}`} />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <button onClick={() => setEditingBanner(null)}
+                              className="flex-1 border border-gray-200 text-gray-400 py-1.5 rounded-lg text-xs">취소</button>
+                            <button onClick={handleSaveBanner}
+                              className="flex-1 bg-green-500 text-white py-1.5 rounded-lg text-xs font-bold">💾 저장</button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* 정보 + 액션 버튼 */
+                        <div className="px-3 py-2.5 flex items-center justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-gray-700 truncate">{b.title || "(제목 없음)"}</p>
+                            {b.link && <p className="text-[10px] text-gray-400 truncate">{b.link}</p>}
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {/* 순서 이동 */}
+                            <button onClick={() => handleMoveBanner(b.id, "up")} disabled={idx === 0}
+                              className="w-6 h-6 rounded bg-gray-100 text-gray-400 text-xs disabled:opacity-30">↑</button>
+                            <button onClick={() => handleMoveBanner(b.id, "down")} disabled={idx === banners.length - 1}
+                              className="w-6 h-6 rounded bg-gray-100 text-gray-400 text-xs disabled:opacity-30">↓</button>
+                            {/* 수정 */}
+                            <button onClick={() => { setEditingBanner(b); setBannerMode(false); }}
+                              className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold">수정</button>
+                            {/* 활성/비활성 */}
+                            <button onClick={() => handleToggleBanner(b.id, b.active)}
+                              className={`px-2 py-1 rounded-lg text-xs font-bold ${b.active ? "bg-gray-100 text-gray-500" : "bg-green-50 text-green-600"}`}>
+                              {b.active ? "숨김" : "표시"}
+                            </button>
+                            {/* 삭제 */}
+                            <button onClick={() => handleDeleteBanner(b.id)}
+                              className="px-2 py-1 bg-red-50 text-red-500 rounded-lg text-xs font-bold">삭제</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </>
           )}

@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { db } from "@/lib/firebase";
+import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
 
 // ─── 배너 데이터 ────────────────────────────────────────
-// 실제 배너 이미지/링크는 여기서 수정하세요
+// image: "URL" 을 넣으면 이미지 배너, 없으면 그라디언트+텍스트 배너
 const BANNERS = [
   {
     id: 1,
+    // image: "https://example.com/banner1.jpg",  ← 이미지 URL 넣으면 이미지로 표시
     bg: "from-green-400 to-green-600",
     emoji: "🌿",
     title: "오백원의 행복",
@@ -119,9 +122,32 @@ const BANNERS = [
 export default function BannerSlider({ autoInterval = 4000 }) {
   const [current, setCurrent] = useState(0);
   const [paused, setPaused]   = useState(false);
+  const [bannerList, setBannerList] = useState(BANNERS); // 기본값: 하드코딩
   const timerRef = useRef(null);
 
-  const total = BANNERS.length;
+  // Firestore에서 배너 로드 (있으면 교체, 없으면 하드코딩 유지)
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const q = query(
+          collection(db, "banners"),
+          where("active", "==", true),
+          orderBy("order", "asc")
+        );
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          setBannerList(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+          setCurrent(0);
+        }
+      } catch (e) {
+        // Firestore 실패 시 하드코딩 배너 유지
+        console.warn("배너 로드 실패, 기본 배너 사용:", e.message);
+      }
+    };
+    load();
+  }, []);
+
+  const total = bannerList.length;
 
   const next = useCallback(() => {
     setCurrent((prev) => (prev + 1) % total);
@@ -147,7 +173,7 @@ export default function BannerSlider({ autoInterval = 4000 }) {
     }
   };
 
-  const banner = BANNERS[current];
+  const banner = bannerList[current];
 
   return (
     <div
@@ -159,33 +185,42 @@ export default function BannerSlider({ autoInterval = 4000 }) {
       onTouchEnd={() => setPaused(false)}
     >
       {/* ── 배너 슬라이드 (애니메이션) ── */}
-      {BANNERS.map((b, idx) => (
+      {bannerList.map((b, idx) => (
         <div
           key={b.id}
           onClick={() => handleBannerClick(b)}
-          className={`absolute inset-0 bg-gradient-to-r ${b.bg} flex items-center px-5
-            transition-opacity duration-500
+          className={`absolute inset-0 transition-opacity duration-500
             ${idx === current ? "opacity-100 z-10" : "opacity-0 z-0"}
             ${b.link ? "cursor-pointer" : "cursor-default"}`}
         >
-          {/* 태그 */}
-          {b.tag && (
-            <span className="absolute top-3 right-3 bg-white/30 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-              {b.tag}
-            </span>
+          {/* ── 이미지 배너 ── */}
+          {b.image ? (
+            <img
+              src={b.image}
+              alt={b.title || "배너"}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            /* ── 그라디언트 + 텍스트 배너 ── */
+            <div className={`w-full h-full bg-gradient-to-r ${b.bg} flex items-center px-5`}>
+              {/* 태그 */}
+              {b.tag && (
+                <span className="absolute top-3 right-3 bg-white/30 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {b.tag}
+                </span>
+              )}
+              {/* 이모지 */}
+              <div className="text-5xl mr-4 flex-shrink-0">{b.emoji}</div>
+              {/* 텍스트 */}
+              <div>
+                <p className="text-white font-bold text-lg leading-tight">{b.title}</p>
+                <p className="text-white/80 text-sm mt-0.5">{b.sub}</p>
+                {b.link && (
+                  <p className="text-white/60 text-xs mt-1.5">탭하여 이동 →</p>
+                )}
+              </div>
+            </div>
           )}
-
-          {/* 이모지 */}
-          <div className="text-5xl mr-4 flex-shrink-0">{b.emoji}</div>
-
-          {/* 텍스트 */}
-          <div>
-            <p className="text-white font-bold text-lg leading-tight">{b.title}</p>
-            <p className="text-white/80 text-sm mt-0.5">{b.sub}</p>
-            {b.link && (
-              <p className="text-white/60 text-xs mt-1.5">탭하여 이동 →</p>
-            )}
-          </div>
         </div>
       ))}
 
@@ -205,7 +240,7 @@ export default function BannerSlider({ autoInterval = 4000 }) {
 
       {/* ── 하단 인디케이터 ── */}
       <div className="absolute bottom-2.5 left-0 right-0 flex justify-center gap-1 z-20">
-        {BANNERS.map((_, idx) => (
+        {bannerList.map((_, idx) => (
           <button
             key={idx}
             onClick={(e) => { e.stopPropagation(); setCurrent(idx); }}
