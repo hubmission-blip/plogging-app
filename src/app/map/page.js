@@ -112,7 +112,7 @@ function ReadyCheckModal({ onStart, onCancel }) {
   const allChecked = READY_CHECKS.every((c) => checked[c.id]);
 
   return (
-    <div className="absolute inset-0 bg-black/60 flex items-end justify-center z-20">
+    <div className="fixed inset-0 bg-black/60 flex items-end justify-center z-[200]">
       <div className="bg-white rounded-t-3xl w-full shadow-2xl overflow-hidden">
         {/* 핸들 */}
         <div className="pt-3 pb-1 flex justify-center">
@@ -153,7 +153,7 @@ function ReadyCheckModal({ onStart, onCancel }) {
         </div>
 
         {/* 버튼 */}
-        <div className="px-5 pb-8 pt-2 space-y-2">
+        <div className="px-5 pt-2 space-y-2" style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 16px))" }}>
           <button
             onClick={onStart}
             className={`w-full py-4 rounded-2xl font-black text-base transition-all

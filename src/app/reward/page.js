@@ -319,8 +319,8 @@ export default function RewardPage() {
 
       {/* ── 교환 확인 모달 ── */}
       {confirming && selectedItem && (
-        <div className="fixed inset-0 bg-black/50 flex items-end z-50 p-4">
-          <div className="bg-white w-full rounded-3xl p-6 shadow-2xl">
+        <div className="fixed inset-0 bg-black/50 flex items-end z-[200]" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+          <div className="bg-white w-full rounded-3xl p-6 shadow-2xl mb-0">
             <div className="text-center mb-4">
               <div className="text-5xl mb-2">{selectedItem.icon}</div>
               <h2 className="text-lg font-bold text-gray-800">{selectedItem.title}</h2>
