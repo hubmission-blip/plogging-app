@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-  doc, getDoc, updateDoc,
+  doc, getDoc,
   collection, query, where, getDocs,
 } from "firebase/firestore";
-import { signOut, updateProfile } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getWeekLabel } from "@/lib/routeUtils";
 import Link from "next/link";
@@ -46,9 +46,6 @@ export default function ProfilePage() {
   });
   const [recentRoutes, setRecentRoutes] = useState([]);
   const [loading, setLoading]           = useState(true);
-  const [editingName, setEditingName]   = useState(false);
-  const [newName, setNewName]           = useState("");
-  const [saving, setSaving]             = useState(false);
 
   // ── 관리자 여부 ──────────────────────────────────────────
   const isAdmin = user && ADMIN_EMAILS.includes(user.email);
@@ -68,7 +65,6 @@ export default function ProfilePage() {
           displayName:   d.displayName   || user.displayName || user.email?.split("@")[0] || "익명",
           photoURL:      d.photoURL      || user.photoURL    || "",
         });
-        setNewName(d.displayName || user.displayName || "");
       }
 
       const q = query(collection(db, "routes"), where("userId", "==", user.uid));
@@ -89,24 +85,6 @@ export default function ProfilePage() {
     if (!user) { router.push("/login"); return; }
     fetchData();
   }, [user, fetchData, router]);
-
-  // ── 닉네임 저장 (Firestore + Firebase Auth 동시 업데이트) ──
-  const handleSaveName = async () => {
-    if (!newName.trim()) return;
-    setSaving(true);
-    try {
-      const trimmed = newName.trim();
-      // Firestore 업데이트
-      await updateDoc(doc(db, "users", user.uid), { displayName: trimmed });
-      // Firebase Auth 프로필도 업데이트 → 모든 페이지에서 즉시 반영
-      if (auth.currentUser) {
-        await updateProfile(auth.currentUser, { displayName: trimmed });
-      }
-      setStats((p) => ({ ...p, displayName: trimmed }));
-      setEditingName(false);
-    } catch (e) { alert("저장 실패: " + e.message); }
-    finally { setSaving(false); }
-  };
 
   // ── 로그아웃 ─────────────────────────────────────────────
   const handleLogout = async () => {
@@ -154,30 +132,7 @@ export default function ProfilePage() {
           {/* 프로필 정보 행 */}
           <div className="flex items-center gap-3 mb-3">
             <div className="flex-1 min-w-0">
-              {editingName ? (
-                <div className="flex gap-2 items-center">
-                  <input
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    className="text-black rounded-lg px-3 py-1 text-sm flex-1 max-w-[140px]"
-                    maxLength={12}
-                    autoFocus
-                  />
-                  <button onClick={handleSaveName} disabled={saving}
-                    className="bg-white text-green-600 px-3 py-1 rounded-lg text-xs font-bold">
-                    {saving ? "..." : "저장"}
-                  </button>
-                  <button onClick={() => setEditingName(false)} className="text-white/70 text-xs">취소</button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <p className="font-black text-base text-white truncate">{stats.displayName}</p>
-                  <button onClick={() => setEditingName(true)}
-                    className="text-white/70 text-[10px] border border-white/40 rounded px-1.5 py-0.5 flex-shrink-0">
-                    ✏️ 수정
-                  </button>
-                </div>
-              )}
+              <p className="font-black text-base text-white truncate">{stats.displayName}</p>
               <p className="text-green-100 text-xs mt-0.5">
                 {levelInfo.icon} Lv.{levelInfo.level} {levelInfo.name}
               </p>
