@@ -37,25 +37,53 @@ function getGradeColor(distance) {
   return                        { bg: "#F1F8E9", text: "#9E9E9E", border: "#DCEDC8", grade: "-", emoji: "·" };
 }
 
+// ─── 기간 탭 정의 ─────────────────────────────────────────
+const PERIOD_TABS = [
+  { id: "weekly",  label: "주간" },
+  { id: "monthly", label: "월간" },
+  { id: "all",     label: "전체" },
+];
+
+const PERIOD_LABEL = {
+  weekly:  "이번 주",
+  monthly: "이번 달",
+  all:     "전체 기간",
+};
+
+function getPeriodStart(period) {
+  const now = new Date();
+  if (period === "weekly") {
+    const start = new Date(now);
+    start.setDate(now.getDate() - now.getDay());
+    start.setHours(0, 0, 0, 0);
+    return start;
+  }
+  if (period === "monthly") {
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  return null; // 전체
+}
+
 export default function RankingMap() {
   const [mapLoading] = useKakaoLoader({
     appkey: process.env.NEXT_PUBLIC_KAKAO_MAP_KEY,
   });
 
+  const [period, setPeriod]                 = useState("monthly");
   const [regionStats, setRegionStats]       = useState({});
   const [loading, setLoading]               = useState(true);
   const [selectedRegion, setSelectedRegion] = useState(null);
 
   // ── 지역별 플로깅 집계 ───────────────────────────────────
-  const fetchRegionStats = useCallback(async () => {
+  const fetchRegionStats = useCallback(async (selectedPeriod) => {
     setLoading(true);
+    setSelectedRegion(null);
     try {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-
+      const sinceDate = getPeriodStart(selectedPeriod);
       const snap = await getDocs(
-        query(collection(db, "routes"), where("createdAt", ">=", startOfMonth))
+        sinceDate
+          ? query(collection(db, "routes"), where("createdAt", ">=", sinceDate))
+          : query(collection(db, "routes"))
       );
 
       const stats = {};
@@ -65,7 +93,7 @@ export default function RankingMap() {
         const data   = docSnap.data();
         const coords = data.coords;
         if (!coords || coords.length === 0) return;
-        if (!data.points || data.points === 0) return; // 0점 기록 랭킹 제외
+        if (!data.points || data.points === 0) return;
         const firstCoord = coords[0];
         let minDist = Infinity, closestCode = "11";
         REGIONS.forEach((r) => {
@@ -83,7 +111,11 @@ export default function RankingMap() {
     }
   }, []);
 
-  useEffect(() => { fetchRegionStats(); }, [fetchRegionStats]);
+  useEffect(() => { fetchRegionStats(period); }, [fetchRegionStats, period]);
+
+  const handlePeriodChange = (newPeriod) => {
+    setPeriod(newPeriod);
+  };
 
   const ranked = REGIONS
     .map((r) => ({ ...r, distance: regionStats[r.code]?.distance || 0, count: regionStats[r.code]?.count || 0 }))
@@ -95,6 +127,20 @@ export default function RankingMap() {
 
   return (
     <div className="space-y-4">
+
+      {/* ── 기간 탭 ──────────────────────────────────────── */}
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+        {PERIOD_TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => handlePeriodChange(t.id)}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors
+              ${period === t.id ? "bg-white text-green-600 shadow-sm font-bold" : "text-gray-500"}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
       {/* ── 지도 ─────────────────────────────────────────── */}
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ height: "380px" }}>
@@ -196,7 +242,7 @@ export default function RankingMap() {
                   {rankMap[selectedRegion.code]}위 · {selectedRegion.color.grade}등급
                 </span>
               </h3>
-              <p className="text-sm opacity-75 mt-0.5">이번 달 플로깅 현황</p>
+              <p className="text-sm opacity-75 mt-0.5">{PERIOD_LABEL[period]} 플로깅 현황</p>
             </div>
             <button
               onClick={() => setSelectedRegion(null)}
@@ -233,7 +279,7 @@ export default function RankingMap() {
       {/* ── 등급 범례 ─────────────────────────────────────── */}
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <h3 className="font-bold text-gray-600 mb-2 text-xs uppercase tracking-wide">
-          등급 기준 · 이번 달 누적 거리
+          등급 기준 · {PERIOD_LABEL[period]} 누적 거리
         </h3>
         <div className="flex gap-1.5 flex-wrap">
           {[
@@ -259,7 +305,7 @@ export default function RankingMap() {
       {/* ── 지역 순위 리스트 ──────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b flex items-center justify-between">
-          <h3 className="font-bold text-gray-700">지역별 순위 (이번 달)</h3>
+          <h3 className="font-bold text-gray-700">지역별 순위 ({PERIOD_LABEL[period]})</h3>
           {loading && <span className="text-xs text-gray-400 animate-pulse">집계 중...</span>}
         </div>
         {loading ? (
