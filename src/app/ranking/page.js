@@ -235,10 +235,10 @@ function RankingPageInner() {
                           : <div className="w-full h-full flex items-center justify-center text-xl">😊</div>
                         }
                       </div>
-                      <div className={`${bgs[pos]} ${heights[pos]} rounded-t-xl flex flex-col items-center justify-center px-1 overflow-hidden w-full`}>
+                      <div className={`${bgs[pos]} ${heights[pos]} rounded-t-xl flex flex-col items-center justify-center px-1 w-full`}>
                         <span className="text-xl">{medals[pos]}</span>
-                        <p className="text-xs font-bold text-gray-700 truncate w-full text-center px-1">{item.displayName}</p>
-                        <p className="text-xs text-gray-500 truncate w-full text-center">{fmt(item)}</p>
+                        <p className="text-xs font-bold text-gray-700 break-words w-full text-center px-1 leading-tight">{item.displayName}</p>
+                        <p className="text-xs text-gray-500 w-full text-center">{fmt(item)}</p>
                       </div>
                     </div>
                   );
