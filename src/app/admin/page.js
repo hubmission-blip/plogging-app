@@ -197,7 +197,7 @@ export default function AdminPage() {
         setAppSettings(snap.data());
       } else {
         // 기본값 초기화
-        const defaults = { minDistanceKm: 0.5, minDurationSec: 600, minStops: 3, dailyMax: 3 };
+        const defaults = { minDistanceKm: 0.5, minDurationSec: 600, minStops: 3, dailyMax: 3, speedLimitEnabled: true };
         setAppSettings(defaults);
       }
     } catch (e) { console.error("설정 로드 실패:", e); }
@@ -752,6 +752,45 @@ export default function AdminPage() {
           ══════════════════════════════════════ */}
           {activeTab === "maintenance" && appSettings && (
             <>
+              {/* ── 속도 제한 토글 ── */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <SectionTitle>🚗 이동수단 속도제한</SectionTitle>
+                <p className="text-xs text-gray-400 mb-4">
+                  시속 30km/h 초과 5초 지속 시 플로깅 자동 종료 기능입니다.<br/>
+                  OFF 시 속도 제한 없이 플로깅이 진행됩니다.
+                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-gray-700">속도제한 기능</p>
+                    <p className={`text-xs mt-0.5 font-medium ${appSettings.speedLimitEnabled ? "text-green-500" : "text-red-400"}`}>
+                      {appSettings.speedLimitEnabled ? "✅ 현재 ON — 30km/h 초과 시 자동 종료" : "⛔ 현재 OFF — 속도 제한 없음"}
+                    </p>
+                  </div>
+                  {/* 토글 스위치 */}
+                  <button
+                    onClick={() => {
+                      setAppSettings((prev) => ({ ...prev, speedLimitEnabled: !prev.speedLimitEnabled }));
+                      setSettingsDirty(true);
+                    }}
+                    className={`relative w-14 h-7 rounded-full transition-colors duration-200 focus:outline-none ${
+                      appSettings.speedLimitEnabled ? "bg-green-500" : "bg-gray-300"
+                    }`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200 ${
+                      appSettings.speedLimitEnabled ? "translate-x-7" : "translate-x-0"
+                    }`} />
+                  </button>
+                </div>
+                {settingsDirty && (
+                  <button
+                    onClick={handleSaveSettings}
+                    className="w-full mt-4 bg-green-500 text-white py-3 rounded-xl font-bold text-sm"
+                  >
+                    💾 설정 저장
+                  </button>
+                )}
+              </div>
+
               {/* 앱 인증 조건 설정 */}
               <div className="bg-white rounded-2xl p-4 shadow-sm">
                 <SectionTitle>⚙️ 플로깅 인증 조건 설정</SectionTitle>

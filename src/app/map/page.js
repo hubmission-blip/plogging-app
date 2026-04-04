@@ -11,7 +11,7 @@ import { useLocation } from "@/hooks/useLocation";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-  doc, collection, addDoc, updateDoc, setDoc,
+  doc, collection, addDoc, updateDoc, setDoc, getDoc,
   increment, serverTimestamp, query,
   where, getDocs, deleteDoc, limit,
 } from "firebase/firestore";
@@ -410,6 +410,20 @@ function MapPageInner() {
   const [uploading, setUploading]                   = useState(false);
   const pendingDataRef = useRef(null);
 
+  // ── 속도제한 설정 (Firestore settings/app) ───────────────
+  const [speedLimitEnabled, setSpeedLimitEnabled] = useState(true);
+
+  useEffect(() => {
+    getDoc(doc(db, "settings", "app"))
+      .then((snap) => {
+        if (snap.exists()) {
+          const val = snap.data().speedLimitEnabled;
+          setSpeedLimitEnabled(val !== false); // 명시적 false 아니면 기본 ON
+        }
+      })
+      .catch(() => {}); // 로드 실패 시 기본값(ON) 유지
+  }, []);
+
   const handleSpeedViolation = useCallback(() => {
     setSpeedViolationStop(true);
   }, []);
@@ -418,7 +432,7 @@ function MapPageInner() {
     path, distance, isTracking, currentSpeed,
     isSpeedWarning, duration, stopCount,
     startTracking, stopTracking,
-  } = useLocation({ onSpeedViolation: handleSpeedViolation });
+  } = useLocation({ onSpeedViolation: speedLimitEnabled ? handleSpeedViolation : undefined });
 
   // ─── A. 하루 플로깅 횟수 체크 ────────────────────────
   const checkPloggingLimit = useCallback(async () => {
@@ -766,7 +780,7 @@ function MapPageInner() {
       )}
 
       {/* ── 속도 경고 배너 ──────────────────────────────── */}
-      {isSpeedWarning && isTracking && (
+      {speedLimitEnabled && isSpeedWarning && isTracking && (
         <div className="absolute top-36 left-0 right-0 flex justify-center z-10 px-4">
           <div className="bg-red-500 text-white rounded-2xl px-5 py-3 shadow-xl flex items-center gap-2 animate-pulse">
             <span className="text-xl">⚠️</span>
