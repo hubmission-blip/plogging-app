@@ -1,7 +1,29 @@
 {
-  "version": "v1.14",
-  "build": 14,
+  "version": "v1.16",
+  "build": 16,
   "changelog": [
+    {
+      "version": "v1.16",
+      "build": 16,
+      "date": "2026-04-05",
+      "emoji": "🌿",
+      "title": "happy500.kr",
+      "items": [
+        "내정보 수정페이지",
+        "UI 화면 개선"
+      ]
+    },
+    {
+      "version": "v1.15",
+      "build": 15,
+      "date": "2026-04-05",
+      "emoji": "💡",
+      "title": "happy500.kr 도메인 적용",
+      "items": [
+        "내정보 수정 페이지 추가",
+        "UI 화면 개선"
+      ]
+    },
     {
       "version": "v1.14",
       "build": 14,
