@@ -337,7 +337,7 @@ async function verifyPhotoWithAI(file) {
 }
 
 // ─── 사진 인증 필수 모달 (AI 검증 포함) ──────────────────
-function PhotoRequiredModal({ onConfirm, onSkip, uploading }) {
+function PhotoRequiredModal({ onConfirm, onSkip, uploading, aiEnabled = true }) {
   const [file, setFile]         = useState(null);
   const [preview, setPreview]   = useState(null);
   const [step, setStep]         = useState("capture"); // capture | verifying | result
@@ -358,7 +358,7 @@ function PhotoRequiredModal({ onConfirm, onSkip, uploading }) {
     setStep("verifying");
 
     try {
-      // 1. EXIF 시간 신선도 체크 (30분 이내)
+      // 1. EXIF 시간 신선도 체크 (30분 이내) — AI ON/OFF 무관하게 항상 실행
       const exifDate = await readExifTimestamp(file);
       if (exifDate) {
         const diffMin = (Date.now() - exifDate.getTime()) / 60000;
@@ -374,9 +374,19 @@ function PhotoRequiredModal({ onConfirm, onSkip, uploading }) {
         }
       }
 
-      // 2. AI 쓰레기봉투 인식
-      const aiResult = await verifyPhotoWithAI(file);
-      setVerifyResult(aiResult);
+      // 2. AI 쓰레기봉투 인식 (관리자 설정으로 ON/OFF)
+      if (aiEnabled) {
+        const aiResult = await verifyPhotoWithAI(file);
+        setVerifyResult(aiResult);
+      } else {
+        // AI 검증 OFF → 바로 통과
+        setVerifyResult({
+          valid: true,
+          confidence: "low",
+          reason: "AI 검증이 비활성화되어 있습니다. 사진이 정상 등록됩니다.",
+          skipped: true,
+        });
+      }
       setStep("result");
     } catch {
       // 예외 시 통과
@@ -443,7 +453,7 @@ function PhotoRequiredModal({ onConfirm, onSkip, uploading }) {
                 <button onClick={handleVerify} disabled={!file}
                   className={`w-full py-4 rounded-2xl font-black text-base transition-all
                     ${file ? "bg-gradient-to-r from-green-500 to-teal-500 text-white shadow-md active:scale-95" : "bg-gray-100 text-gray-300 cursor-not-allowed"}`}>
-                  🔍 AI 사진 검증하기
+                  {aiEnabled ? "🔍 AI 사진 검증하기" : "✅ 사진 확인하기"}
                 </button>
                 <button onClick={onSkip}
                   className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">
@@ -631,15 +641,17 @@ function MapPageInner() {
   const [uploading, setUploading]                   = useState(false);
   const pendingDataRef = useRef(null);
 
-  // ── 속도제한 설정 (Firestore settings/app) ───────────────
-  const [speedLimitEnabled, setSpeedLimitEnabled] = useState(true);
+  // ── 앱 설정 (Firestore settings/app) ────────────────────
+  const [speedLimitEnabled,     setSpeedLimitEnabled]     = useState(true);
+  const [aiVerificationEnabled, setAiVerificationEnabled] = useState(true);
 
   useEffect(() => {
     getDoc(doc(db, "settings", "app"))
       .then((snap) => {
         if (snap.exists()) {
-          const val = snap.data().speedLimitEnabled;
-          setSpeedLimitEnabled(val !== false); // 명시적 false 아니면 기본 ON
+          const data = snap.data();
+          setSpeedLimitEnabled(data.speedLimitEnabled !== false);
+          setAiVerificationEnabled(data.aiVerificationEnabled !== false);
         }
       })
       .catch(() => {}); // 로드 실패 시 기본값(ON) 유지
@@ -1128,6 +1140,7 @@ function MapPageInner() {
           onConfirm={handlePhotoConfirm}
           onSkip={handlePhotoSkip}
           uploading={uploading}
+          aiEnabled={aiVerificationEnabled}
         />
       )}
 

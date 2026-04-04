@@ -197,7 +197,7 @@ export default function AdminPage() {
         setAppSettings(snap.data());
       } else {
         // 기본값 초기화
-        const defaults = { minDistanceKm: 0.5, minDurationSec: 600, minStops: 3, dailyMax: 3, speedLimitEnabled: true };
+        const defaults = { minDistanceKm: 0.5, minDurationSec: 600, minStops: 3, dailyMax: 3, speedLimitEnabled: true, aiVerificationEnabled: true };
         setAppSettings(defaults);
       }
     } catch (e) { console.error("설정 로드 실패:", e); }
@@ -778,6 +778,48 @@ export default function AdminPage() {
                   >
                     <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200 ${
                       appSettings.speedLimitEnabled ? "translate-x-7" : "translate-x-0"
+                    }`} />
+                  </button>
+                </div>
+                {settingsDirty && (
+                  <button
+                    onClick={handleSaveSettings}
+                    className="w-full mt-4 bg-green-500 text-white py-3 rounded-xl font-bold text-sm"
+                  >
+                    💾 설정 저장
+                  </button>
+                )}
+              </div>
+
+              {/* ── AI 사진 검증 토글 ── */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <SectionTitle>🤖 AI 사진 검증</SectionTitle>
+                <p className="text-xs text-gray-400 mb-4">
+                  플로깅 완료 시 쓰레기봉투 사진을 AI로 자동 인식하는 기능입니다.<br />
+                  OFF 시 사진 촬영 후 AI 검증 없이 바로 업로드됩니다.<br />
+                  <span className="text-orange-400 font-medium">※ Anthropic API 키가 설정된 경우에만 작동합니다</span>
+                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-gray-700">AI 사진 인식 기능</p>
+                    <p className={`text-xs mt-0.5 font-medium ${appSettings.aiVerificationEnabled ? "text-green-500" : "text-red-400"}`}>
+                      {appSettings.aiVerificationEnabled
+                        ? "✅ 현재 ON — 쓰레기봉투 AI 자동 판별"
+                        : "⛔ 현재 OFF — AI 검증 없이 사진 업로드"}
+                    </p>
+                  </div>
+                  {/* 토글 스위치 */}
+                  <button
+                    onClick={() => {
+                      setAppSettings((prev) => ({ ...prev, aiVerificationEnabled: !prev.aiVerificationEnabled }));
+                      setSettingsDirty(true);
+                    }}
+                    className={`relative w-14 h-7 rounded-full transition-colors duration-200 focus:outline-none ${
+                      appSettings.aiVerificationEnabled ? "bg-green-500" : "bg-gray-300"
+                    }`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200 ${
+                      appSettings.aiVerificationEnabled ? "translate-x-7" : "translate-x-0"
                     }`} />
                   </button>
                 </div>
