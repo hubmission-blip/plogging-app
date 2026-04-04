@@ -1,7 +1,17 @@
 {
-  "version": "v1.12",
-  "build": 12,
+  "version": "v1.13",
+  "build": 13,
   "changelog": [
+    {
+      "version": "v1.13",
+      "build": 13,
+      "date": "2026-04-04",
+      "emoji": "🎯",
+      "title": "UI 개선",
+      "items": [
+        "흰화면 로딩 수정 및 UI 개선"
+      ]
+    },
     {
       "version": "v1.12",
       "build": 12,
