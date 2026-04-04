@@ -1,7 +1,18 @@
 {
-  "version": "v1.13",
-  "build": 13,
+  "version": "v1.14",
+  "build": 14,
   "changelog": [
+    {
+      "version": "v1.14",
+      "build": 14,
+      "date": "2026-04-05",
+      "emoji": "🔧",
+      "title": "happy500.kr적용",
+      "items": [
+        "전체 도메인 적용",
+        "UI 화면 개선"
+      ]
+    },
     {
       "version": "v1.13",
       "build": 13,

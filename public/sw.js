@@ -1,4 +1,4 @@
-const CACHE_NAME = "plogging-v3";
+const CACHE_NAME = "plogging-v4";
 
 const urlsToCache = ["/", "/manifest.json"];
 

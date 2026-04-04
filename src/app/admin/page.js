@@ -828,7 +828,7 @@ export default function AdminPage() {
                 <SectionTitle>ℹ️ 앱 정보</SectionTitle>
                 {[
                   { label: "Firebase 프로젝트", value: "plogging-app" },
-                  { label: "배포 URL", value: "plogging-app-rose.vercel.app" },
+                  { label: "배포 URL", value: "happy500.kr" },
                   { label: "관리자 이메일", value: ADMIN_EMAILS.join(", ") },
                 ].map((item) => (
                   <div key={item.label} className="flex justify-between py-2 border-b last:border-0 text-xs">

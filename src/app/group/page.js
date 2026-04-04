@@ -119,7 +119,7 @@ export default function GroupPage() {
 
   // ── 링크/코드 복사 ───────────────────────────────────────
   const handleCopy = async () => {
-    const text = `🌿 오백원의 행복 그룹 플로깅 초대!\n\n그룹 코드: ${groupCode}\n앱에서 '그룹 플로깅 → 코드로 참여' 에 입력하세요.\n\nhttps://your-app.vercel.app/group`;
+    const text = `🌿 오백원의 행복 그룹 플로깅 초대!\n\n그룹 코드: ${groupCode}\n앱에서 '그룹 플로깅 → 코드로 참여' 에 입력하세요.\n\n${window.location.origin}/group`;
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
