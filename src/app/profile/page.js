@@ -8,7 +8,7 @@ import {
   doc, getDoc, updateDoc,
   collection, query, where, getDocs,
 } from "firebase/firestore";
-import { signOut } from "firebase/auth";
+import { signOut, updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getWeekLabel } from "@/lib/routeUtils";
 import Link from "next/link";
@@ -90,13 +90,19 @@ export default function ProfilePage() {
     fetchData();
   }, [user, fetchData, router]);
 
-  // ── 닉네임 저장 ──────────────────────────────────────────
+  // ── 닉네임 저장 (Firestore + Firebase Auth 동시 업데이트) ──
   const handleSaveName = async () => {
     if (!newName.trim()) return;
     setSaving(true);
     try {
-      await updateDoc(doc(db, "users", user.uid), { displayName: newName.trim() });
-      setStats((p) => ({ ...p, displayName: newName.trim() }));
+      const trimmed = newName.trim();
+      // Firestore 업데이트
+      await updateDoc(doc(db, "users", user.uid), { displayName: trimmed });
+      // Firebase Auth 프로필도 업데이트 → 모든 페이지에서 즉시 반영
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { displayName: trimmed });
+      }
+      setStats((p) => ({ ...p, displayName: trimmed }));
       setEditingName(false);
     } catch (e) { alert("저장 실패: " + e.message); }
     finally { setSaving(false); }
@@ -275,11 +281,12 @@ export default function ProfilePage() {
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <p className="text-xs text-gray-400 font-medium px-4 pt-3 pb-1">바로가기</p>
           {[
-            { href: "/history", icon: "📊", label: "전체 플로깅 기록" },
-            { href: "/ranking", icon: "🏆", label: "랭킹 보기" },
-            { href: "/ranking?view=map", icon: "🗺️", label: "행정구역별 랭킹 지도" },  // ← 추가
-            { href: "/group",   icon: "👥", label: "그룹 플로깅" },
-            { href: "/reward",  icon: "🎁", label: "포인트 리워드 교환" },              // ← 추가
+            { href: "/profile/edit", icon: "✏️", label: "내정보 수정 (닉네임 · 1365 회원번호)" },
+            { href: "/history",      icon: "📊", label: "전체 플로깅 기록" },
+            { href: "/ranking",      icon: "🏆", label: "랭킹 보기" },
+            { href: "/ranking?view=map", icon: "🗺️", label: "행정구역별 랭킹 지도" },
+            { href: "/group",        icon: "👥", label: "그룹 플로깅" },
+            { href: "/reward",       icon: "🎁", label: "포인트 리워드 교환" },
           ].map((item) => (
             <Link key={item.href} href={item.href}
               className="flex items-center gap-3 px-4 py-4 border-b last:border-0 active:bg-gray-50">
