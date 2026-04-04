@@ -249,56 +249,277 @@ function ValidationFailModal({ errors, onRetry, onForceStop }) {
   );
 }
 
-// ─── 사진 인증 필수 모달 ─────────────────────────────────
+// ─── EXIF 타임스탬프 파서 (라이브러리 없이 직접 구현) ────
+async function readExifTimestamp(file) {
+  try {
+    const buf = await file.arrayBuffer();
+    const view = new DataView(buf);
+    // JPEG 시그니처 확인
+    if (view.getUint16(0) !== 0xFFD8) return null;
+
+    let offset = 2;
+    while (offset < view.byteLength - 4) {
+      const marker = view.getUint16(offset);
+      if (marker === 0xFFE1) {
+        // APP1 마커 (EXIF)
+        const segLen = view.getUint16(offset + 2);
+        const exifHeader = String.fromCharCode(
+          view.getUint8(offset + 4), view.getUint8(offset + 5),
+          view.getUint8(offset + 6), view.getUint8(offset + 7)
+        );
+        if (exifHeader === "Exif") {
+          const tiffStart = offset + 10;
+          const byteOrder = view.getUint16(tiffStart);
+          const le = byteOrder === 0x4949;
+          const readU16 = (o) => le ? view.getUint16(tiffStart + o, true) : view.getUint16(tiffStart + o, false);
+          const readU32 = (o) => le ? view.getUint32(tiffStart + o, true) : view.getUint32(tiffStart + o, false);
+
+          const ifdOffset = readU32(4);
+          const entryCount = readU16(ifdOffset);
+
+          for (let i = 0; i < entryCount; i++) {
+            const entryOffset = ifdOffset + 2 + i * 12;
+            const tag = readU16(entryOffset);
+            // 0x9003 = DateTimeOriginal, 0x9004 = DateTimeDigitized, 0x0132 = DateTime
+            if (tag === 0x9003 || tag === 0x9004 || tag === 0x0132) {
+              const valOffset = readU32(entryOffset + 8);
+              let str = "";
+              for (let c = 0; c < 19; c++) {
+                const ch = view.getUint8(tiffStart + valOffset + c);
+                if (ch === 0) break;
+                str += String.fromCharCode(ch);
+              }
+              // 포맷: "YYYY:MM:DD HH:MM:SS"
+              if (/^\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2}$/.test(str)) {
+                const [datePart, timePart] = str.split(" ");
+                const [y, mo, d] = datePart.split(":");
+                const iso = `${y}-${mo}-${d}T${timePart}`;
+                return new Date(iso);
+              }
+            }
+          }
+        }
+        offset += 2 + segLen;
+      } else if ((marker & 0xFF00) === 0xFF00) {
+        offset += 2 + view.getUint16(offset + 2);
+      } else {
+        break;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// ─── AI 쓰레기봉투 검증 API 호출 ──────────────────────────
+async function verifyPhotoWithAI(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const base64 = e.target.result.split(",")[1];
+        const mimeType = file.type || "image/jpeg";
+        const res = await fetch("/api/verify-photo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageBase64: base64, mimeType }),
+        });
+        const data = await res.json();
+        resolve(data);
+      } catch {
+        // 네트워크 오류 등 → 통과 처리
+        resolve({ valid: true, confidence: "low", reason: "검증 네트워크 오류", skipped: true });
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ─── 사진 인증 필수 모달 (AI 검증 포함) ──────────────────
 function PhotoRequiredModal({ onConfirm, onSkip, uploading }) {
-  const [file, setFile]       = useState(null);
-  const [preview, setPreview] = useState(null);
-  const inputRef              = useRef(null);
+  const [file, setFile]         = useState(null);
+  const [preview, setPreview]   = useState(null);
+  const [step, setStep]         = useState("capture"); // capture | verifying | result
+  const [verifyResult, setVerifyResult] = useState(null); // {valid, confidence, reason, exifFail}
+  const inputRef                = useRef(null);
 
   const handleFileChange = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
     setFile(f);
     setPreview(URL.createObjectURL(f));
+    setStep("capture");
+    setVerifyResult(null);
+  };
+
+  const handleVerify = async () => {
+    if (!file) return;
+    setStep("verifying");
+
+    try {
+      // 1. EXIF 시간 신선도 체크 (30분 이내)
+      const exifDate = await readExifTimestamp(file);
+      if (exifDate) {
+        const diffMin = (Date.now() - exifDate.getTime()) / 60000;
+        if (diffMin > 30) {
+          setVerifyResult({
+            valid: false,
+            confidence: "high",
+            reason: `사진이 ${Math.round(diffMin)}분 전에 촬영됐어요. 방금 찍은 사진(30분 이내)이어야 해요.`,
+            exifFail: true,
+          });
+          setStep("result");
+          return;
+        }
+      }
+
+      // 2. AI 쓰레기봉투 인식
+      const aiResult = await verifyPhotoWithAI(file);
+      setVerifyResult(aiResult);
+      setStep("result");
+    } catch {
+      // 예외 시 통과
+      setVerifyResult({ valid: true, confidence: "low", reason: "검증 중 오류 발생", skipped: true });
+      setStep("result");
+    }
+  };
+
+  const handleRetake = () => {
+    setFile(null);
+    setPreview(null);
+    setStep("capture");
+    setVerifyResult(null);
+    setTimeout(() => inputRef.current?.click(), 100);
   };
 
   return (
-    <div className="absolute inset-0 bg-black/70 flex items-end justify-center z-20 p-4">
-      <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
-        <div className="text-center mb-4">
-          <div className="text-4xl mb-2">📸</div>
-          <h2 className="text-lg font-bold text-gray-800">수거 사진 인증</h2>
-          <p className="text-gray-500 text-sm mt-1">
-            플로깅 포인트 지급을 위해<br />수거한 쓰레기 사진을 촬영해주세요
-          </p>
+    <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[200]">
+      <div className="bg-white rounded-t-3xl w-full shadow-2xl overflow-hidden">
+        {/* 핸들 */}
+        <div className="pt-3 pb-1 flex justify-center">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
         </div>
-        {preview ? (
-          <div className="relative mb-4">
-            <img src={preview} alt="인증 사진" className="w-full h-48 object-cover rounded-2xl" />
-            <button onClick={() => { setFile(null); setPreview(null); }}
-              className="absolute top-2 right-2 bg-black/50 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm">
-              ✕
-            </button>
-          </div>
-        ) : (
-          <button onClick={() => inputRef.current?.click()}
-            className="w-full h-36 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center gap-2 mb-4 active:bg-gray-50">
-            <span className="text-3xl">🗑️</span>
-            <span className="text-sm text-gray-500 font-medium">카메라로 찍기 / 사진 선택</span>
-          </button>
-        )}
-        <input ref={inputRef} type="file" accept="image/*" capture="environment"
-          onChange={handleFileChange} className="hidden" />
-        <div className="space-y-2">
-          <button onClick={() => file && onConfirm(file)} disabled={!file || uploading}
-            className={`w-full py-3.5 rounded-2xl font-bold transition-colors
-              ${file && !uploading ? "bg-green-500 text-white" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}>
-            {uploading ? "업로드 중... ⏳" : "✅ 인증 완료 (포인트 지급)"}
-          </button>
-          <button onClick={onSkip} disabled={uploading}
-            className="w-full py-2.5 rounded-2xl text-sm text-gray-400">
-            건너뛰기 (포인트 지급 안 됨)
-          </button>
+
+        <div className="px-5 pt-2 pb-6" style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 16px))" }}>
+
+          {/* ── STEP 1: 촬영 ── */}
+          {step === "capture" && (
+            <>
+              <div className="text-center mb-4">
+                <div className="text-4xl mb-2">📸</div>
+                <h2 className="text-lg font-black text-gray-800">수거 사진 인증</h2>
+                <p className="text-gray-500 text-sm mt-1">
+                  수거한 쓰레기 봉투를 촬영해주세요<br />
+                  <span className="text-xs text-gray-400">AI가 사진을 자동으로 확인합니다</span>
+                </p>
+              </div>
+
+              {preview ? (
+                <div className="relative mb-4">
+                  <img src={preview} alt="인증 사진" className="w-full h-52 object-cover rounded-2xl" />
+                  <button onClick={() => { setFile(null); setPreview(null); }}
+                    className="absolute top-2 right-2 bg-black/50 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
+                    ✕
+                  </button>
+                  {/* EXIF 없음 안내 */}
+                  <div className="absolute bottom-2 left-2 right-2 bg-black/40 rounded-xl px-3 py-1.5 text-center">
+                    <p className="text-white text-xs">📍 사진 선택됨 · AI 검증 버튼을 눌러주세요</p>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => inputRef.current?.click()}
+                  className="w-full h-40 border-2 border-dashed border-green-300 rounded-2xl flex flex-col items-center justify-center gap-2 mb-4 active:bg-green-50 bg-green-50/30">
+                  <span className="text-4xl">🗑️</span>
+                  <span className="text-sm text-green-600 font-bold">카메라로 찍기</span>
+                  <span className="text-xs text-gray-400">방금 수거한 쓰레기 봉투를 촬영해주세요</span>
+                </button>
+              )}
+
+              <input ref={inputRef} type="file" accept="image/*" capture="environment"
+                onChange={handleFileChange} className="hidden" />
+
+              <div className="space-y-2">
+                <button onClick={handleVerify} disabled={!file}
+                  className={`w-full py-4 rounded-2xl font-black text-base transition-all
+                    ${file ? "bg-gradient-to-r from-green-500 to-teal-500 text-white shadow-md active:scale-95" : "bg-gray-100 text-gray-300 cursor-not-allowed"}`}>
+                  🔍 AI 사진 검증하기
+                </button>
+                <button onClick={onSkip}
+                  className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">
+                  건너뛰기 (포인트 지급 안 됨)
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ── STEP 2: 검증 중 ── */}
+          {step === "verifying" && (
+            <div className="py-8 text-center">
+              <div className="text-5xl mb-4 animate-bounce">🤖</div>
+              <h2 className="text-lg font-black text-gray-800 mb-2">AI 사진 분석 중...</h2>
+              <p className="text-gray-400 text-sm mb-1">쓰레기 봉투 여부를 확인하고 있어요</p>
+              <p className="text-gray-300 text-xs">잠시만 기다려주세요</p>
+              <div className="flex justify-center gap-1.5 mt-6">
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-2 h-2 rounded-full bg-teal-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 3: 결과 ── */}
+          {step === "result" && verifyResult && (
+            <>
+              <div className={`rounded-2xl p-5 mb-4 text-center ${verifyResult.valid ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
+                <div className="text-4xl mb-2">
+                  {verifyResult.valid ? "✅" : (verifyResult.exifFail ? "🕐" : "❌")}
+                </div>
+                <h2 className={`text-lg font-black mb-1 ${verifyResult.valid ? "text-green-700" : "text-red-600"}`}>
+                  {verifyResult.valid
+                    ? (verifyResult.skipped ? "검증 건너뜀" : "인증 통과! 🎉")
+                    : (verifyResult.exifFail ? "사진 시간 오류" : "인증 실패")}
+                </h2>
+                <p className={`text-sm leading-relaxed ${verifyResult.valid ? "text-green-600" : "text-red-500"}`}>
+                  {verifyResult.reason}
+                </p>
+                {verifyResult.confidence && !verifyResult.skipped && (
+                  <div className={`mt-2 inline-block px-3 py-0.5 rounded-full text-xs font-bold
+                    ${verifyResult.confidence === "high" ? "bg-green-200 text-green-800"
+                      : verifyResult.confidence === "medium" ? "bg-yellow-100 text-yellow-700"
+                      : "bg-gray-100 text-gray-500"}`}>
+                    신뢰도: {verifyResult.confidence === "high" ? "높음" : verifyResult.confidence === "medium" ? "보통" : "낮음"}
+                  </div>
+                )}
+              </div>
+
+              {preview && (
+                <div className="mb-4 relative">
+                  <img src={preview} alt="인증 사진" className="w-full h-36 object-cover rounded-2xl opacity-80" />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                {verifyResult.valid ? (
+                  <button onClick={() => onConfirm(file)} disabled={uploading}
+                    className={`w-full py-4 rounded-2xl font-black text-base transition-all
+                      ${uploading ? "bg-gray-100 text-gray-400" : "bg-gradient-to-r from-green-500 to-teal-500 text-white shadow-md active:scale-95"}`}>
+                    {uploading ? "저장 중... ⏳" : "✅ 완료! 포인트 받기"}
+                  </button>
+                ) : (
+                  <button onClick={handleRetake}
+                    className="w-full py-4 rounded-2xl font-black text-base bg-gradient-to-r from-orange-400 to-red-400 text-white shadow-md active:scale-95">
+                    📷 다시 촬영하기
+                  </button>
+                )}
+                <button onClick={onSkip} disabled={uploading}
+                  className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">
+                  {verifyResult.valid ? "건너뛰기 (포인트 없음)" : "그냥 종료하기 (포인트 없음)"}
+                </button>
+              </div>
+            </>
+          )}
+
         </div>
       </div>
     </div>
