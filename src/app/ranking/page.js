@@ -228,17 +228,17 @@ function RankingPageInner() {
                   const medals  = ["🥈", "🥇", "🥉"];
                   const bgs     = ["bg-gray-200", "bg-yellow-100", "bg-orange-100"];
                   return (
-                    <div key={item.uid} className="flex-1 text-center">
+                    <div key={item.uid} className="flex-1 min-w-0 text-center">
                       <div className="w-12 h-12 rounded-full bg-gray-100 mx-auto overflow-hidden mb-1">
                         {item.photoURL
                           ? <img src={item.photoURL} alt="" className="w-full h-full object-cover" />
                           : <div className="w-full h-full flex items-center justify-center text-xl">😊</div>
                         }
                       </div>
-                      <div className={`${bgs[pos]} ${heights[pos]} rounded-t-xl flex flex-col items-center justify-center px-1`}>
+                      <div className={`${bgs[pos]} ${heights[pos]} rounded-t-xl flex flex-col items-center justify-center px-1 overflow-hidden w-full`}>
                         <span className="text-xl">{medals[pos]}</span>
                         <p className="text-xs font-bold text-gray-700 truncate w-full text-center px-1">{item.displayName}</p>
-                        <p className="text-xs text-gray-500">{fmt(item)}</p>
+                        <p className="text-xs text-gray-500 truncate w-full text-center">{fmt(item)}</p>
                       </div>
                     </div>
                   );
