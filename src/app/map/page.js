@@ -51,6 +51,49 @@ async function uploadToCloudinary(file) {
   return (await res.json()).secure_url;
 }
 
+// ─── 플로깅 가능 시간 상수 ────────────────────────────────
+const PLOGGING_START_HOUR = 6;  // 오전 6시
+const PLOGGING_END_HOUR   = 20; // 오후 8시
+
+function isWithinPloggingHours() {
+  const hour = new Date().getHours();
+  return hour >= PLOGGING_START_HOUR && hour < PLOGGING_END_HOUR;
+}
+
+// ─── 시간 제한 모달 ───────────────────────────────────────
+function TimeRestrictionModal({ onClose }) {
+  const hour = new Date().getHours();
+  const isTooEarly = hour < PLOGGING_START_HOUR;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[200] p-4">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center">
+        <div className="text-5xl mb-3">{isTooEarly ? "🌙" : "🌅"}</div>
+        <h2 className="text-xl font-black text-gray-800 mb-1">
+          {isTooEarly ? "아직 이른 시간이에요" : "오늘 플로깅은 마감됐어요"}
+        </h2>
+        <p className="text-gray-500 text-sm mb-1">
+          플로깅 가능 시간은
+        </p>
+        <p className="text-green-600 font-black text-lg mb-3">
+          오전 6:00 ~ 오후 8:00
+        </p>
+        <p className="text-gray-400 text-xs mb-5">
+          {isTooEarly
+            ? "안전한 플로깅을 위해 날이 밝은 후 시작해주세요 🌿"
+            : "내일 아침 6시부터 다시 시작할 수 있어요 🌿"}
+        </p>
+        <button
+          onClick={onClose}
+          className="w-full bg-gray-100 text-gray-600 py-3 rounded-xl font-bold"
+        >
+          확인
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── A. 중복 플로깅 경고 모달 ────────────────────────────
 function DuplicateWarningModal({ message, onContinue, onCancel }) {
   return (
@@ -342,6 +385,9 @@ function MapPageInner() {
   // 준비 체크 모달
   const [showReadyCheck, setShowReadyCheck] = useState(false);
 
+  // 시간 제한 모달
+  const [showTimeRestriction, setShowTimeRestriction] = useState(false);
+
   // A. 중복 방지
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [duplicateMsg, setDuplicateMsg]                 = useState("");
@@ -541,14 +587,20 @@ function MapPageInner() {
     }
   }, [user, fetchPastRoutes]);
 
-  // ─── 시작 버튼 (중복 체크 포함) ──────────────────────
+  // ─── 시작 버튼 (시간 체크 → 중복 체크 포함) ──────────
   const handleStart = async () => {
+    // 1. 시간 제한 체크 (오전 6시 ~ 오후 8시)
+    if (!isWithinPloggingHours()) {
+      setShowTimeRestriction(true);
+      return;
+    }
     if (noPointsOverride.current) {
       // 경고 확인 후 포인트 없이 시작
       noPointsOverride.current = false;
       startTracking();
       return;
     }
+    // 2. 중복 플로깅 체크
     const msg = await checkPloggingLimit();
     if (msg) {
       setDuplicateMsg(msg);
@@ -801,6 +853,10 @@ function MapPageInner() {
       </div>
 
       {/* ── 모달들 ──────────────────────────────────────── */}
+      {showTimeRestriction && (
+        <TimeRestrictionModal onClose={() => setShowTimeRestriction(false)} />
+      )}
+
       {showReadyCheck && (
         <ReadyCheckModal
           onStart={() => { setShowReadyCheck(false); handleStart(); }}
