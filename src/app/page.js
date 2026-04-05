@@ -35,23 +35,24 @@ function InstallModal({ onClose }) {
         {isIOS && (
           <div className="space-y-3 mb-6">
             {[
-              { step: "1", icon: "⬆️", text: "하단의 공유 버튼을 탭하세요" },
-              { step: "2", icon: "➕", text: '"홈 화면에 추가"를 선택하세요' },
-              { step: "3", icon: "✅", text: '"추가"를 탭하면 완료!' },
+              { step: "1", icon: "···", text: "Safari 하단 오른쪽 ··· 버튼을 탭하세요" },
+              { step: "2", icon: "⬆️", text: "메뉴에서 공유(□↑) 버튼을 탭하세요" },
+              { step: "3", icon: "➕", text: '"홈 화면에 추가"를 선택하세요' },
+              { step: "4", icon: "✅", text: '"추가"를 탭하면 완료!' },
             ].map((s) => (
               <div key={s.step} className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3">
                 <div className="w-7 h-7 rounded-full bg-green-500 text-white text-xs font-black flex items-center justify-center flex-shrink-0">
                   {s.step}
                 </div>
-                <span className="text-xl">{s.icon}</span>
+                <span className="text-xl font-bold">{s.icon}</span>
                 <p className="text-sm text-gray-700 font-medium">{s.text}</p>
               </div>
             ))}
-            {/* iOS 공유 버튼 위치 안내 이미지 */}
+            {/* iOS 안내 팁 */}
             <div className="bg-blue-50 rounded-2xl px-4 py-3 flex items-center gap-2">
               <span className="text-xl">💡</span>
               <p className="text-xs text-blue-700">
-                공유 버튼은 Safari 하단 가운데에 있는 <strong>□↑</strong> 모양 아이콘이에요
+                Safari 하단 오른쪽 끝의 <strong>···</strong> 버튼을 먼저 누르면 공유 메뉴가 열려요
               </p>
             </div>
           </div>
