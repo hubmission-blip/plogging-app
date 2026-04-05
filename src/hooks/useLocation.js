@@ -125,22 +125,28 @@ export function useLocation({ onSpeedViolation } = {}) {
 
           setCurrentSpeed(roundedSpeed);
 
-          // ── ① 이동수단 감지 (30km/h 초과) ──────────────────────
-          if (speedKmh > SPEED_LIMIT_KMH) {
-            setIsSpeedWarning(true);
-            if (!violationStartRef.current) {
-              violationStartRef.current = now;
-            }
-            if (
-              !autoStopCalledRef.current &&
-              now - violationStartRef.current >= AUTO_STOP_MS
-            ) {
-              autoStopCalledRef.current = true;
-              stopTracking();
-              if (onSpeedViolation) onSpeedViolation();
-              return;
+          // ── ① 이동수단 감지 (30km/h 초과) — onSpeedViolation이 있을 때만 작동 ──
+          if (onSpeedViolation) {
+            if (speedKmh > SPEED_LIMIT_KMH) {
+              setIsSpeedWarning(true);
+              if (!violationStartRef.current) {
+                violationStartRef.current = now;
+              }
+              if (
+                !autoStopCalledRef.current &&
+                now - violationStartRef.current >= AUTO_STOP_MS
+              ) {
+                autoStopCalledRef.current = true;
+                stopTracking();
+                onSpeedViolation();
+                return;
+              }
+            } else {
+              setIsSpeedWarning(false);
+              violationStartRef.current = null;
             }
           } else {
+            // 속도제한 OFF → 경고 상태 항상 해제
             setIsSpeedWarning(false);
             violationStartRef.current = null;
           }

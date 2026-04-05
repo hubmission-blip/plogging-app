@@ -347,6 +347,17 @@ function PhotoRequiredModal({ onConfirm, onSkip, uploading, aiEnabled = true }) 
   const handleFileChange = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
+
+    // ── 갤러리 사진 차단: 파일 수정 시간이 10분 초과 시 거부 ──────
+    const ageMin = (Date.now() - f.lastModified) / 60000;
+    if (ageMin > 10) {
+      e.target.value = "";
+      alert(
+        `📷 방금 찍은 사진만 인증이 가능합니다.\n\n갤러리에 저장된 사진은 사용할 수 없어요.\n카메라를 열어 지금 바로 촬영해주세요!`
+      );
+      return;
+    }
+
     setFile(f);
     setPreview(URL.createObjectURL(f));
     setStep("capture");
@@ -420,9 +431,13 @@ function PhotoRequiredModal({ onConfirm, onSkip, uploading, aiEnabled = true }) 
                 <div className="text-4xl mb-2">📸</div>
                 <h2 className="text-lg font-black text-gray-800">수거 사진 인증</h2>
                 <p className="text-gray-500 text-sm mt-1">
-                  수거한 쓰레기 봉투를 촬영해주세요<br />
-                  <span className="text-xs text-gray-400">AI가 사진을 자동으로 확인합니다</span>
+                  쓰레기 봉투가 보이도록 촬영해주세요<br />
+                  <span className="text-xs text-gray-400">봉투를 들고 찍어도 OK · AI가 자동 확인합니다</span>
                 </p>
+                <div className="mt-2 inline-flex items-center gap-1.5 bg-orange-50 border border-orange-200 rounded-full px-3 py-1">
+                  <span className="text-xs">📷</span>
+                  <span className="text-xs font-bold text-orange-600">카메라 직접 촬영만 가능 · 갤러리 사용 불가</span>
+                </div>
               </div>
 
               {preview ? (
@@ -479,56 +494,115 @@ function PhotoRequiredModal({ onConfirm, onSkip, uploading, aiEnabled = true }) 
           )}
 
           {/* ── STEP 3: 결과 ── */}
-          {step === "result" && verifyResult && (
-            <>
-              <div className={`rounded-2xl p-5 mb-4 text-center ${verifyResult.valid ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
-                <div className="text-4xl mb-2">
-                  {verifyResult.valid ? "✅" : (verifyResult.exifFail ? "🕐" : "❌")}
+          {step === "result" && verifyResult && (() => {
+            const isConfigError  = !!verifyResult.configError;
+            const isServerError  = !!verifyResult.serverError;
+            const isExifFail     = !!verifyResult.exifFail;
+            const isSystemIssue  = isConfigError || isServerError;
+
+            return (
+              <>
+                {/* 결과 카드 */}
+                <div className={`rounded-2xl p-5 mb-4 text-center ${
+                  verifyResult.valid
+                    ? "bg-green-50 border border-green-200"
+                    : isSystemIssue
+                      ? "bg-orange-50 border border-orange-200"
+                      : "bg-red-50 border border-red-200"
+                }`}>
+                  <div className="text-4xl mb-2">
+                    {verifyResult.valid ? "✅" : isConfigError ? "⚙️" : isServerError ? "🔧" : isExifFail ? "🕐" : "❌"}
+                  </div>
+                  <h2 className={`text-lg font-black mb-1 ${
+                    verifyResult.valid ? "text-green-700"
+                      : isSystemIssue ? "text-orange-600"
+                      : "text-red-600"
+                  }`}>
+                    {verifyResult.valid
+                      ? "인증 통과! 🎉"
+                      : isConfigError ? "AI 검증 미설정"
+                      : isServerError ? "AI 서버 오류"
+                      : isExifFail    ? "사진 시간 오류"
+                      : "인증 실패"}
+                  </h2>
+                  <p className={`text-sm leading-relaxed ${
+                    verifyResult.valid ? "text-green-600"
+                      : isSystemIssue ? "text-orange-500"
+                      : "text-red-500"
+                  }`}>
+                    {verifyResult.reason}
+                  </p>
+                  {verifyResult.confidence && !isSystemIssue && (
+                    <div className={`mt-2 inline-block px-3 py-0.5 rounded-full text-xs font-bold
+                      ${verifyResult.confidence === "high" ? "bg-green-200 text-green-800"
+                        : verifyResult.confidence === "medium" ? "bg-yellow-100 text-yellow-700"
+                        : "bg-gray-100 text-gray-500"}`}>
+                      신뢰도: {verifyResult.confidence === "high" ? "높음" : verifyResult.confidence === "medium" ? "보통" : "낮음"}
+                    </div>
+                  )}
                 </div>
-                <h2 className={`text-lg font-black mb-1 ${verifyResult.valid ? "text-green-700" : "text-red-600"}`}>
-                  {verifyResult.valid
-                    ? (verifyResult.skipped ? "검증 건너뜀" : "인증 통과! 🎉")
-                    : (verifyResult.exifFail ? "사진 시간 오류" : "인증 실패")}
-                </h2>
-                <p className={`text-sm leading-relaxed ${verifyResult.valid ? "text-green-600" : "text-red-500"}`}>
-                  {verifyResult.reason}
-                </p>
-                {verifyResult.confidence && !verifyResult.skipped && (
-                  <div className={`mt-2 inline-block px-3 py-0.5 rounded-full text-xs font-bold
-                    ${verifyResult.confidence === "high" ? "bg-green-200 text-green-800"
-                      : verifyResult.confidence === "medium" ? "bg-yellow-100 text-yellow-700"
-                      : "bg-gray-100 text-gray-500"}`}>
-                    신뢰도: {verifyResult.confidence === "high" ? "높음" : verifyResult.confidence === "medium" ? "보통" : "낮음"}
+
+                {preview && !isSystemIssue && (
+                  <div className="mb-4 relative">
+                    <img src={preview} alt="인증 사진" className="w-full h-36 object-cover rounded-2xl opacity-80" />
                   </div>
                 )}
-              </div>
 
-              {preview && (
-                <div className="mb-4 relative">
-                  <img src={preview} alt="인증 사진" className="w-full h-36 object-cover rounded-2xl opacity-80" />
+                <div className="space-y-2">
+                  {/* 통과: 포인트 받기 */}
+                  {verifyResult.valid && (
+                    <button onClick={() => onConfirm(file)} disabled={uploading}
+                      className={`w-full py-4 rounded-2xl font-black text-base transition-all
+                        ${uploading ? "bg-gray-100 text-gray-400" : "bg-gradient-to-r from-green-500 to-teal-500 text-white shadow-md active:scale-95"}`}>
+                      {uploading ? "저장 중... ⏳" : "✅ 완료! 포인트 받기"}
+                    </button>
+                  )}
+
+                  {/* 실패 (일반): 다시 촬영 / 같은 사진 재검증 */}
+                  {!verifyResult.valid && !isSystemIssue && !isExifFail && (
+                    <>
+                      <button onClick={handleVerify}
+                        className="w-full py-4 rounded-2xl font-black text-base bg-gradient-to-r from-blue-400 to-blue-600 text-white shadow-md active:scale-95">
+                        🔄 같은 사진으로 다시 검증
+                      </button>
+                      <button onClick={handleRetake}
+                        className="w-full py-3 rounded-2xl font-bold text-base border-2 border-orange-300 text-orange-500 bg-white active:bg-orange-50">
+                        📷 다른 사진 찍기
+                      </button>
+                    </>
+                  )}
+                  {/* EXIF 실패: 새로 촬영만 허용 */}
+                  {!verifyResult.valid && isExifFail && (
+                    <button onClick={handleRetake}
+                      className="w-full py-4 rounded-2xl font-black text-base bg-gradient-to-r from-orange-400 to-red-400 text-white shadow-md active:scale-95">
+                      📷 지금 새로 촬영하기
+                    </button>
+                  )}
+
+                  {/* 서버 오류: 재시도 */}
+                  {isServerError && (
+                    <button onClick={handleVerify}
+                      className="w-full py-4 rounded-2xl font-black text-base bg-gradient-to-r from-blue-400 to-blue-500 text-white shadow-md active:scale-95">
+                      🔄 다시 시도하기
+                    </button>
+                  )}
+
+                  {/* 설정 오류: 안내만 */}
+                  {isConfigError && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3 text-center">
+                      <p className="text-xs text-orange-600 font-medium">관리자 페이지 → 유지관리 → AI 사진 검증 OFF로 설정하거나 API 키를 추가해주세요</p>
+                    </div>
+                  )}
+
+                  {/* 공통: 포인트 없이 종료 */}
+                  <button onClick={onSkip} disabled={uploading}
+                    className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">
+                    {verifyResult.valid ? "건너뛰기 (포인트 없음)" : "포인트 없이 종료하기"}
+                  </button>
                 </div>
-              )}
-
-              <div className="space-y-2">
-                {verifyResult.valid ? (
-                  <button onClick={() => onConfirm(file)} disabled={uploading}
-                    className={`w-full py-4 rounded-2xl font-black text-base transition-all
-                      ${uploading ? "bg-gray-100 text-gray-400" : "bg-gradient-to-r from-green-500 to-teal-500 text-white shadow-md active:scale-95"}`}>
-                    {uploading ? "저장 중... ⏳" : "✅ 완료! 포인트 받기"}
-                  </button>
-                ) : (
-                  <button onClick={handleRetake}
-                    className="w-full py-4 rounded-2xl font-black text-base bg-gradient-to-r from-orange-400 to-red-400 text-white shadow-md active:scale-95">
-                    📷 다시 촬영하기
-                  </button>
-                )}
-                <button onClick={onSkip} disabled={uploading}
-                  className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">
-                  {verifyResult.valid ? "건너뛰기 (포인트 없음)" : "그냥 종료하기 (포인트 없음)"}
-                </button>
-              </div>
-            </>
-          )}
+              </>
+            );
+          })()}
 
         </div>
       </div>

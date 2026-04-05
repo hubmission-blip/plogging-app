@@ -781,14 +781,6 @@ export default function AdminPage() {
                     }`} />
                   </button>
                 </div>
-                {settingsDirty && (
-                  <button
-                    onClick={handleSaveSettings}
-                    className="w-full mt-4 bg-green-500 text-white py-3 rounded-xl font-bold text-sm"
-                  >
-                    💾 설정 저장
-                  </button>
-                )}
               </div>
 
               {/* ── AI 사진 검증 토글 ── */}
@@ -823,14 +815,6 @@ export default function AdminPage() {
                     }`} />
                   </button>
                 </div>
-                {settingsDirty && (
-                  <button
-                    onClick={handleSaveSettings}
-                    className="w-full mt-4 bg-green-500 text-white py-3 rounded-xl font-bold text-sm"
-                  >
-                    💾 설정 저장
-                  </button>
-                )}
               </div>
 
               {/* 앱 인증 조건 설정 */}
@@ -858,15 +842,22 @@ export default function AdminPage() {
                     />
                   </div>
                 ))}
-                {settingsDirty && (
+              </div>
+
+              {/* ── 통합 저장 버튼 ── */}
+              {settingsDirty && (
+                <div className="bg-white rounded-2xl p-4 shadow-sm border-2 border-green-300">
+                  <p className="text-xs text-green-600 font-medium mb-3 text-center">
+                    ⚠️ 변경된 설정이 있습니다. 저장 후 적용됩니다.
+                  </p>
                   <button
                     onClick={handleSaveSettings}
-                    className="w-full mt-3 bg-green-500 text-white py-3 rounded-xl font-bold text-sm"
+                    className="w-full bg-green-500 text-white py-3.5 rounded-xl font-black text-base shadow-md active:scale-95 transition-transform"
                   >
-                    💾 설정 저장
+                    💾 설정 전체 저장
                   </button>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* 데이터 정리 */}
               <div className="bg-white rounded-2xl p-4 shadow-sm">
