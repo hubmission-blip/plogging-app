@@ -220,9 +220,9 @@ export default function BannerSlider({ userRegion = null, autoInterval = 4000 })
           {/* 영상 영역 (16:9) */}
           <div style={{ aspectRatio: "16/9" }}>
             <iframe
-              src={`https://www.youtube.com/embed/${ytVideoId}?autoplay=1&rel=0`}
+              src={`https://www.youtube.com/embed/${ytVideoId}?autoplay=1&rel=0&playsinline=1&enablejsapi=1`}
               className="w-full h-full"
-              allow="autoplay; encrypted-media; picture-in-picture"
+              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
               allowFullScreen
               title="YouTube 영상"
             />
