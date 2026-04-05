@@ -39,7 +39,7 @@ export default function LoginPage() {
           email: user.email,
           displayName: user.displayName || "구글유저",
           provider: "google",
-          totalPoints: 0,
+          totalPoints: 100,   // 신규 가입 환영 포인트
           totalDistance: 0,
           ploggingCount: 0,
           createdAt: serverTimestamp(),
@@ -89,9 +89,10 @@ export default function LoginPage() {
           uid: cred.user.uid,
           email: cred.user.email,
           displayName: nickname,
-          totalPoints: 0,
+          totalPoints: 100,   // 신규 가입 환영 포인트
           totalDistance: 0,
           ploggingCount: 0,
+          provider: "email",
           createdAt: serverTimestamp(),
         });
       } else {

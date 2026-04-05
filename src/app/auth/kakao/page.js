@@ -100,7 +100,7 @@ export default function KakaoCallbackPage() {
             nickname:     displayName,
             displayName,
             provider:     "kakao",
-            totalPoints:  0,
+            totalPoints:  100,   // 신규 가입 환영 포인트
             totalDistance: 0,
             ploggingCount: 0,
             createdAt:    serverTimestamp(),
