@@ -105,7 +105,8 @@ export default function BannerSlider({ userRegion = null, autoInterval = 4000 })
   const [paused,       setPaused]       = useState(false);
   const [allBanners,   setAllBanners]   = useState(null); // null = 아직 로드 전
   const [bannerList,   setBannerList]   = useState(BANNERS);
-  const [ytVideoId,    setYtVideoId]    = useState(null); // YouTube 모달용
+  const [ytVideoId,    setYtVideoId]    = useState(null);  // YouTube 모달용
+  const [ytIsShorts,   setYtIsShorts]   = useState(false); // Shorts 여부 (9:16)
   const timerRef = useRef(null);
 
   // ── Firestore에서 활성 배너 전체 로드 ───────────────────────
@@ -177,7 +178,13 @@ export default function BannerSlider({ userRegion = null, autoInterval = 4000 })
     // YouTube 링크 → 앱 내 임베드 모달로 재생 (창 이중 열림 문제 방지)
     if (banner.link.includes("youtube.com") || banner.link.includes("youtu.be")) {
       const id = getYouTubeId(banner.link);
-      if (id) { setYtVideoId(id); setPaused(true); return; }
+      if (id) {
+        const isShorts = banner.link.includes("/shorts/");
+        setYtVideoId(id);
+        setYtIsShorts(isShorts);
+        setPaused(true);
+        return;
+      }
     }
     // 일반 외부 링크
     if (banner.link.startsWith("http")) {
@@ -188,7 +195,7 @@ export default function BannerSlider({ userRegion = null, autoInterval = 4000 })
     }
   };
 
-  const handleCloseYt = () => { setYtVideoId(null); setPaused(false); };
+  const handleCloseYt = () => { setYtVideoId(null); setYtIsShorts(false); setPaused(false); };
 
   const banner = bannerList[current];
 
@@ -201,14 +208,19 @@ export default function BannerSlider({ userRegion = null, autoInterval = 4000 })
         onClick={handleCloseYt}
       >
         <div
-          className="w-full max-w-lg bg-black rounded-2xl overflow-hidden shadow-2xl"
+          className={`bg-black rounded-2xl overflow-hidden shadow-2xl
+            ${ytIsShorts
+              ? "w-full max-w-xs"      // 쇼츠: 좁고 세로로 긺
+              : "w-full max-w-lg"}`}   // 일반: 가로로 넓음
           onClick={(e) => e.stopPropagation()}
         >
           {/* 모달 헤더 */}
           <div className="flex items-center justify-between px-4 py-2.5 bg-gray-900">
             <div className="flex items-center gap-2">
               <span className="text-red-500 text-lg">▶</span>
-              <p className="text-white text-sm font-bold">YouTube</p>
+              <p className="text-white text-sm font-bold">
+                YouTube {ytIsShorts && <span className="text-xs text-gray-400 ml-1">Shorts</span>}
+              </p>
             </div>
             <button
               onClick={handleCloseYt}
@@ -217,16 +229,18 @@ export default function BannerSlider({ userRegion = null, autoInterval = 4000 })
               ×
             </button>
           </div>
-          {/* 영상 영역 (16:9) */}
-          <div style={{ aspectRatio: "16/9" }}>
+
+          {/* 영상 영역 — 쇼츠: 9:16 세로 / 일반: 16:9 가로 */}
+          <div style={{ aspectRatio: ytIsShorts ? "9/16" : "16/9" }}>
             <iframe
               src={`https://www.youtube.com/embed/${ytVideoId}?autoplay=1&rel=0&playsinline=1&enablejsapi=1`}
               className="w-full h-full"
               allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
               allowFullScreen
-              title="YouTube 영상"
+              title={ytIsShorts ? "YouTube Shorts" : "YouTube 영상"}
             />
           </div>
+
           {/* 닫기 버튼 */}
           <button
             onClick={handleCloseYt}
