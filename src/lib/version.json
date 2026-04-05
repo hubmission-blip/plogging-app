@@ -1,7 +1,18 @@
 {
-  "version": "v1.18",
-  "build": 18,
+  "version": "v1.19",
+  "build": 19,
   "changelog": [
+    {
+      "version": "v1.19",
+      "build": 19,
+      "date": "2026-04-05",
+      "emoji": "⚡",
+      "title": "happy500.kr",
+      "items": [
+        "배너 지역노출기능 적용",
+        "AI 사진인식 적용"
+      ]
+    },
     {
       "version": "v1.18",
       "build": 18,

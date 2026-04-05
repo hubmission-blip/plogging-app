@@ -2,150 +2,133 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
-// ─── 배너 데이터 ────────────────────────────────────────
-// image: "URL" 을 넣으면 이미지 배너, 없으면 그라디언트+텍스트 배너
+// ─── 기본 하드코딩 배너 (Firestore 미설정 시 표시) ────────────
+// priority: 낮을수록 앞에 노출 (1 = 최우선)
+// region: "전국" = 모두 노출 | 특정 시/도 = 해당 지역만 노출
 const BANNERS = [
   {
-    id: 1,
-    // image: "https://example.com/banner1.jpg",  ← 이미지 URL 넣으면 이미지로 표시
-    bg: "from-green-400 to-green-600",
-    emoji: "🌿",
-    title: "오백원의 행복",
-    sub: "플로깅으로 지구를 지켜요",
-    link: null,
-    tag: null,
+    id: 1, priority: 1, region: "전국",
+    bg: "from-green-400 to-green-600", emoji: "🌿",
+    title: "오백원의 행복", sub: "플로깅으로 지구를 지켜요",
+    link: null, tag: null,
   },
   {
-    id: 2,
-    bg: "from-blue-400 to-blue-600",
-    emoji: "♻️",
-    title: "감탄소 파트너",
-    sub: "탄소 절감 인증 파트너사",
-    link: "https://www.gamtanso.com/",
-    tag: "파트너",
+    id: 2, priority: 2, region: "전국",
+    bg: "from-blue-400 to-blue-600", emoji: "♻️",
+    title: "감탄소 파트너", sub: "탄소 절감 인증 파트너사",
+    link: "https://www.gamtanso.com/", tag: "파트너",
   },
   {
-    id: 3,
-    bg: "from-purple-400 to-purple-600",
-    emoji: "🏆",
-    title: "이번 주 랭킹 1위",
-    sub: "나도 도전해볼까?",
-    link: "/ranking",
-    tag: "랭킹",
+    id: 3, priority: 3, region: "전국",
+    bg: "from-purple-400 to-purple-600", emoji: "🏆",
+    title: "이번 주 랭킹 1위", sub: "나도 도전해볼까?",
+    link: "/ranking", tag: "랭킹",
   },
   {
-    id: 4,
-    bg: "from-orange-400 to-orange-500",
-    emoji: "👥",
-    title: "그룹 플로깅",
-    sub: "친구와 함께 보너스 포인트!",
-    link: "/group",
-    tag: "NEW",
+    id: 4, priority: 4, region: "전국",
+    bg: "from-orange-400 to-orange-500", emoji: "👥",
+    title: "그룹 플로깅", sub: "친구와 함께 보너스 포인트!",
+    link: "/group", tag: "NEW",
   },
   {
-    id: 5,
-    bg: "from-teal-400 to-teal-600",
-    emoji: "🎁",
-    title: "포인트 교환",
-    sub: "모은 포인트로 리워드 받기",
-    link: "/reward",
-    tag: "리워드",
+    id: 5, priority: 5, region: "전국",
+    bg: "from-teal-400 to-teal-600", emoji: "🎁",
+    title: "포인트 교환", sub: "모은 포인트로 리워드 받기",
+    link: "/reward", tag: "리워드",
   },
   {
-    id: 6,
-    bg: "from-pink-400 to-pink-600",
-    emoji: "📸",
-    title: "플로깅 인증샷",
-    sub: "사진 업로드하고 기록 남기기",
-    link: "/map",
-    tag: null,
+    id: 6, priority: 6, region: "전국",
+    bg: "from-pink-400 to-pink-600", emoji: "📸",
+    title: "플로깅 인증샷", sub: "사진 업로드하고 기록 남기기",
+    link: "/map", tag: null,
   },
   {
-    id: 7,
-    bg: "from-indigo-400 to-indigo-600",
-    emoji: "🌍",
-    title: "GYEA 국제청년환경연합회",
-    sub: "함께 만드는 깨끗한 지구",
-    link: "https://gyea.kr",
-    tag: "공식",
+    id: 7, priority: 7, region: "전국",
+    bg: "from-indigo-400 to-indigo-600", emoji: "🌍",
+    title: "GYEA 국제청년환경연합회", sub: "함께 만드는 깨끗한 지구",
+    link: "https://gyea.kr", tag: "공식",
   },
   {
-    id: 8,
-    bg: "from-yellow-400 to-yellow-500",
-    emoji: "⭐",
-    title: "큐엠씨코리아 파트너",
-    sub: "에코 리워드 파트너십",
-    link: "https://example.com",
-    tag: "파트너",
+    id: 8, priority: 8, region: "전국",
+    bg: "from-yellow-400 to-yellow-500", emoji: "⭐",
+    title: "큐엠씨코리아 파트너", sub: "에코 리워드 파트너십",
+    link: "https://example.com", tag: "파트너",
   },
   {
-    id: 9,
-    bg: "from-red-400 to-red-500",
-    emoji: "🚶",
-    title: "하루 30분 플로깅",
-    sub: "매일 꾸준히, 지구도 건강하게",
-    link: "/map",
-    tag: "도전",
+    id: 9, priority: 9, region: "전국",
+    bg: "from-red-400 to-red-500", emoji: "🚶",
+    title: "하루 30분 플로깅", sub: "매일 꾸준히, 지구도 건강하게",
+    link: "/map", tag: "도전",
   },
   {
-    id: 10,
-    bg: "from-cyan-400 to-cyan-600",
-    emoji: "💧",
-    title: "깨끗한 수질 보호",
-    sub: "하천 주변 플로깅 캠페인",
-    link: "https://www.youtube.com/watch?v=55kCOkQlleU",
-    tag: "캠페인",
+    id: 10, priority: 10, region: "전국",
+    bg: "from-cyan-400 to-cyan-600", emoji: "💧",
+    title: "깨끗한 수질 보호", sub: "하천 주변 플로깅 캠페인",
+    link: "https://www.youtube.com/watch?v=55kCOkQlleU", tag: "캠페인",
   },
   {
-    id: 11,
-    bg: "from-lime-400 to-lime-600",
-    emoji: "🌱",
-    title: "신규 회원 환영",
-    sub: "첫 플로깅 완료 시 보너스 100P",
-    link: "/map",
-    tag: "혜택",
+    id: 11, priority: 11, region: "전국",
+    bg: "from-lime-400 to-lime-600", emoji: "🌱",
+    title: "신규 회원 환영", sub: "첫 플로깅 완료 시 보너스 100P",
+    link: "/map", tag: "혜택",
   },
   {
-    id: 12,
-    bg: "from-violet-400 to-violet-600",
-    emoji: "📱",
-    title: "홈 화면에 추가하기",
-    sub: "앱처럼 편하게 사용하세요",
-    link: null,
-    tag: "TIP",
+    id: 12, priority: 12, region: "전국",
+    bg: "from-violet-400 to-violet-600", emoji: "📱",
+    title: "홈 화면에 추가하기", sub: "앱처럼 편하게 사용하세요",
+    link: null, tag: "TIP",
   },
 ];
 
-// ─── 컴포넌트 ─────────────────────────────────────────────
-export default function BannerSlider({ autoInterval = 4000 }) {
-  const [current, setCurrent] = useState(0);
-  const [paused, setPaused]   = useState(false);
-  const [bannerList, setBannerList] = useState(BANNERS); // 기본값: 하드코딩
+// ─── 컴포넌트 ─────────────────────────────────────────────────
+// userRegion: 감지된 사용자 시/도 (예: "부산광역시") | null = 미감지
+export default function BannerSlider({ userRegion = null, autoInterval = 4000 }) {
+  const [current,    setCurrent]    = useState(0);
+  const [paused,     setPaused]     = useState(false);
+  const [allBanners, setAllBanners] = useState(null); // null = 아직 로드 전
+  const [bannerList, setBannerList] = useState(BANNERS);
   const timerRef = useRef(null);
 
-  // Firestore에서 배너 로드 (있으면 교체, 없으면 하드코딩 유지)
+  // ── Firestore에서 활성 배너 전체 로드 ───────────────────────
   useEffect(() => {
     const load = async () => {
       try {
-        const q = query(
-          collection(db, "banners"),
-          where("active", "==", true),
-          orderBy("order", "asc")
-        );
+        const q    = query(collection(db, "banners"), where("active", "==", true));
         const snap = await getDocs(q);
         if (!snap.empty) {
-          setBannerList(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-          setCurrent(0);
+          const loaded = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          setAllBanners(loaded);
         }
       } catch (e) {
-        // Firestore 실패 시 하드코딩 배너 유지
         console.warn("배너 로드 실패, 기본 배너 사용:", e.message);
       }
     };
     load();
   }, []);
+
+  // ── 지역 필터 + 중요도 정렬 ─────────────────────────────────
+  useEffect(() => {
+    const source = allBanners ?? BANNERS; // Firestore 로드 전이면 기본값
+
+    const filtered = source.filter((b) => {
+      const r = b.region || "전국";
+      // 전국 배너 → 항상 표시
+      // 지역 배너 → 감지된 지역과 일치할 때만 표시
+      return r === "전국" || (userRegion && r === userRegion);
+    });
+
+    // priority 오름차순 (낮을수록 먼저)
+    const sorted = [...filtered].sort(
+      (a, b) => (a.priority ?? a.order ?? 99) - (b.priority ?? b.order ?? 99)
+    );
+
+    if (sorted.length > 0) {
+      setBannerList(sorted);
+      setCurrent(0);
+    }
+  }, [allBanners, userRegion]);
 
   const total = bannerList.length;
 
@@ -157,7 +140,7 @@ export default function BannerSlider({ autoInterval = 4000 }) {
     setCurrent((prev) => (prev - 1 + total) % total);
   }, [total]);
 
-  // ── 자동 슬라이드 ────────────────────────────────────────
+  // ── 자동 슬라이드 ────────────────────────────────────────────
   useEffect(() => {
     if (paused) return;
     timerRef.current = setInterval(next, autoInterval);
@@ -184,7 +167,7 @@ export default function BannerSlider({ autoInterval = 4000 }) {
       onTouchStart={() => setPaused(true)}
       onTouchEnd={() => setPaused(false)}
     >
-      {/* ── 배너 슬라이드 (애니메이션) ── */}
+      {/* ── 배너 슬라이드 ── */}
       {bannerList.map((b, idx) => (
         <div
           key={b.id}
@@ -193,7 +176,7 @@ export default function BannerSlider({ autoInterval = 4000 }) {
             ${idx === current ? "opacity-100 z-10" : "opacity-0 z-0"}
             ${b.link ? "cursor-pointer" : "cursor-default"}`}
         >
-          {/* ── 이미지 배너 ── */}
+          {/* 이미지 배너 */}
           {b.image ? (
             <img
               src={b.image}
@@ -201,17 +184,20 @@ export default function BannerSlider({ autoInterval = 4000 }) {
               className="w-full h-full object-cover"
             />
           ) : (
-            /* ── 그라디언트 + 텍스트 배너 ── */
+            /* 그라디언트 + 텍스트 배너 */
             <div className={`w-full h-full bg-gradient-to-r ${b.bg} flex items-center px-5`}>
-              {/* 태그 */}
               {b.tag && (
                 <span className="absolute top-3 right-3 bg-white/30 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   {b.tag}
                 </span>
               )}
-              {/* 이모지 */}
+              {/* 지역 배너 표시 (전국이 아닐 때) */}
+              {b.region && b.region !== "전국" && (
+                <span className="absolute top-3 left-3 bg-orange-500/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  📍 {b.region.slice(0, 2)}
+                </span>
+              )}
               <div className="text-5xl mr-4 flex-shrink-0">{b.emoji}</div>
-              {/* 텍스트 */}
               <div>
                 <p className="text-white font-bold text-lg leading-tight">{b.title}</p>
                 <p className="text-white/80 text-sm mt-0.5">{b.sub}</p>

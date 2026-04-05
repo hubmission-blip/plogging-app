@@ -115,6 +115,14 @@ const HOW_TO = [
 // localStorage 키 (첫 방문 가이드)
 const GUIDE_KEY = "plogging_guide_shown";
 
+// ─── 17개 시/도 목록 ───────────────────────────────────────
+const KOREAN_REGIONS = [
+  "서울특별시", "부산광역시", "대구광역시", "인천광역시",
+  "광주광역시", "대전광역시", "울산광역시", "세종특별자치시",
+  "경기도", "강원도", "충청북도", "충청남도",
+  "전북특별자치도", "전라남도", "경상북도", "경상남도", "제주특별자치도",
+];
+
 // 공지사항 유형별 스타일
 const NOTICE_STYLE = {
   info:    { bg: "bg-blue-50",   border: "border-blue-300",   text: "text-blue-700",   icon: "📌" },
@@ -130,6 +138,7 @@ export default function HomePage() {
   const [notices, setNotices] = useState([]); // 활성 공지사항
   const [expandedNotice, setExpandedNotice] = useState(null); // 펼친 공지 id
   const [communityStats, setCommunityStats] = useState({ users: null, distance: null }); // 커뮤니티 통계
+  const [userRegion, setUserRegion] = useState(null); // 감지된 사용자 지역 (예: "부산광역시")
 
   // 첫 방문 시에만 캐릭터 가이드 표시
   useEffect(() => {
@@ -139,6 +148,57 @@ export default function HomePage() {
     } catch {
       // localStorage 미지원 환경 무시
     }
+  }, []);
+
+  // ── 사용자 위치 기반 지역 감지 ────────────────────────────
+  useEffect(() => {
+    const detectRegion = async () => {
+      try {
+        // 세션 캐시 확인 (페이지 재로드 시 재감지 방지)
+        const cached = sessionStorage.getItem("user_region");
+        if (cached) { setUserRegion(cached); return; }
+
+        if (!navigator?.geolocation) return;
+
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            try {
+              const { latitude: lat, longitude: lon } = pos.coords;
+              const res = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=ko`,
+                {
+                  headers: { "User-Agent": "plogging-app/1.0" },
+                  signal: AbortSignal.timeout(5000),
+                }
+              );
+              if (!res.ok) return;
+              const data = await res.json();
+              const raw  = data.address?.state
+                        || data.address?.province
+                        || data.address?.city
+                        || "";
+              // 17개 시/도 중 일치하는 것 찾기
+              const found = KOREAN_REGIONS.find(
+                (r) => raw.includes(r) || r.startsWith(raw.slice(0, 2))
+              );
+              if (found) {
+                setUserRegion(found);
+                try { sessionStorage.setItem("user_region", found); } catch {}
+              }
+            } catch {
+              // 역주소 실패 → 기본 전국 배너만 표시
+            }
+          },
+          () => {
+            // 위치 거부 → 기본 전국 배너만 표시
+          },
+          { timeout: 8000, maximumAge: 300000 } // 5분 캐시
+        );
+      } catch {
+        // 무시
+      }
+    };
+    detectRegion();
   }, []);
 
   // 활성 공지사항 불러오기
@@ -274,7 +334,7 @@ export default function HomePage() {
 
         {/* ── 배너 슬라이더 (헤더 바로 아래, 여백 없음) ── */}
         <div className="px-4 pt-3">
-          <BannerSlider />
+          <BannerSlider userRegion={userRegion} />
         </div>
 
         <div className="px-4 mt-3 space-y-3">
