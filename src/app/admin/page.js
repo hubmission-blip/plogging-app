@@ -83,7 +83,7 @@ export default function AdminPage() {
     { id: "recycle_bin", label: "♻️ 재활용수거기",  color: "bg-blue-100 text-blue-700",    border: "#2563EB" },
     { id: "smart_bin",   label: "🗑️ 스마트휴지통", color: "bg-purple-100 text-purple-700", border: "#7C3AED" },
   ];
-  const EMPTY_ECO = { name: "", address: "", lat: "", lng: "", category: "eco_store", desc: "", benefit: "", contact: "", icon: "", active: true };
+  const EMPTY_ECO = { name: "", address: "", lat: "", lng: "", category: "eco_store", region: "전국", desc: "", benefit: "", contact: "", icon: "", active: true };
   const [ecoSpots,     setEcoSpots]     = useState([]);
   const [ecoMode,      setEcoMode]      = useState(false);
   const [editingEco,   setEditingEco]   = useState(null);
@@ -1221,6 +1221,21 @@ export default function AdminPage() {
                       💡 위도/경도는 카카오맵 또는 구글맵에서 장소를 우클릭하면 확인할 수 있어요
                     </div>
 
+                    {/* 노출 지역 */}
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium mb-1">📍 노출 지역</p>
+                      <select
+                        value={newEco.region}
+                        onChange={(e) => setNewEco((p) => ({ ...p, region: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-green-400 bg-white"
+                      >
+                        <option value="전국">🌐 전국 (모든 지역에 표시)</option>
+                        {REGIONS.map((r) => (
+                          <option key={r} value={r}>📍 {r}</option>
+                        ))}
+                      </select>
+                    </div>
+
                     <textarea placeholder="소개 (광고 문구, 간단 설명)"
                       value={newEco.desc}
                       onChange={(e) => setNewEco((p) => ({ ...p, desc: e.target.value }))}
@@ -1281,6 +1296,9 @@ export default function AdminPage() {
                           {e.desc && <p className="text-xs text-gray-600 mb-1">{e.desc}</p>}
                           {e.benefit && <p className="text-xs text-green-700 font-medium">🎁 {e.benefit}</p>}
                           <p className="text-xs text-gray-400 mt-1">위도 {e.lat} / 경도 {e.lng}</p>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium mt-1 inline-block ${!e.region || e.region === "전국" ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"}`}>
+                            {!e.region || e.region === "전국" ? "🌐 전국" : `📍 ${REGION_SHORT[e.region] || e.region}`}
+                          </span>
                         </div>
                         <div className="flex border-t border-gray-100">
                           <button onClick={() => handleToggleEco(e.id, e.active)}
@@ -1290,7 +1308,8 @@ export default function AdminPage() {
                           <button onClick={() => {
                             setEditingEco(e);
                             setNewEco({ name: e.name, address: e.address || "", lat: String(e.lat), lng: String(e.lng),
-                              category: e.category || "eco_store", desc: e.desc || "", benefit: e.benefit || "",
+                              category: e.category || "eco_store", region: e.region || "전국",
+                              desc: e.desc || "", benefit: e.benefit || "",
                               contact: e.contact || "", icon: e.icon || "", active: e.active !== false });
                             setEcoMode(true);
                             window.scrollTo({ top: 0, behavior: "smooth" });

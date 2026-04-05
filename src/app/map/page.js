@@ -726,9 +726,10 @@ function MapPageInner() {
 
   // B. 파트너 마커 (에코스팟)
   const [allPartners,    setAllPartners]    = useState([]);   // 전체 목록 (필터 전)
-  const [partnerMarkers, setPartnerMarkers] = useState([]);   // 3km 필터 후
+  const [partnerMarkers, setPartnerMarkers] = useState([]);   // 지역 필터 후
   const [selectedPartner, setSelectedPartner] = useState(null);
-  const [mapUserPos,      setMapUserPos]    = useState(null); // 지도페이지 GPS 위치
+  const [mapUserPos,      setMapUserPos]    = useState(null); // GPS 위치 (거리 표시용)
+  const [ecoUserRegion,   setEcoUserRegion] = useState(null); // 지역 필터용 시/도
 
   // C. 타인 최근 경로
   const [nearbyRoutes, setNearbyRoutes] = useState([]);
@@ -793,7 +794,7 @@ function MapPageInner() {
     }
   }, [user]);
 
-  // ─── B. 에코스팟 조회 (전체 로드 후 3km 필터 적용) ──────
+  // ─── B. 에코스팟 조회 ────────────────────────────────
   const fetchPartnerMarkers = useCallback(async () => {
     try {
       const snap = await getDocs(collection(db, "partners"));
@@ -810,29 +811,67 @@ function MapPageInner() {
     }
   }, []);
 
-  // ─── GPS 위치 취득 (지도 페이지용) ────────────────────
+  // ─── GPS 위치 취득 (거리 표시용) + 지역 감지 ──────────
   useEffect(() => {
+    // 1) sessionStorage 캐시 우선 사용 (홈페이지에서 이미 감지된 경우)
+    try {
+      const cached = sessionStorage.getItem("user_region");
+      if (cached) setEcoUserRegion(cached);
+    } catch {}
+
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
-      (pos) => setMapUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        setMapUserPos({ lat, lng });
+
+        // 캐시 없으면 Nominatim 역지오코딩으로 시/도 감지
+        if (!sessionStorage.getItem("user_region")) {
+          try {
+            const KOREAN_REGIONS = [
+              "서울특별시", "부산광역시", "대구광역시", "인천광역시",
+              "광주광역시", "대전광역시", "울산광역시", "세종특별자치시",
+              "경기도", "강원도", "충청북도", "충청남도",
+              "전북특별자치도", "전라남도", "경상북도", "경상남도", "제주특별자치도",
+            ];
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ko`,
+              { headers: { "User-Agent": "plogging-app/1.0" }, signal: AbortSignal.timeout(5000) }
+            );
+            if (res.ok) {
+              const data = await res.json();
+              const raw = data.address?.state || data.address?.province || data.address?.city || "";
+              const found = KOREAN_REGIONS.find((r) => raw.includes(r) || r.startsWith(raw.slice(0, 2)));
+              if (found) {
+                setEcoUserRegion(found);
+                try { sessionStorage.setItem("user_region", found); } catch {}
+              }
+            }
+          } catch {}
+        }
+      },
       () => {},
       { enableHighAccuracy: true, maximumAge: 60000 }
     );
   }, []);
 
-  // ─── 3km 반경 필터 (위치 or 파트너 목록 변경 시) ──────
+  // ─── 지역 기반 필터 (ecoUserRegion or allPartners 변경 시) ──
   useEffect(() => {
-    if (!mapUserPos || allPartners.length === 0) {
-      setPartnerMarkers(allPartners);
-      return;
-    }
-    const RADIUS_KM = 3;
-    const nearby = allPartners
-      .map((p) => ({ ...p, distanceKm: haversineKm(mapUserPos.lat, mapUserPos.lng, p.lat, p.lng) }))
-      .filter((p) => p.distanceKm <= RADIUS_KM)
-      .sort((a, b) => a.distanceKm - b.distanceKm);
-    setPartnerMarkers(nearby);
-  }, [mapUserPos, allPartners]);
+    if (allPartners.length === 0) { setPartnerMarkers([]); return; }
+
+    const filtered = allPartners.filter((p) => {
+      const r = p.region || "전국";
+      return r === "전국" || !ecoUserRegion || r === ecoUserRegion;
+    });
+
+    // 거리 정보 첨부 (mapUserPos 있을 때만)
+    const withDist = mapUserPos
+      ? filtered.map((p) => ({ ...p, distanceKm: haversineKm(mapUserPos.lat, mapUserPos.lng, p.lat, p.lng) }))
+              .sort((a, b) => a.distanceKm - b.distanceKm)
+      : filtered;
+
+    setPartnerMarkers(withDist);
+  }, [ecoUserRegion, allPartners, mapUserPos]);
 
   // ─── C. 타인 최근 경로 조회 ──────────────────────────
   const fetchNearbyRoutes = useCallback(async () => {
