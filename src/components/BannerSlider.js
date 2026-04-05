@@ -108,26 +108,34 @@ export default function BannerSlider({ userRegion = null, autoInterval = 4000 })
     load();
   }, []);
 
-  // ── 지역 필터 + 중요도 정렬 ─────────────────────────────────
+  // ── 지역 필터 + 중요도 정렬 + 항상 12개 유지 ────────────────
   useEffect(() => {
-    const source = allBanners ?? BANNERS; // Firestore 로드 전이면 기본값
+    // Firestore 로드 전 → 기본 12개 그라디언트 배너 바로 표시
+    if (allBanners === null) {
+      setBannerList(BANNERS);
+      setCurrent(0);
+      return;
+    }
 
-    const filtered = source.filter((b) => {
+    // 1. Firestore 배너 지역 필터
+    const firestoreFiltered = allBanners.filter((b) => {
       const r = b.region || "전국";
-      // 전국 배너 → 항상 표시
-      // 지역 배너 → 감지된 지역과 일치할 때만 표시
       return r === "전국" || (userRegion && r === userRegion);
     });
 
-    // priority 오름차순 (낮을수록 먼저)
-    const sorted = [...filtered].sort(
+    // 2. priority 오름차순 정렬
+    const sorted = [...firestoreFiltered].sort(
       (a, b) => (a.priority ?? a.order ?? 99) - (b.priority ?? b.order ?? 99)
     );
 
-    if (sorted.length > 0) {
-      setBannerList(sorted);
-      setCurrent(0);
-    }
+    // 3. 12개 미만이면 기본 그라디언트 배너로 나머지 채우기
+    //    (Firestore 배너가 이미 12개 이상이면 그대로 사용)
+    const needed = Math.max(0, 12 - sorted.length);
+    const padded = needed > 0 ? BANNERS.slice(0, needed) : [];
+    const finalList = [...sorted, ...padded];
+
+    setBannerList(finalList.length > 0 ? finalList : BANNERS);
+    setCurrent(0);
   }, [allBanners, userRegion]);
 
   const total = bannerList.length;
