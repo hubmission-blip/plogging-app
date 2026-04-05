@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
@@ -10,53 +10,204 @@ import {
   onSnapshot, query, where, getDocs,
 } from "firebase/firestore";
 
-// ─── 랜덤 6자리 코드 ──────────────────────────────────────
+// ─── 상수 ──────────────────────────────────────────────────
 function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-const DAYS = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"];
+const DAYS       = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"];
 const EMOJI_LIST = ["🌿", "🌱", "♻️", "🌍", "🏃", "💪", "🌸", "⭐", "🔥", "🌊", "🦋", "🌻"];
+const REGIONS    = [
+  "서울특별시", "부산광역시", "대구광역시", "인천광역시",
+  "광주광역시", "대전광역시", "울산광역시", "세종특별자치시",
+  "경기도", "강원도", "충청북도", "충청남도",
+  "전북특별자치도", "전라남도", "경상북도", "경상남도", "제주특별자치도",
+];
 
+const EMPTY_FORM = {
+  name: "", emoji: "🌿", description: "",
+  region: "", district: "",
+  scheduleDay: "토요일", scheduleTime: "09:00",
+  hasSchedule: false, maxMembers: 20,
+};
+
+// ─── 공용 UI 컴포넌트 ──────────────────────────────────────
+
+/** 동아리 생성·수정 공통 폼 */
+function ClubForm({ form, onChange, loading, onSubmit, submitLabel, onCancel }) {
+  return (
+    <>
+      <div className="bg-white rounded-2xl p-5 shadow-sm space-y-5">
+
+        {/* 이모지 */}
+        <div>
+          <label className="text-xs font-bold text-gray-500 mb-2 block">동아리 아이콘</label>
+          <div className="flex flex-wrap gap-2">
+            {EMOJI_LIST.map((e) => (
+              <button key={e} type="button"
+                onClick={() => onChange("emoji", e)}
+                className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all
+                  ${form.emoji === e
+                    ? "bg-indigo-100 border-2 border-indigo-400 scale-110"
+                    : "bg-gray-50 border border-gray-200"}`}
+              >{e}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* 이름 */}
+        <div>
+          <label className="text-xs font-bold text-gray-500 mb-1 block">
+            동아리 이름 <span className="text-red-400">*</span>
+          </label>
+          <input value={form.name}
+            onChange={(e) => onChange("name", e.target.value)}
+            placeholder="예: 초록발자국 러닝 클럽" maxLength={20}
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400"
+          />
+        </div>
+
+        {/* 소개 */}
+        <div>
+          <label className="text-xs font-bold text-gray-500 mb-1 block">동아리 소개</label>
+          <textarea value={form.description}
+            onChange={(e) => onChange("description", e.target.value)}
+            placeholder="동아리를 소개해주세요 (선택)" maxLength={100} rows={2}
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400 resize-none"
+          />
+        </div>
+
+        {/* 지역 */}
+        <div>
+          <label className="text-xs font-bold text-gray-500 mb-2 block">📍 활동 지역</label>
+          <select value={form.region}
+            onChange={(e) => onChange("region", e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400 bg-white mb-2"
+          >
+            <option value="">지역 선택 (선택사항)</option>
+            {REGIONS.map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+          {form.region && (
+            <input value={form.district}
+              onChange={(e) => onChange("district", e.target.value)}
+              placeholder="시·군·구 입력 (예: 마포구)" maxLength={20}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400"
+            />
+          )}
+        </div>
+
+        {/* 최대 인원 */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-bold text-gray-700">최대 인원</p>
+            <p className="text-xs text-gray-400">동아리 최대 참여 인원</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button type="button"
+              onClick={() => onChange("maxMembers", Math.max(2, form.maxMembers - 5))}
+              className="w-9 h-9 rounded-full bg-gray-100 font-bold text-gray-600 text-lg flex items-center justify-center">−</button>
+            <span className="font-black text-gray-800 text-lg w-10 text-center">{form.maxMembers}</span>
+            <button type="button"
+              onClick={() => onChange("maxMembers", Math.min(200, form.maxMembers + 5))}
+              className="w-9 h-9 rounded-full bg-gray-100 font-bold text-gray-600 text-lg flex items-center justify-center">+</button>
+          </div>
+        </div>
+
+        {/* 정기 모임 */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-sm font-bold text-gray-700">📅 정기 모임 설정</p>
+              <p className="text-xs text-gray-400">동아리 정기 모임 일정을 등록해요</p>
+            </div>
+            <button type="button"
+              onClick={() => onChange("hasSchedule", !form.hasSchedule)}
+              className={`relative h-7 rounded-full transition-colors flex-shrink-0 ml-4 focus:outline-none
+                ${form.hasSchedule ? "bg-indigo-500" : "bg-gray-300"}`}
+              style={{ width: "3.25rem" }}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform
+                ${form.hasSchedule ? "translate-x-6" : "translate-x-0"}`} />
+            </button>
+          </div>
+          {form.hasSchedule && (
+            <div className="bg-indigo-50 rounded-xl p-4 space-y-3">
+              <div>
+                <label className="text-xs text-indigo-600 font-bold mb-2 block">요일</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {DAYS.map((day) => (
+                    <button key={day} type="button"
+                      onClick={() => onChange("scheduleDay", day)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all
+                        ${form.scheduleDay === day
+                          ? "bg-indigo-500 text-white shadow-sm"
+                          : "bg-white text-gray-500 border border-gray-200"}`}
+                    >{day.replace("요일", "")}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-indigo-600 font-bold mb-1 block">시간</label>
+                <input type="time" value={form.scheduleTime}
+                  onChange={(e) => onChange("scheduleTime", e.target.value)}
+                  className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        {onCancel && (
+          <button type="button" onClick={onCancel}
+            className="flex-1 bg-gray-100 text-gray-500 py-4 rounded-2xl font-bold text-base">
+            취소
+          </button>
+        )}
+        <button type="button" onClick={onSubmit}
+          disabled={loading || !form.name.trim()}
+          className="flex-1 bg-indigo-500 text-white py-4 rounded-2xl font-bold text-base shadow-md disabled:opacity-40 active:scale-95 transition-transform">
+          {loading ? "저장 중..." : submitLabel}
+        </button>
+      </div>
+    </>
+  );
+}
+
+// ─── 메인 ──────────────────────────────────────────────────
 export default function GroupPage() {
   const { user } = useAuth();
-  const router = useRouter();
+  const router   = useRouter();
 
-  // ── 탭 (1회성 | 동아리) ──────────────────────────────────
-  const [tab, setTab] = useState("oneTime");
+  const [tab,  setTab]  = useState("oneTime");
+  const [mode, setMode] = useState("home"); // home | waiting | createClub | clubDetail
 
-  // ── 화면 모드 ────────────────────────────────────────────
-  // home | waiting | createClub | clubDetail
-  const [mode, setMode] = useState("home");
+  // 1회성
+  const [groupCode, setGroupCode] = useState("");
+  const [joinCode,  setJoinCode]  = useState("");
+  const [groupData, setGroupData] = useState(null);
 
-  // ── 1회성 그룹 상태 ──────────────────────────────────────
-  const [groupCode, setGroupCode]   = useState("");
-  const [joinCode, setJoinCode]     = useState("");
-  const [groupData, setGroupData]   = useState(null);
+  // 동아리
+  const [myClubs,       setMyClubs]       = useState([]);
+  const [clubsLoading,  setClubsLoading]  = useState(false);
+  const [selectedClub,  setSelectedClub]  = useState(null);
+  const [clubJoinCode,  setClubJoinCode]  = useState("");
+  const [clubEditMode,  setClubEditMode]  = useState(false);
+  const [clubForm,      setClubForm]      = useState(EMPTY_FORM);
+  const [editForm,      setEditForm]      = useState(EMPTY_FORM);
 
-  // ── 동아리 상태 ──────────────────────────────────────────
-  const [myClubs, setMyClubs]         = useState([]);
-  const [clubsLoading, setClubsLoading] = useState(false);
-  const [selectedClub, setSelectedClub] = useState(null);
-  const [clubJoinCode, setClubJoinCode] = useState("");
-
-  // ── 동아리 생성 폼 ───────────────────────────────────────
-  const [clubForm, setClubForm] = useState({
-    name: "",
-    emoji: "🌿",
-    description: "",
-    scheduleDay: "토요일",
-    scheduleTime: "09:00",
-    hasSchedule: false,
-    maxMembers: 20,
-  });
-
-  // ── 공통 ──────────────────────────────────────────────────
+  // 공통
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
-  const [copied, setCopied]   = useState(false);
+  const [error,   setError]   = useState("");
+  const [copied,  setCopied]  = useState(false);
 
-  // ── 1회성 그룹: 실시간 리슨 ──────────────────────────────
+  // 자동 이동 버그 방지용 ref (직전 status 추적)
+  const prevClubStatusRef = useRef(null);
+
+  // ── 1회성: 실시간 리슨 ────────────────────────────────────
   useEffect(() => {
     if (!groupCode) return;
     const unsub = onSnapshot(doc(db, "groups", groupCode), (snap) => {
@@ -65,45 +216,46 @@ export default function GroupPage() {
     return () => unsub();
   }, [groupCode]);
 
-  // ── 1회성 그룹: 상태에 따라 지도로 이동 ──────────────────
   useEffect(() => {
     if (groupData?.status === "plogging" && mode === "waiting") {
       router.push(`/map?groupId=${groupCode}&groupSize=${groupData.members.length}`);
     }
   }, [groupData, mode, groupCode, router]);
 
-  // ── 동아리: 실시간 리슨 (상세 화면) ──────────────────────
+  // ── 동아리: 실시간 리슨 ───────────────────────────────────
   useEffect(() => {
     if (!selectedClub?.code || mode !== "clubDetail") return;
+    prevClubStatusRef.current = selectedClub.status ?? null;
     const unsub = onSnapshot(doc(db, "clubs", selectedClub.code), (snap) => {
       if (snap.exists()) setSelectedClub({ id: snap.id, ...snap.data() });
     });
     return () => unsub();
-  }, [selectedClub?.code, mode]);
+  }, [selectedClub?.code, mode]); // eslint-disable-line
 
-  // ── 동아리: 동아리장이 플로깅 시작하면 멤버도 이동 ────────
+  // ── 동아리: 플로깅 시작 감지 → 이동 (status가 바뀔 때만) ──
   useEffect(() => {
-    if (selectedClub?.status === "plogging" && mode === "clubDetail") {
+    const cur = selectedClub?.status;
+    if (
+      mode === "clubDetail" &&
+      cur === "plogging" &&
+      prevClubStatusRef.current !== null &&
+      prevClubStatusRef.current !== "plogging"
+    ) {
       router.push(`/map?groupId=${selectedClub.code}&groupSize=${selectedClub.members?.length || 1}`);
     }
-  }, [selectedClub?.status, mode, selectedClub, router]);
+    if (cur) prevClubStatusRef.current = cur;
+  }, [selectedClub?.status]); // eslint-disable-line
 
-  // ── 내 동아리 목록 불러오기 ──────────────────────────────
+  // ── 내 동아리 목록 ────────────────────────────────────────
   const fetchMyClubs = useCallback(async () => {
     if (!user) return;
     setClubsLoading(true);
     try {
-      const q = query(
-        collection(db, "clubs"),
-        where("memberUids", "array-contains", user.uid)
-      );
+      const q    = query(collection(db, "clubs"), where("memberUids", "array-contains", user.uid));
       const snap = await getDocs(q);
       setMyClubs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    } catch (e) {
-      console.error("동아리 로드 실패:", e);
-    } finally {
-      setClubsLoading(false);
-    }
+    } catch (e) { console.error("동아리 로드 실패:", e); }
+    finally { setClubsLoading(false); }
   }, [user]);
 
   useEffect(() => {
@@ -111,7 +263,7 @@ export default function GroupPage() {
   }, [tab, mode, fetchMyClubs]);
 
   // ─────────────────────────────────────────────────────────
-  //  1회성 그룹
+  //  1회성 그룹 핸들러
   // ─────────────────────────────────────────────────────────
 
   const handleCreate = async () => {
@@ -127,8 +279,7 @@ export default function GroupPage() {
         createdAt: serverTimestamp(),
         expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
       });
-      setGroupCode(code);
-      setMode("waiting");
+      setGroupCode(code); setMode("waiting");
     } catch (e) { setError("그룹 생성 실패: " + e.message); }
     finally { setLoading(false); }
   };
@@ -163,13 +314,30 @@ export default function GroupPage() {
   };
 
   const handleLeave = () => {
-    setGroupCode(""); setGroupData(null);
-    setMode("home"); setJoinCode(""); setError("");
+    setGroupCode(""); setGroupData(null); setMode("home"); setJoinCode(""); setError("");
   };
 
   // ─────────────────────────────────────────────────────────
-  //  동아리
+  //  동아리 핸들러
   // ─────────────────────────────────────────────────────────
+
+  const formToLocation = (f) =>
+    f.region ? { region: f.region, district: f.district.trim() } : null;
+
+  const formToSchedule = (f) =>
+    f.hasSchedule ? { day: f.scheduleDay, time: f.scheduleTime } : null;
+
+  const clubToForm = (club) => ({
+    name:        club.name        || "",
+    emoji:       club.emoji       || "🌿",
+    description: club.description || "",
+    region:      club.location?.region   || "",
+    district:    club.location?.district || "",
+    scheduleDay:  club.schedule?.day  || "토요일",
+    scheduleTime: club.schedule?.time || "09:00",
+    hasSchedule:  !!club.schedule,
+    maxMembers:   club.maxMembers || 20,
+  });
 
   const handleCreateClub = async () => {
     if (!user || !clubForm.name.trim()) return;
@@ -178,29 +346,48 @@ export default function GroupPage() {
       const code = generateCode();
       const name = user.displayName || user.email?.split("@")[0] || "동아리장";
       const data = {
-        code,
-        name: clubForm.name.trim(),
-        emoji: clubForm.emoji,
+        code, name: clubForm.name.trim(), emoji: clubForm.emoji,
         description: clubForm.description.trim(),
-        hostUid: user.uid,
-        hostName: name,
+        location:  formToLocation(clubForm),
+        schedule:  formToSchedule(clubForm),
+        hostUid: user.uid, hostName: name,
         members: [{ uid: user.uid, name, photoURL: user.photoURL || "" }],
         memberUids: [user.uid],
         maxMembers: clubForm.maxMembers,
-        schedule: clubForm.hasSchedule
-          ? { day: clubForm.scheduleDay, time: clubForm.scheduleTime }
-          : null,
-        status: "active",
-        totalPloggings: 0,
+        status: "active", totalPloggings: 0,
         createdAt: serverTimestamp(),
       };
       await setDoc(doc(db, "clubs", code), data);
       const created = { id: code, ...data };
       setMyClubs((prev) => [...prev, created]);
       setSelectedClub(created);
-      setClubForm({ name: "", emoji: "🌿", description: "", scheduleDay: "토요일", scheduleTime: "09:00", hasSchedule: false, maxMembers: 20 });
+      setClubForm(EMPTY_FORM);
+      prevClubStatusRef.current = "active";
       setMode("clubDetail");
     } catch (e) { setError("동아리 생성 실패: " + e.message); }
+    finally { setLoading(false); }
+  };
+
+  const handleEditClub = async () => {
+    if (!selectedClub || !editForm.name.trim()) return;
+    setLoading(true); setError("");
+    try {
+      const updates = {
+        name:        editForm.name.trim(),
+        emoji:       editForm.emoji,
+        description: editForm.description.trim(),
+        location:    formToLocation(editForm),
+        schedule:    formToSchedule(editForm),
+        maxMembers:  editForm.maxMembers,
+        updatedAt:   serverTimestamp(),
+      };
+      await updateDoc(doc(db, "clubs", selectedClub.code), updates);
+      setSelectedClub((prev) => ({ ...prev, ...updates }));
+      setMyClubs((prev) => prev.map((c) =>
+        c.code === selectedClub.code ? { ...c, ...updates } : c
+      ));
+      setClubEditMode(false);
+    } catch (e) { setError("수정 실패: " + e.message); }
     finally { setLoading(false); }
   };
 
@@ -218,11 +405,14 @@ export default function GroupPage() {
       }
       const name = user.displayName || user.email?.split("@")[0] || "멤버";
       await updateDoc(doc(db, "clubs", code), {
-        members: arrayUnion({ uid: user.uid, name, photoURL: user.photoURL || "" }),
+        members:    arrayUnion({ uid: user.uid, name, photoURL: user.photoURL || "" }),
         memberUids: arrayUnion(user.uid),
       });
-      setSelectedClub({ id: code, ...data });
+      const joined = { id: code, ...data };
+      setSelectedClub(joined);
+      setMyClubs((prev) => [...prev, joined]);
       setClubJoinCode("");
+      prevClubStatusRef.current = data.status ?? "active";
       setMode("clubDetail");
     } catch (e) { setError("참여 실패: " + e.message); }
     finally { setLoading(false); }
@@ -248,25 +438,28 @@ export default function GroupPage() {
     try {
       const me = selectedClub.members?.find((m) => m.uid === user.uid);
       await updateDoc(doc(db, "clubs", selectedClub.code), {
-        members: arrayRemove(me),
+        members:    arrayRemove(me),
         memberUids: arrayRemove(user.uid),
       });
       setMyClubs((prev) => prev.filter((c) => c.code !== selectedClub.code));
-      setSelectedClub(null);
-      setMode("home");
-      setTab("club");
+      setSelectedClub(null); setMode("home"); setTab("club");
     } catch (e) { alert("탈퇴 실패: " + e.message); }
   };
 
   const handleCopyCode = async (code, type = "group") => {
     const text = type === "club"
       ? `🏅 플로깅 동아리 초대!\n\n동아리 코드: ${code}\n앱에서 '플로깅 동아리 → 코드로 참여' 에 입력하세요.`
-      : `🌿 오백원의 행복 그룹 플로깅 초대!\n\n그룹 코드: ${code}\n앱에서 '그룹 플로깅 → 코드로 참여' 에 입력하세요.\n\n${window.location.origin}/group`;
+      : `🌿 오백원의 행복 그룹 플로깅 초대!\n\n그룹 코드: ${code}\n${window.location.origin}/group`;
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopied(true); setTimeout(() => setCopied(false), 2000);
     } catch { alert("코드: " + code); }
+  };
+
+  const openEdit = () => {
+    setEditForm(clubToForm(selectedClub));
+    setClubEditMode(true);
+    setError("");
   };
 
   // ─────────────────────────────────────────────────────────
@@ -278,35 +471,28 @@ export default function GroupPage() {
   );
 
   return (
-    <div
-      className="min-h-screen bg-gray-50"
-      style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
-    >
+    <div className="min-h-screen bg-gray-50"
+      style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}>
+
       {/* ── 헤더 ── */}
       <div className="bg-gray-50 px-4 pt-4 pb-1 flex justify-between items-center">
-        <img
-          src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
-          alt="오백원의 행복" className="h-9 w-auto object-contain"
-        />
+        <img src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+          alt="오백원의 행복" className="h-9 w-auto object-contain" />
         <p className="text-sm font-black text-gray-700">👥 그룹 플로깅</p>
       </div>
 
-      {/* ── 탭 (홈 화면에서만 표시) ── */}
+      {/* ── 탭 (홈만 표시) ── */}
       {mode === "home" && (
         <div className="px-4 mt-4">
           <div className="flex bg-white rounded-2xl p-1 shadow-sm gap-1">
-            <button
-              onClick={() => { setTab("oneTime"); setError(""); }}
+            <button onClick={() => { setTab("oneTime"); setError(""); }}
               className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all
-                ${tab === "oneTime" ? "bg-purple-500 text-white shadow" : "text-gray-400"}`}
-            >
+                ${tab === "oneTime" ? "bg-purple-500 text-white shadow" : "text-gray-400"}`}>
               ⚡ 1회성 그룹
             </button>
-            <button
-              onClick={() => { setTab("club"); setError(""); }}
+            <button onClick={() => { setTab("club"); setError(""); }}
               className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all
-                ${tab === "club" ? "bg-indigo-500 text-white shadow" : "text-gray-400"}`}
-            >
+                ${tab === "club" ? "bg-indigo-500 text-white shadow" : "text-gray-400"}`}>
               🏅 플로깅 동아리
             </button>
           </div>
@@ -315,67 +501,51 @@ export default function GroupPage() {
 
       <div className="px-4 mt-4 space-y-4">
 
-        {/* ══════════════════════════════════════
-            ⚡ 1회성 그룹 홈
-        ══════════════════════════════════════ */}
+        {/* ═══════════ ⚡ 1회성 그룹 홈 ═══════════ */}
         {mode === "home" && tab === "oneTime" && (
           <>
             <div className="bg-purple-50 rounded-2xl p-4 border border-purple-100">
               <h2 className="font-bold text-purple-700 mb-2">🎁 그룹 보너스 포인트</h2>
-              {[
-                { size: "2명", bonus: "+10P" }, { size: "3명", bonus: "+15P" },
-                { size: "5명", bonus: "+25P" }, { size: "10명", bonus: "+50P" },
-              ].map((item) => (
-                <div key={item.size} className="flex justify-between text-sm py-1 border-b border-purple-100 last:border-0">
-                  <span className="text-gray-600">그룹 {item.size}</span>
-                  <span className="font-bold text-purple-600">{item.bonus} (인원 × 5P)</span>
+              {[{ s:"2명", b:"+10P" },{ s:"3명", b:"+15P" },{ s:"5명", b:"+25P" },{ s:"10명", b:"+50P" }].map(({s,b}) => (
+                <div key={s} className="flex justify-between text-sm py-1 border-b border-purple-100 last:border-0">
+                  <span className="text-gray-600">그룹 {s}</span>
+                  <span className="font-bold text-purple-600">{b} (인원 × 5P)</span>
                 </div>
               ))}
             </div>
-
-            <button
-              onClick={handleCreate} disabled={loading}
-              className="w-full bg-purple-500 text-white py-5 rounded-2xl shadow-md font-bold text-lg active:scale-95 transition-transform"
-            >
+            <button onClick={handleCreate} disabled={loading}
+              className="w-full bg-purple-500 text-white py-5 rounded-2xl shadow-md font-bold text-lg active:scale-95 transition-transform">
               {loading ? "생성 중..." : "🚀 그룹 방 만들기"}
             </button>
-
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <h2 className="font-bold text-gray-700 mb-3">🔑 코드로 참여하기</h2>
               <div className="flex gap-2">
-                <input
-                  value={joinCode}
-                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                <input value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                   placeholder="6자리 코드 입력" maxLength={6}
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-purple-400"
-                />
-                <button
-                  onClick={handleJoin} disabled={loading || joinCode.length < 6}
-                  className="bg-purple-500 text-white px-5 rounded-xl font-bold disabled:opacity-40"
-                >참여</button>
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-purple-400" />
+                <button onClick={handleJoin} disabled={loading || joinCode.length < 6}
+                  className="bg-purple-500 text-white px-5 rounded-xl font-bold disabled:opacity-40">참여</button>
               </div>
               {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
             </div>
           </>
         )}
 
-        {/* ══════════════════════════════════════
-            🏅 동아리 홈
-        ══════════════════════════════════════ */}
+        {/* ═══════════ 🏅 동아리 홈 ═══════════ */}
         {mode === "home" && tab === "club" && (
           <>
-            {/* 내 동아리 목록 */}
             {clubsLoading ? (
               <div className="text-center py-8 text-gray-400 text-sm animate-pulse">동아리 불러오는 중...</div>
             ) : myClubs.length > 0 ? (
               <div className="space-y-3">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wide px-1">내 동아리</p>
                 {myClubs.map((club) => (
-                  <button
-                    key={club.id}
-                    onClick={() => { setSelectedClub(club); setMode("clubDetail"); }}
-                    className="w-full bg-white rounded-2xl p-4 shadow-sm text-left active:bg-indigo-50 transition-colors"
-                  >
+                  <button key={club.id}
+                    onClick={() => {
+                      prevClubStatusRef.current = club.status ?? "active";
+                      setSelectedClub(club); setMode("clubDetail"); setClubEditMode(false);
+                    }}
+                    className="w-full bg-white rounded-2xl p-4 shadow-sm text-left active:bg-indigo-50 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className="text-3xl w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center flex-shrink-0">
                         {club.emoji}
@@ -389,6 +559,7 @@ export default function GroupPage() {
                         </div>
                         <p className="text-xs text-gray-400 mt-0.5">
                           👥 {club.members?.length || 0}명
+                          {club.location?.region ? ` · 📍 ${club.location.region}${club.location.district ? " " + club.location.district : ""}` : ""}
                           {club.schedule ? ` · 📅 ${club.schedule.day} ${club.schedule.time}` : ""}
                         </p>
                         {club.description ? (
@@ -407,180 +578,60 @@ export default function GroupPage() {
                 <p className="text-indigo-400 text-xs mt-1">동아리를 만들거나 초대 코드로 참여해보세요</p>
               </div>
             )}
-
-            <button
-              onClick={() => { setMode("createClub"); setError(""); }}
-              className="w-full bg-indigo-500 text-white py-4 rounded-2xl shadow-md font-bold text-base active:scale-95 transition-transform"
-            >
+            <button onClick={() => { setMode("createClub"); setError(""); }}
+              className="w-full bg-indigo-500 text-white py-4 rounded-2xl shadow-md font-bold text-base active:scale-95 transition-transform">
               🏅 새 동아리 만들기
             </button>
-
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <h2 className="font-bold text-gray-700 mb-3">🔑 코드로 동아리 참여</h2>
               <div className="flex gap-2">
-                <input
-                  value={clubJoinCode}
-                  onChange={(e) => setClubJoinCode(e.target.value.toUpperCase())}
+                <input value={clubJoinCode} onChange={(e) => setClubJoinCode(e.target.value.toUpperCase())}
                   placeholder="6자리 코드 입력" maxLength={6}
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-indigo-400"
-                />
-                <button
-                  onClick={handleJoinClub} disabled={loading || clubJoinCode.length < 6}
-                  className="bg-indigo-500 text-white px-5 rounded-xl font-bold disabled:opacity-40"
-                >참여</button>
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-indigo-400" />
+                <button onClick={handleJoinClub} disabled={loading || clubJoinCode.length < 6}
+                  className="bg-indigo-500 text-white px-5 rounded-xl font-bold disabled:opacity-40">참여</button>
               </div>
               {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
             </div>
           </>
         )}
 
-        {/* ══════════════════════════════════════
-            🏅 동아리 생성 폼
-        ══════════════════════════════════════ */}
+        {/* ═══════════ 🏅 동아리 생성 ═══════════ */}
         {mode === "createClub" && (
           <>
             <div className="flex items-center gap-3 mb-1">
               <button onClick={() => { setMode("home"); setError(""); }} className="text-gray-400 text-2xl leading-none">←</button>
               <h2 className="font-black text-gray-800 text-lg">새 동아리 만들기</h2>
             </div>
-
-            <div className="bg-white rounded-2xl p-5 shadow-sm space-y-5">
-
-              {/* 이모지 선택 */}
-              <div>
-                <label className="text-xs font-bold text-gray-500 mb-2 block">동아리 아이콘 선택</label>
-                <div className="flex flex-wrap gap-2">
-                  {EMOJI_LIST.map((e) => (
-                    <button
-                      key={e}
-                      onClick={() => setClubForm((p) => ({ ...p, emoji: e }))}
-                      className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all
-                        ${clubForm.emoji === e
-                          ? "bg-indigo-100 border-2 border-indigo-400 scale-110"
-                          : "bg-gray-50 border border-gray-200"}`}
-                    >{e}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 동아리 이름 */}
-              <div>
-                <label className="text-xs font-bold text-gray-500 mb-1 block">
-                  동아리 이름 <span className="text-red-400">*</span>
-                </label>
-                <input
-                  value={clubForm.name}
-                  onChange={(e) => setClubForm((p) => ({ ...p, name: e.target.value }))}
-                  placeholder="예: 초록발자국 러닝 클럽" maxLength={20}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400"
-                />
-              </div>
-
-              {/* 소개글 */}
-              <div>
-                <label className="text-xs font-bold text-gray-500 mb-1 block">동아리 소개</label>
-                <textarea
-                  value={clubForm.description}
-                  onChange={(e) => setClubForm((p) => ({ ...p, description: e.target.value }))}
-                  placeholder="동아리를 소개해주세요 (선택)" maxLength={100} rows={2}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400 resize-none"
-                />
-              </div>
-
-              {/* 최대 인원 */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold text-gray-700">최대 인원</p>
-                  <p className="text-xs text-gray-400">동아리 최대 참여 인원</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setClubForm((p) => ({ ...p, maxMembers: Math.max(2, p.maxMembers - 5) }))}
-                    className="w-9 h-9 rounded-full bg-gray-100 font-bold text-gray-600 text-lg flex items-center justify-center"
-                  >−</button>
-                  <span className="font-black text-gray-800 text-lg w-10 text-center">{clubForm.maxMembers}</span>
-                  <button
-                    onClick={() => setClubForm((p) => ({ ...p, maxMembers: Math.min(200, p.maxMembers + 5) }))}
-                    className="w-9 h-9 rounded-full bg-gray-100 font-bold text-gray-600 text-lg flex items-center justify-center"
-                  >+</button>
-                </div>
-              </div>
-
-              {/* 정기 모임 설정 */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-bold text-gray-700">📅 정기 모임 설정</p>
-                    <p className="text-xs text-gray-400">동아리 정기 모임 일정을 등록해요</p>
-                  </div>
-                  <button
-                    onClick={() => setClubForm((p) => ({ ...p, hasSchedule: !p.hasSchedule }))}
-                    className={`relative w-13 h-7 rounded-full transition-colors duration-200 focus:outline-none flex-shrink-0 ml-4
-                      ${clubForm.hasSchedule ? "bg-indigo-500" : "bg-gray-300"}`}
-                    style={{ width: "3.25rem" }}
-                  >
-                    <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200
-                      ${clubForm.hasSchedule ? "translate-x-6" : "translate-x-0"}`}
-                    />
-                  </button>
-                </div>
-
-                {clubForm.hasSchedule && (
-                  <div className="bg-indigo-50 rounded-xl p-4 space-y-3">
-                    <div>
-                      <label className="text-xs text-indigo-600 font-bold mb-2 block">요일 선택</label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {DAYS.map((day) => (
-                          <button
-                            key={day}
-                            onClick={() => setClubForm((p) => ({ ...p, scheduleDay: day }))}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all
-                              ${clubForm.scheduleDay === day
-                                ? "bg-indigo-500 text-white shadow-sm"
-                                : "bg-white text-gray-500 border border-gray-200"}`}
-                          >
-                            {day.replace("요일", "")}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs text-indigo-600 font-bold mb-1 block">시간</label>
-                      <input
-                        type="time" value={clubForm.scheduleTime}
-                        onChange={(e) => setClubForm((p) => ({ ...p, scheduleTime: e.target.value }))}
-                        className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-
-            <button
-              onClick={handleCreateClub} disabled={loading || !clubForm.name.trim()}
-              className="w-full bg-indigo-500 text-white py-4 rounded-2xl font-bold text-base shadow-md disabled:opacity-40 active:scale-95 transition-transform"
-            >
-              {loading ? "생성 중..." : `${clubForm.emoji} 동아리 만들기`}
-            </button>
+            <ClubForm
+              form={clubForm}
+              onChange={(k, v) => setClubForm((p) => ({ ...p, [k]: v }))}
+              loading={loading}
+              onSubmit={handleCreateClub}
+              submitLabel={`${clubForm.emoji} 동아리 만들기`}
+              onCancel={() => { setMode("home"); setError(""); }}
+            />
           </>
         )}
 
-        {/* ══════════════════════════════════════
-            🏅 동아리 상세
-        ══════════════════════════════════════ */}
-        {mode === "clubDetail" && selectedClub && (
+        {/* ═══════════ 🏅 동아리 상세 ═══════════ */}
+        {mode === "clubDetail" && selectedClub && !clubEditMode && (
           <>
+            {/* 헤더 */}
             <div className="flex items-center gap-3 mb-1">
-              <button
-                onClick={() => { setMode("home"); setTab("club"); setError(""); }}
-                className="text-gray-400 text-2xl leading-none"
-              >←</button>
+              <button onClick={() => { setMode("home"); setTab("club"); setError(""); }}
+                className="text-gray-400 text-2xl leading-none">←</button>
               <h2 className="font-black text-gray-800 text-lg truncate flex-1">
                 {selectedClub.emoji} {selectedClub.name}
               </h2>
+              {/* 동아리장만 수정 버튼 */}
+              {selectedClub.hostUid === user?.uid && (
+                <button onClick={openEdit}
+                  className="flex-shrink-0 text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded-full font-bold active:bg-indigo-100">
+                  ✏️ 수정
+                </button>
+              )}
             </div>
 
             {/* 동아리 코드 카드 */}
@@ -592,20 +643,25 @@ export default function GroupPage() {
               {selectedClub.description && (
                 <p className="text-sm text-gray-500 mb-3 leading-relaxed">{selectedClub.description}</p>
               )}
-              {selectedClub.schedule && (
-                <div className="inline-flex items-center gap-1.5 bg-indigo-50 rounded-full px-3 py-1.5 mb-3">
-                  <span className="text-xs text-indigo-600 font-bold">
-                    📅 정기 모임: {selectedClub.schedule.day} {selectedClub.schedule.time}
+              <div className="flex flex-wrap justify-center gap-2 mb-3">
+                {selectedClub.location?.region && (
+                  <span className="inline-flex items-center gap-1 bg-green-50 rounded-full px-3 py-1">
+                    <span className="text-xs text-green-600 font-bold">
+                      📍 {selectedClub.location.region}{selectedClub.location.district ? " " + selectedClub.location.district : ""}
+                    </span>
                   </span>
-                </div>
-              )}
-              <button
-                onClick={() => handleCopyCode(selectedClub.code, "club")}
+                )}
+                {selectedClub.schedule && (
+                  <span className="inline-flex items-center gap-1 bg-indigo-50 rounded-full px-3 py-1">
+                    <span className="text-xs text-indigo-600 font-bold">
+                      📅 {selectedClub.schedule.day} {selectedClub.schedule.time}
+                    </span>
+                  </span>
+                )}
+              </div>
+              <button onClick={() => handleCopyCode(selectedClub.code, "club")}
                 className={`w-full py-3 rounded-xl font-medium text-sm transition-colors
-                  ${copied
-                    ? "bg-green-100 text-green-600"
-                    : "bg-indigo-50 text-indigo-600 border border-indigo-200"}`}
-              >
+                  ${copied ? "bg-green-100 text-green-600" : "bg-indigo-50 text-indigo-600 border border-indigo-200"}`}>
                 {copied ? "✅ 복사됨!" : "📋 초대 코드 복사하기"}
               </button>
             </div>
@@ -642,7 +698,7 @@ export default function GroupPage() {
               </div>
             </div>
 
-            {/* 그룹 보너스 미리보기 */}
+            {/* 그룹 보너스 */}
             <div className="bg-indigo-50 rounded-2xl p-3 text-center">
               <p className="text-sm text-indigo-700">
                 오늘 플로깅 시 <span className="font-bold">{selectedClub.members?.length || 0}명</span> 참여 —
@@ -650,13 +706,10 @@ export default function GroupPage() {
               </p>
             </div>
 
-            {/* 플로깅 시작 버튼 */}
+            {/* 플로깅 시작 */}
             {selectedClub.hostUid === user?.uid ? (
-              <button
-                onClick={handleStartClubPlogging}
-                disabled={loading}
-                className="w-full bg-green-500 text-white py-5 rounded-2xl font-bold text-lg shadow-md disabled:opacity-40 active:scale-95 transition-transform"
-              >
+              <button onClick={handleStartClubPlogging} disabled={loading}
+                className="w-full bg-green-500 text-white py-5 rounded-2xl font-bold text-lg shadow-md disabled:opacity-40 active:scale-95 transition-transform">
                 {loading ? "시작 중..." : `🚀 오늘의 플로깅 시작 (${selectedClub.members?.length || 0}명)`}
               </button>
             ) : (
@@ -666,44 +719,52 @@ export default function GroupPage() {
               </div>
             )}
 
-            {/* 탈퇴 (동아리장 제외) */}
+            {/* 탈퇴 */}
             {selectedClub.hostUid !== user?.uid && (
-              <button
-                onClick={handleLeaveClub}
-                className="w-full bg-white text-red-400 py-3 rounded-2xl text-sm font-medium shadow-sm border border-red-100 active:bg-red-50"
-              >
+              <button onClick={handleLeaveClub}
+                className="w-full bg-white text-red-400 py-3 rounded-2xl text-sm font-medium shadow-sm border border-red-100 active:bg-red-50">
                 동아리 탈퇴하기
               </button>
             )}
           </>
         )}
 
-        {/* ══════════════════════════════════════
-            ⚡ 1회성 대기실
-        ══════════════════════════════════════ */}
+        {/* ═══════════ 🏅 동아리 수정 ═══════════ */}
+        {mode === "clubDetail" && selectedClub && clubEditMode && (
+          <>
+            <div className="flex items-center gap-3 mb-1">
+              <button onClick={() => { setClubEditMode(false); setError(""); }}
+                className="text-gray-400 text-2xl leading-none">←</button>
+              <h2 className="font-black text-gray-800 text-lg">동아리 정보 수정</h2>
+            </div>
+            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+            <ClubForm
+              form={editForm}
+              onChange={(k, v) => setEditForm((p) => ({ ...p, [k]: v }))}
+              loading={loading}
+              onSubmit={handleEditClub}
+              submitLabel="💾 수정 저장"
+              onCancel={() => { setClubEditMode(false); setError(""); }}
+            />
+          </>
+        )}
+
+        {/* ═══════════ ⚡ 1회성 대기실 ═══════════ */}
         {mode === "waiting" && groupData && (
           <>
             <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
               <p className="text-sm text-gray-400 mb-1">그룹 코드</p>
-              <span className="text-4xl font-mono font-black text-purple-600 tracking-widest block mb-3">
-                {groupCode}
-              </span>
-              <button
-                onClick={() => handleCopyCode(groupCode)}
+              <span className="text-4xl font-mono font-black text-purple-600 tracking-widest block mb-3">{groupCode}</span>
+              <button onClick={() => handleCopyCode(groupCode)}
                 className={`w-full py-3 rounded-xl font-medium text-sm transition-colors
-                  ${copied
-                    ? "bg-green-100 text-green-600"
-                    : "bg-purple-50 text-purple-600 border border-purple-200"}`}
-              >
+                  ${copied ? "bg-green-100 text-green-600" : "bg-purple-50 text-purple-600 border border-purple-200"}`}>
                 {copied ? "✅ 복사됨!" : "📋 코드 및 링크 복사하기"}
               </button>
             </div>
 
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <div className="flex justify-between items-center mb-3">
-                <h2 className="font-bold text-gray-700">
-                  참여 멤버 ({groupData.members?.length || 0}/10)
-                </h2>
+                <h2 className="font-bold text-gray-700">참여 멤버 ({groupData.members?.length || 0}/10)</h2>
                 <span className="text-xs text-gray-400 animate-pulse">● 실시간</span>
               </div>
               <div className="space-y-2">
@@ -739,11 +800,8 @@ export default function GroupPage() {
             </div>
 
             {groupData.hostUid === user?.uid ? (
-              <button
-                onClick={handleStart}
-                disabled={loading || (groupData.members?.length || 0) < 2}
-                className="w-full bg-green-500 text-white py-5 rounded-2xl font-bold text-lg shadow-md disabled:opacity-40 active:scale-95 transition-transform"
-              >
+              <button onClick={handleStart} disabled={loading || (groupData.members?.length || 0) < 2}
+                className="w-full bg-green-500 text-white py-5 rounded-2xl font-bold text-lg shadow-md disabled:opacity-40 active:scale-95 transition-transform">
                 {loading ? "시작 중..." :
                   (groupData.members?.length || 0) < 2
                     ? "멤버를 기다리는 중... (최소 2명)"
@@ -757,10 +815,8 @@ export default function GroupPage() {
               </div>
             )}
 
-            <button
-              onClick={handleLeave}
-              className="w-full bg-white text-gray-400 py-3 rounded-2xl text-sm font-medium shadow-sm"
-            >
+            <button onClick={handleLeave}
+              className="w-full bg-white text-gray-400 py-3 rounded-2xl text-sm font-medium shadow-sm">
               그룹 나가기
             </button>
           </>
