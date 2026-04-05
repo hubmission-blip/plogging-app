@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-  doc, setDoc, getDoc, updateDoc,
+  doc, setDoc, getDoc, updateDoc, addDoc,
   collection, serverTimestamp, arrayUnion, arrayRemove,
-  onSnapshot, query, where, getDocs,
+  onSnapshot, query, where, getDocs, orderBy, limit,
 } from "firebase/firestore";
 
 // ─── 상수 ──────────────────────────────────────────────────
@@ -195,8 +195,11 @@ export default function GroupPage() {
   const [clubsLoading,  setClubsLoading]  = useState(false);
   const [selectedClub,  setSelectedClub]  = useState(null);
   const [clubJoinCode,  setClubJoinCode]  = useState("");
-  const [clubEditMode,  setClubEditMode]  = useState(false);
-  const [clubForm,      setClubForm]      = useState(EMPTY_FORM);
+  const [clubEditMode,   setClubEditMode]   = useState(false);
+  const [clubForm,       setClubForm]       = useState(EMPTY_FORM);
+  const [clubDetailTab,  setClubDetailTab]  = useState("home"); // "home" | "history" | "stats"
+  const [clubHistory,    setClubHistory]    = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [editForm,      setEditForm]      = useState(EMPTY_FORM);
 
   // 공통
@@ -241,10 +244,26 @@ export default function GroupPage() {
       prevClubStatusRef.current !== null &&
       prevClubStatusRef.current !== "plogging"
     ) {
-      router.push(`/map?groupId=${selectedClub.code}&groupSize=${selectedClub.members?.length || 1}`);
+      router.push(`/map?groupId=${selectedClub.code}&groupSize=${selectedClub.members?.length || 1}&groupType=club`);
     }
     if (cur) prevClubStatusRef.current = cur;
   }, [selectedClub?.status]); // eslint-disable-line
+
+  // ── 동아리 플로깅 기록 로드 ───────────────────────────────
+  const fetchClubHistory = useCallback(async (clubCode) => {
+    if (!clubCode) return;
+    setHistoryLoading(true);
+    try {
+      const q    = query(
+        collection(db, "clubs", clubCode, "history"),
+        orderBy("createdAt", "desc"),
+        limit(100),
+      );
+      const snap = await getDocs(q);
+      setClubHistory(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    } catch (e) { console.error("기록 불러오기 실패:", e); }
+    finally { setHistoryLoading(false); }
+  }, []);
 
   // ── 내 동아리 목록 ────────────────────────────────────────
   const fetchMyClubs = useCallback(async () => {
@@ -347,6 +366,7 @@ export default function GroupPage() {
       const name = user.displayName || user.email?.split("@")[0] || "동아리장";
       const data = {
         code, name: clubForm.name.trim(), emoji: clubForm.emoji,
+        totalPloggings: 0, totalDistance: 0, totalDuration: 0,
         description: clubForm.description.trim(),
         location:  formToLocation(clubForm),
         schedule:  formToSchedule(clubForm),
@@ -363,6 +383,8 @@ export default function GroupPage() {
       setSelectedClub(created);
       setClubForm(EMPTY_FORM);
       prevClubStatusRef.current = "active";
+      setClubDetailTab("home");
+      setClubHistory([]);
       setMode("clubDetail");
     } catch (e) { setError("동아리 생성 실패: " + e.message); }
     finally { setLoading(false); }
@@ -413,6 +435,9 @@ export default function GroupPage() {
       setMyClubs((prev) => [...prev, joined]);
       setClubJoinCode("");
       prevClubStatusRef.current = data.status ?? "active";
+      setClubDetailTab("home");
+      setClubHistory([]);
+      fetchClubHistory(code);
       setMode("clubDetail");
     } catch (e) { setError("참여 실패: " + e.message); }
     finally { setLoading(false); }
@@ -423,9 +448,27 @@ export default function GroupPage() {
     setLoading(true);
     try {
       await updateDoc(doc(db, "clubs", selectedClub.code), { status: "plogging" });
-      router.push(`/map?groupId=${selectedClub.code}&groupSize=${selectedClub.members?.length || 1}`);
+      router.push(`/map?groupId=${selectedClub.code}&groupSize=${selectedClub.members?.length || 1}&groupType=club`);
     } catch (e) { setError("시작 실패: " + e.message); }
     finally { setLoading(false); }
+  };
+
+  // ── 동아리장 위임 ─────────────────────────────────────────
+  const handleTransferLeader = async (memberUid, memberName) => {
+    if (!selectedClub || selectedClub.hostUid !== user?.uid) return;
+    if (!confirm(`'${memberName}'님에게 동아리장을 위임하시겠어요?\n\n위임 후에는 해당 멤버가 동아리장이 됩니다.`)) return;
+    try {
+      await updateDoc(doc(db, "clubs", selectedClub.code), {
+        hostUid:  memberUid,
+        hostName: memberName,
+      });
+      const updated = { ...selectedClub, hostUid: memberUid, hostName: memberName };
+      setSelectedClub(updated);
+      setMyClubs((prev) => prev.map((c) =>
+        c.code === selectedClub.code ? { ...c, hostUid: memberUid, hostName: memberName } : c
+      ));
+      alert(`✅ ${memberName}님에게 동아리장을 위임했습니다.`);
+    } catch (e) { alert("위임 실패: " + e.message); }
   };
 
   const handleLeaveClub = async () => {
@@ -543,7 +586,12 @@ export default function GroupPage() {
                   <button key={club.id}
                     onClick={() => {
                       prevClubStatusRef.current = club.status ?? "active";
-                      setSelectedClub(club); setMode("clubDetail"); setClubEditMode(false);
+                      setSelectedClub(club);
+                      setMode("clubDetail");
+                      setClubEditMode(false);
+                      setClubDetailTab("home");
+                      setClubHistory([]);
+                      fetchClubHistory(club.code);
                     }}
                     className="w-full bg-white rounded-2xl p-4 shadow-sm text-left active:bg-indigo-50 transition-colors">
                     <div className="flex items-center gap-3">
@@ -618,14 +666,13 @@ export default function GroupPage() {
         {/* ═══════════ 🏅 동아리 상세 ═══════════ */}
         {mode === "clubDetail" && selectedClub && !clubEditMode && (
           <>
-            {/* 헤더 */}
+            {/* ── 헤더 ── */}
             <div className="flex items-center gap-3 mb-1">
               <button onClick={() => { setMode("home"); setTab("club"); setError(""); }}
                 className="text-gray-400 text-2xl leading-none">←</button>
               <h2 className="font-black text-gray-800 text-lg truncate flex-1">
                 {selectedClub.emoji} {selectedClub.name}
               </h2>
-              {/* 동아리장만 수정 버튼 */}
               {selectedClub.hostUid === user?.uid && (
                 <button onClick={openEdit}
                   className="flex-shrink-0 text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded-full font-bold active:bg-indigo-100">
@@ -634,98 +681,286 @@ export default function GroupPage() {
               )}
             </div>
 
-            {/* 동아리 코드 카드 */}
-            <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
-              <p className="text-xs text-gray-400 mb-1">동아리 초대 코드</p>
-              <p className="text-3xl font-mono font-black text-indigo-600 tracking-widest mb-2">
-                {selectedClub.code}
-              </p>
-              {selectedClub.description && (
-                <p className="text-sm text-gray-500 mb-3 leading-relaxed">{selectedClub.description}</p>
-              )}
-              <div className="flex flex-wrap justify-center gap-2 mb-3">
-                {selectedClub.location?.region && (
-                  <span className="inline-flex items-center gap-1 bg-green-50 rounded-full px-3 py-1">
-                    <span className="text-xs text-green-600 font-bold">
-                      📍 {selectedClub.location.region}{selectedClub.location.district ? " " + selectedClub.location.district : ""}
-                    </span>
-                  </span>
-                )}
-                {selectedClub.schedule && (
-                  <span className="inline-flex items-center gap-1 bg-indigo-50 rounded-full px-3 py-1">
-                    <span className="text-xs text-indigo-600 font-bold">
-                      📅 {selectedClub.schedule.day} {selectedClub.schedule.time}
-                    </span>
-                  </span>
-                )}
-              </div>
-              <button onClick={() => handleCopyCode(selectedClub.code, "club")}
-                className={`w-full py-3 rounded-xl font-medium text-sm transition-colors
-                  ${copied ? "bg-green-100 text-green-600" : "bg-indigo-50 text-indigo-600 border border-indigo-200"}`}>
-                {copied ? "✅ 복사됨!" : "📋 초대 코드 복사하기"}
-              </button>
+            {/* ── 내부 탭 ── */}
+            <div className="flex bg-white rounded-2xl p-1 shadow-sm gap-1">
+              {[["home","🏠 홈"],["history","📋 기록"],["stats","📊 통계"]].map(([t, label]) => (
+                <button key={t}
+                  onClick={() => {
+                    setClubDetailTab(t);
+                    if ((t === "history" || t === "stats") && clubHistory.length === 0) {
+                      fetchClubHistory(selectedClub.code);
+                    }
+                  }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all
+                    ${clubDetailTab === t ? "bg-indigo-500 text-white shadow" : "text-gray-400"}`}>
+                  {label}
+                </button>
+              ))}
             </div>
 
-            {/* 멤버 목록 */}
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="font-bold text-gray-700">
-                  멤버 ({selectedClub.members?.length || 0}/{selectedClub.maxMembers})
-                </h2>
-                <span className="text-xs text-gray-400 animate-pulse">● 실시간</span>
-              </div>
-              <div className="space-y-2">
-                {(selectedClub.members || []).map((member) => (
-                  <div key={member.uid} className="flex items-center gap-3 py-1">
-                    <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {member.photoURL
-                        ? <img src={member.photoURL} alt="" className="w-full h-full object-cover" />
-                        : <span className="text-lg">😊</span>}
+            {/* ════ 홈 탭 ════ */}
+            {clubDetailTab === "home" && (
+              <>
+                {/* 동아리 코드 카드 */}
+                <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
+                  <p className="text-xs text-gray-400 mb-1">동아리 초대 코드</p>
+                  <p className="text-3xl font-mono font-black text-indigo-600 tracking-widest mb-2">
+                    {selectedClub.code}
+                  </p>
+                  {selectedClub.description && (
+                    <p className="text-sm text-gray-500 mb-3 leading-relaxed">{selectedClub.description}</p>
+                  )}
+                  <div className="flex flex-wrap justify-center gap-2 mb-3">
+                    {selectedClub.location?.region && (
+                      <span className="inline-flex items-center gap-1 bg-green-50 rounded-full px-3 py-1">
+                        <span className="text-xs text-green-600 font-bold">
+                          📍 {selectedClub.location.region}{selectedClub.location.district ? " " + selectedClub.location.district : ""}
+                        </span>
+                      </span>
+                    )}
+                    {selectedClub.schedule && (
+                      <span className="inline-flex items-center gap-1 bg-indigo-50 rounded-full px-3 py-1">
+                        <span className="text-xs text-indigo-600 font-bold">
+                          📅 {selectedClub.schedule.day} {selectedClub.schedule.time}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                  <button onClick={() => handleCopyCode(selectedClub.code, "club")}
+                    className={`w-full py-3 rounded-xl font-medium text-sm transition-colors
+                      ${copied ? "bg-green-100 text-green-600" : "bg-indigo-50 text-indigo-600 border border-indigo-200"}`}>
+                    {copied ? "✅ 복사됨!" : "📋 초대 코드 복사하기"}
+                  </button>
+                </div>
+
+                {/* 멤버 목록 + 동아리장 위임 */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm">
+                  <div className="flex justify-between items-center mb-3">
+                    <h2 className="font-bold text-gray-700">
+                      멤버 ({selectedClub.members?.length || 0}/{selectedClub.maxMembers})
+                    </h2>
+                    <span className="text-xs text-gray-400 animate-pulse">● 실시간</span>
+                  </div>
+                  <div className="space-y-2">
+                    {(selectedClub.members || []).map((member) => (
+                      <div key={member.uid} className="flex items-center gap-3 py-1">
+                        <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {member.photoURL
+                            ? <img src={member.photoURL} alt="" className="w-full h-full object-cover" />
+                            : <span className="text-lg">😊</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-700 flex items-center gap-1 flex-wrap">
+                            <span className="truncate">{member.name}</span>
+                            {member.uid === selectedClub.hostUid && (
+                              <span className="text-xs bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded flex-shrink-0">동아리장</span>
+                            )}
+                            {member.uid === user?.uid && (
+                              <span className="text-xs text-gray-400 flex-shrink-0">(나)</span>
+                            )}
+                          </p>
+                        </div>
+                        {/* 동아리장만 볼 수 있는 위임 버튼 (자기 자신 제외) */}
+                        {selectedClub.hostUid === user?.uid && member.uid !== user?.uid && (
+                          <button
+                            onClick={() => handleTransferLeader(member.uid, member.name)}
+                            className="flex-shrink-0 text-xs bg-amber-50 text-amber-600 border border-amber-200 px-2 py-1 rounded-lg font-bold active:bg-amber-100">
+                            위임
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {selectedClub.hostUid === user?.uid && (selectedClub.members?.length || 0) > 1 && (
+                    <p className="text-xs text-gray-400 mt-3 text-center">
+                      💡 멤버 옆 <span className="font-bold text-amber-500">위임</span> 버튼으로 동아리장을 이전할 수 있어요
+                    </p>
+                  )}
+                </div>
+
+                {/* 그룹 보너스 */}
+                <div className="bg-indigo-50 rounded-2xl p-3 text-center">
+                  <p className="text-sm text-indigo-700">
+                    오늘 플로깅 시 <span className="font-bold">{selectedClub.members?.length || 0}명</span> 참여 —
+                    그룹 보너스 <span className="font-bold text-indigo-600">+{(selectedClub.members?.length || 0) * 5}P</span> 예정
+                  </p>
+                </div>
+
+                {/* 플로깅 시작 */}
+                {selectedClub.hostUid === user?.uid ? (
+                  <button onClick={handleStartClubPlogging} disabled={loading}
+                    className="w-full bg-green-500 text-white py-5 rounded-2xl font-bold text-lg shadow-md disabled:opacity-40 active:scale-95 transition-transform">
+                    {loading ? "시작 중..." : `🚀 오늘의 플로깅 시작 (${selectedClub.members?.length || 0}명)`}
+                  </button>
+                ) : (
+                  <div className="bg-white rounded-2xl p-4 text-center shadow-sm">
+                    <div className="text-3xl mb-1 animate-bounce">⏳</div>
+                    <p className="text-gray-600 font-medium text-sm">동아리장이 플로깅을 시작하면 자동으로 이동해요</p>
+                  </div>
+                )}
+
+                {/* 탈퇴 */}
+                {selectedClub.hostUid !== user?.uid && (
+                  <button onClick={handleLeaveClub}
+                    className="w-full bg-white text-red-400 py-3 rounded-2xl text-sm font-medium shadow-sm border border-red-100 active:bg-red-50">
+                    동아리 탈퇴하기
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* ════ 기록 탭 ════ */}
+            {clubDetailTab === "history" && (
+              <>
+                {historyLoading ? (
+                  <div className="text-center py-10 text-gray-400 text-sm animate-pulse">기록 불러오는 중...</div>
+                ) : clubHistory.length === 0 ? (
+                  <div className="text-center py-14">
+                    <div className="text-5xl mb-3">📋</div>
+                    <p className="font-bold text-gray-500">아직 플로깅 기록이 없어요</p>
+                    <p className="text-xs text-gray-400 mt-1">동아리 플로깅을 완료하면 여기에 기록돼요</p>
+                  </div>
+                ) : (() => {
+                  // sessionDate 기준 그룹핑
+                  const grouped = {};
+                  clubHistory.forEach((h) => {
+                    const key = h.sessionDate || h.createdAt?.toDate?.()?.toLocaleDateString("ko-KR") || "날짜 없음";
+                    if (!grouped[key]) grouped[key] = [];
+                    grouped[key].push(h);
+                  });
+                  return (
+                    <div className="space-y-4">
+                      {Object.entries(grouped).map(([date, entries]) => (
+                        <div key={date} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                          <div className="bg-indigo-50 px-4 py-2 border-b border-indigo-100">
+                            <p className="text-xs font-bold text-indigo-600">📅 {date}</p>
+                            <p className="text-xs text-indigo-400">{entries.length}명 참여</p>
+                          </div>
+                          <div className="divide-y divide-gray-50">
+                            {entries.map((h) => (
+                              <div key={h.id} className="flex items-center gap-3 px-4 py-3">
+                                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                  {h.photoURL
+                                    ? <img src={h.photoURL} alt="" className="w-full h-full object-cover" />
+                                    : <span className="text-sm">😊</span>}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-bold text-gray-700 truncate">
+                                    {h.name}
+                                    {h.uid === user?.uid && <span className="text-xs text-gray-400 font-normal ml-1">(나)</span>}
+                                  </p>
+                                  <p className="text-xs text-gray-400">
+                                    {h.distance?.toFixed(2)}km ·{" "}
+                                    {Math.floor((h.duration || 0) / 60)}분
+                                    {h.verified && " · ✅ 인증"}
+                                  </p>
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                  <p className="text-sm font-black text-indigo-600">+{h.points}P</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-700 flex items-center gap-1 flex-wrap">
-                        <span className="truncate">{member.name}</span>
-                        {member.uid === selectedClub.hostUid && (
-                          <span className="text-xs bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded flex-shrink-0">동아리장</span>
-                        )}
-                        {member.uid === user?.uid && (
-                          <span className="text-xs text-gray-400 flex-shrink-0">(나)</span>
-                        )}
-                      </p>
+                  );
+                })()}
+              </>
+            )}
+
+            {/* ════ 통계 탭 ════ */}
+            {clubDetailTab === "stats" && (() => {
+              const myHistory = clubHistory.filter((h) => h.uid === user?.uid);
+              const totalDist = clubHistory.reduce((s, h) => s + (h.distance || 0), 0);
+              const totalMin  = Math.round(clubHistory.reduce((s, h) => s + (h.duration || 0), 0) / 60);
+              const myDist    = myHistory.reduce((s, h) => s + (h.distance || 0), 0);
+
+              // 멤버별 참여 횟수
+              const memberCounts = {};
+              clubHistory.forEach((h) => {
+                if (!memberCounts[h.uid]) memberCounts[h.uid] = { name: h.name, photoURL: h.photoURL, count: 0, dist: 0 };
+                memberCounts[h.uid].count++;
+                memberCounts[h.uid].dist += (h.distance || 0);
+              });
+              const memberRank = Object.values(memberCounts).sort((a, b) => b.count - a.count);
+
+              return (
+                <div className="space-y-4">
+                  {/* 동아리 전체 통계 */}
+                  <div className="bg-white rounded-2xl p-4 shadow-sm">
+                    <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">동아리 전체</h3>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { icon:"🏃", val: clubHistory.length, unit:"회", label:"총 기록" },
+                        { icon:"📍", val: totalDist.toFixed(1), unit:"km", label:"총 거리" },
+                        { icon:"⏱", val: totalMin, unit:"분", label:"총 시간" },
+                      ].map(({ icon, val, unit, label }) => (
+                        <div key={label} className="bg-indigo-50 rounded-xl p-3 text-center">
+                          <div className="text-xl mb-1">{icon}</div>
+                          <p className="text-lg font-black text-indigo-700">{val}<span className="text-xs font-normal text-indigo-400 ml-0.5">{unit}</span></p>
+                          <p className="text-xs text-gray-400">{label}</p>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* 그룹 보너스 */}
-            <div className="bg-indigo-50 rounded-2xl p-3 text-center">
-              <p className="text-sm text-indigo-700">
-                오늘 플로깅 시 <span className="font-bold">{selectedClub.members?.length || 0}명</span> 참여 —
-                그룹 보너스 <span className="font-bold text-indigo-600">+{(selectedClub.members?.length || 0) * 5}P</span> 예정
-              </p>
-            </div>
+                  {/* 내 통계 */}
+                  <div className="bg-white rounded-2xl p-4 shadow-sm">
+                    <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">나의 기록</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { icon:"🏅", val: myHistory.length, unit:"회", label:"참여 횟수" },
+                        { icon:"🌿", val: myDist.toFixed(1), unit:"km", label:"총 거리" },
+                      ].map(({ icon, val, unit, label }) => (
+                        <div key={label} className="bg-green-50 rounded-xl p-3 text-center">
+                          <div className="text-xl mb-1">{icon}</div>
+                          <p className="text-lg font-black text-green-700">{val}<span className="text-xs font-normal text-green-400 ml-0.5">{unit}</span></p>
+                          <p className="text-xs text-gray-400">{label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-            {/* 플로깅 시작 */}
-            {selectedClub.hostUid === user?.uid ? (
-              <button onClick={handleStartClubPlogging} disabled={loading}
-                className="w-full bg-green-500 text-white py-5 rounded-2xl font-bold text-lg shadow-md disabled:opacity-40 active:scale-95 transition-transform">
-                {loading ? "시작 중..." : `🚀 오늘의 플로깅 시작 (${selectedClub.members?.length || 0}명)`}
-              </button>
-            ) : (
-              <div className="bg-white rounded-2xl p-4 text-center shadow-sm">
-                <div className="text-3xl mb-1 animate-bounce">⏳</div>
-                <p className="text-gray-600 font-medium text-sm">동아리장이 플로깅을 시작하면 자동으로 이동해요</p>
-              </div>
-            )}
+                  {/* 멤버별 참여 순위 */}
+                  {memberRank.length > 0 && (
+                    <div className="bg-white rounded-2xl p-4 shadow-sm">
+                      <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">멤버 참여 순위</h3>
+                      <div className="space-y-2">
+                        {memberRank.map((m, i) => (
+                          <div key={m.name + i} className="flex items-center gap-3">
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0
+                              ${i === 0 ? "bg-yellow-400 text-white" : i === 1 ? "bg-gray-300 text-white" : i === 2 ? "bg-amber-600 text-white" : "bg-gray-100 text-gray-400"}`}>
+                              {i + 1}
+                            </span>
+                            <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {m.photoURL
+                                ? <img src={m.photoURL} alt="" className="w-full h-full object-cover" />
+                                : <span className="text-xs">😊</span>}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-gray-700 truncate">{m.name}</p>
+                              <p className="text-xs text-gray-400">{m.dist.toFixed(1)}km</p>
+                            </div>
+                            <span className="text-sm font-black text-indigo-600 flex-shrink-0">{m.count}회</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-            {/* 탈퇴 */}
-            {selectedClub.hostUid !== user?.uid && (
-              <button onClick={handleLeaveClub}
-                className="w-full bg-white text-red-400 py-3 rounded-2xl text-sm font-medium shadow-sm border border-red-100 active:bg-red-50">
-                동아리 탈퇴하기
-              </button>
-            )}
+                  {historyLoading && (
+                    <div className="text-center py-4 text-gray-400 text-xs animate-pulse">통계 계산 중...</div>
+                  )}
+                  {!historyLoading && clubHistory.length === 0 && (
+                    <div className="text-center py-10">
+                      <div className="text-4xl mb-2">📊</div>
+                      <p className="text-gray-400 text-sm">플로깅을 완료하면 통계가 쌓여요</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </>
         )}
 

@@ -681,6 +681,7 @@ function MapPageInner() {
   const searchParams = useSearchParams();
   const groupId      = searchParams.get("groupId");
   const groupSize    = parseInt(searchParams.get("groupSize") || "1");
+  const groupType    = searchParams.get("groupType"); // "club" 이면 동아리 플로깅
   const { user }     = useAuth();
 
   const [result, setResult]         = useState(null);
@@ -900,6 +901,29 @@ function MapPageInner() {
           });
         });
       }
+      // ── 동아리 플로깅 기록 저장 ──────────────────────────
+      if (groupId && groupType === "club" && user) {
+        try {
+          const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+          await addDoc(collection(db, "clubs", groupId, "history"), {
+            uid:      user.uid,
+            name:     user.displayName || user.email?.split("@")[0] || "멤버",
+            photoURL: user.photoURL || "",
+            distance: routeDistance,
+            duration: routeDuration,
+            points,
+            verified: !!photoUrl,
+            sessionDate: today,
+            createdAt: serverTimestamp(),
+          });
+          await updateDoc(doc(db, "clubs", groupId), {
+            totalPloggings: increment(1),
+            totalDistance:  increment(routeDistance),
+            totalDuration:  increment(routeDuration),
+          }).catch(() => {}); // 필드 없으면 무시
+        } catch (e2) { console.error("클럽 기록 저장 실패:", e2); }
+      }
+
       notifyPloggingComplete(routeDistance, points);
       fetchPastRoutes();
     } catch (e) {
