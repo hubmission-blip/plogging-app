@@ -82,13 +82,30 @@ const BANNERS = [
   },
 ];
 
+// ─── YouTube URL → embed ID 추출 ──────────────────────────────
+// 지원 형식: youtube.com/watch?v=XXX | youtu.be/XXX | youtube.com/shorts/XXX
+function getYouTubeId(url) {
+  const patterns = [
+    /youtube\.com\/watch\?(?:.*&)?v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const re of patterns) {
+    const m = url.match(re);
+    if (m) return m[1];
+  }
+  return null;
+}
+
 // ─── 컴포넌트 ─────────────────────────────────────────────────
 // userRegion: 감지된 사용자 시/도 (예: "부산광역시") | null = 미감지
 export default function BannerSlider({ userRegion = null, autoInterval = 4000 }) {
-  const [current,    setCurrent]    = useState(0);
-  const [paused,     setPaused]     = useState(false);
-  const [allBanners, setAllBanners] = useState(null); // null = 아직 로드 전
-  const [bannerList, setBannerList] = useState(BANNERS);
+  const [current,      setCurrent]      = useState(0);
+  const [paused,       setPaused]       = useState(false);
+  const [allBanners,   setAllBanners]   = useState(null); // null = 아직 로드 전
+  const [bannerList,   setBannerList]   = useState(BANNERS);
+  const [ytVideoId,    setYtVideoId]    = useState(null); // YouTube 모달용
   const timerRef = useRef(null);
 
   // ── Firestore에서 활성 배너 전체 로드 ───────────────────────
@@ -157,16 +174,71 @@ export default function BannerSlider({ userRegion = null, autoInterval = 4000 })
 
   const handleBannerClick = (banner) => {
     if (!banner.link) return;
+    // YouTube 링크 → 앱 내 임베드 모달로 재생 (창 이중 열림 문제 방지)
+    if (banner.link.includes("youtube.com") || banner.link.includes("youtu.be")) {
+      const id = getYouTubeId(banner.link);
+      if (id) { setYtVideoId(id); setPaused(true); return; }
+    }
+    // 일반 외부 링크
     if (banner.link.startsWith("http")) {
       window.open(banner.link, "_blank");
     } else {
+      // 앱 내부 경로
       window.location.href = banner.link;
     }
   };
 
+  const handleCloseYt = () => { setYtVideoId(null); setPaused(false); };
+
   const banner = bannerList[current];
 
   return (
+    <>
+    {/* ── YouTube 임베드 모달 ── */}
+    {ytVideoId && (
+      <div
+        className="fixed inset-0 bg-black/85 z-[500] flex flex-col items-center justify-center p-4"
+        onClick={handleCloseYt}
+      >
+        <div
+          className="w-full max-w-lg bg-black rounded-2xl overflow-hidden shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* 모달 헤더 */}
+          <div className="flex items-center justify-between px-4 py-2.5 bg-gray-900">
+            <div className="flex items-center gap-2">
+              <span className="text-red-500 text-lg">▶</span>
+              <p className="text-white text-sm font-bold">YouTube</p>
+            </div>
+            <button
+              onClick={handleCloseYt}
+              className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center text-lg leading-none active:bg-white/20"
+            >
+              ×
+            </button>
+          </div>
+          {/* 영상 영역 (16:9) */}
+          <div style={{ aspectRatio: "16/9" }}>
+            <iframe
+              src={`https://www.youtube.com/embed/${ytVideoId}?autoplay=1&rel=0`}
+              className="w-full h-full"
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen
+              title="YouTube 영상"
+            />
+          </div>
+          {/* 닫기 버튼 */}
+          <button
+            onClick={handleCloseYt}
+            className="w-full py-3 bg-gray-900 text-gray-300 text-sm font-bold active:bg-gray-800"
+          >
+            ✕ 닫고 돌아가기
+          </button>
+        </div>
+        <p className="text-white/40 text-xs mt-3">배경을 탭해도 닫혀요</p>
+      </div>
+    )}
+
     <div
       className="relative w-full rounded-2xl overflow-hidden select-none"
       style={{ aspectRatio: "5/2", minHeight: "160px", maxHeight: "220px" }}
@@ -249,5 +321,6 @@ export default function BannerSlider({ userRegion = null, autoInterval = 4000 })
         {current + 1}/{total}
       </div>
     </div>
+    </>
   );
 }
