@@ -72,9 +72,23 @@ export default function AdminPage() {
   const [confirmInput,  setConfirmInput]  = useState("");
 
   // ── 공지사항 ──────────────────────────────────────────
-  const [notices,    setNotices]    = useState([]);
-  const [newNotice,  setNewNotice]  = useState({ title: "", content: "", type: "info" });
-  const [noticeMode, setNoticeMode] = useState(false); // 작성 모드
+  const [notices,       setNotices]       = useState([]);
+  const [newNotice,     setNewNotice]     = useState({ title: "", content: "", type: "info" });
+  const [noticeMode,    setNoticeMode]    = useState(false); // 작성 모드
+  const [editingNotice, setEditingNotice] = useState(null);  // 수정 중인 공지 (null = 새 작성)
+
+  // ── 에코스팟 ──────────────────────────────────────────
+  const ECO_CATEGORIES = [
+    { id: "eco_store",   label: "🌿 친환경매장",   color: "bg-green-100 text-green-700",  border: "#16A34A" },
+    { id: "recycle_bin", label: "♻️ 재활용수거기",  color: "bg-blue-100 text-blue-700",    border: "#2563EB" },
+    { id: "smart_bin",   label: "🗑️ 스마트휴지통", color: "bg-purple-100 text-purple-700", border: "#7C3AED" },
+  ];
+  const EMPTY_ECO = { name: "", address: "", lat: "", lng: "", category: "eco_store", desc: "", benefit: "", contact: "", icon: "", active: true };
+  const [ecoSpots,     setEcoSpots]     = useState([]);
+  const [ecoMode,      setEcoMode]      = useState(false);
+  const [editingEco,   setEditingEco]   = useState(null);
+  const [newEco,       setNewEco]       = useState(EMPTY_ECO);
+  const [ecoCatFilter, setEcoCatFilter] = useState("all");
 
   // ── 배너 ──────────────────────────────────────────────
   const [banners,      setBanners]      = useState([]);
@@ -249,6 +263,15 @@ export default function AdminPage() {
     finally { setLoading(false); }
   }, []);
 
+  // ── Fetch: 에코스팟 ───────────────────────────────────
+  const fetchEcoSpots = useCallback(async () => {
+    try {
+      const snap = await getDocs(collection(db, "partners"));
+      const arr  = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setEcoSpots(arr);
+    } catch (e) { console.error("에코스팟 로드 실패:", e); }
+  }, []);
+
   // ── 탭 전환 시 데이터 로드 ─────────────────────────────
   useEffect(() => {
     if (!user || !isAdmin) return;
@@ -258,6 +281,7 @@ export default function AdminPage() {
     if (activeTab === "maintenance") fetchMaintenance();
     if (activeTab === "notices")     fetchNotices();
     if (activeTab === "banners")     fetchBanners();
+    if (activeTab === "ecospots")    fetchEcoSpots();
   }, [activeTab, user, isAdmin]);
 
   useEffect(() => {
@@ -360,6 +384,32 @@ export default function AdminPage() {
   };
 
   // ──────────────────────────────────────────────────────
+  //  Action: 공지사항 수정
+  // ──────────────────────────────────────────────────────
+  const handleUpdateNotice = async () => {
+    if (!newNotice.title.trim() || !newNotice.content.trim()) {
+      showMsg("❌ 제목과 내용을 입력하세요"); return;
+    }
+    try {
+      await updateDoc(doc(db, "notices", editingNotice.id), {
+        title:     newNotice.title,
+        content:   newNotice.content,
+        type:      newNotice.type,
+        updatedAt: serverTimestamp(),
+      });
+      setNotices((prev) => prev.map((n) =>
+        n.id === editingNotice.id
+          ? { ...n, title: newNotice.title, content: newNotice.content, type: newNotice.type }
+          : n
+      ));
+      setNewNotice({ title: "", content: "", type: "info" });
+      setEditingNotice(null);
+      setNoticeMode(false);
+      showMsg("✅ 공지사항이 수정되었습니다");
+    } catch (e) { showMsg("❌ 수정 실패: " + e.message); }
+  };
+
+  // ──────────────────────────────────────────────────────
   //  Action: 공지사항 토글/삭제
   // ──────────────────────────────────────────────────────
   const handleToggleNotice = async (id, current) => {
@@ -375,6 +425,45 @@ export default function AdminPage() {
       await deleteDoc(doc(db, "notices", id));
       setNotices((prev) => prev.filter((n) => n.id !== id));
       showMsg("✅ 공지사항이 삭제되었습니다");
+    } catch (e) { showMsg("❌ 삭제 실패: " + e.message); }
+  };
+
+  // ──────────────────────────────────────────────────────
+  //  Action: 에코스팟 CRUD
+  // ──────────────────────────────────────────────────────
+  const handleSaveEco = async () => {
+    if (!newEco.name.trim()) { showMsg("❌ 장소명을 입력하세요"); return; }
+    const lat = parseFloat(newEco.lat);
+    const lng = parseFloat(newEco.lng);
+    if (isNaN(lat) || isNaN(lng)) { showMsg("❌ 위도/경도를 올바르게 입력하세요"); return; }
+    try {
+      const data = { ...newEco, lat, lng, updatedAt: serverTimestamp() };
+      if (editingEco) {
+        await updateDoc(doc(db, "partners", editingEco.id), data);
+        setEcoSpots((prev) => prev.map((e) => e.id === editingEco.id ? { ...e, ...data } : e));
+        showMsg("✅ 에코스팟이 수정되었습니다");
+      } else {
+        const docRef = await addDoc(collection(db, "partners"), { ...data, createdAt: serverTimestamp() });
+        setEcoSpots((prev) => [{ id: docRef.id, ...data }, ...prev]);
+        showMsg("✅ 에코스팟이 등록되었습니다");
+      }
+      setNewEco(EMPTY_ECO); setEditingEco(null); setEcoMode(false);
+    } catch (e) { showMsg("❌ 저장 실패: " + e.message); }
+  };
+
+  const handleToggleEco = async (id, current) => {
+    try {
+      await updateDoc(doc(db, "partners", id), { active: !current });
+      setEcoSpots((prev) => prev.map((e) => e.id === id ? { ...e, active: !current } : e));
+    } catch (e) { showMsg("❌ 상태 변경 실패: " + e.message); }
+  };
+
+  const handleDeleteEco = async (id) => {
+    if (!confirm("이 에코스팟을 삭제할까요?")) return;
+    try {
+      await deleteDoc(doc(db, "partners", id));
+      setEcoSpots((prev) => prev.filter((e) => e.id !== id));
+      showMsg("✅ 삭제되었습니다");
     } catch (e) { showMsg("❌ 삭제 실패: " + e.message); }
   };
 
@@ -479,6 +568,7 @@ export default function AdminPage() {
     { id: "users",       label: "👥",  name: "유저" },
     { id: "rewards",     label: "🎁",  name: `리워드${rewards.filter(r=>r.status==="pending").length > 0 ? ` (${rewards.filter(r=>r.status==="pending").length})` : ""}` },
     { id: "banners",     label: "🖼️",  name: "배너" },
+    { id: "ecospots",    label: "♻️",  name: "에코스팟" },
     { id: "maintenance", label: "🔧",  name: "유지관리" },
     { id: "notices",     label: "📢",  name: "공지" },
   ];
@@ -950,7 +1040,7 @@ export default function AdminPage() {
                 </button>
               ) : (
                 <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
-                  <SectionTitle>✏️ 공지사항 작성</SectionTitle>
+                  <SectionTitle>{editingNotice ? "✏️ 공지사항 수정" : "✏️ 공지사항 작성"}</SectionTitle>
 
                   {/* 유형 선택 */}
                   <div className="flex gap-2">
@@ -983,16 +1073,20 @@ export default function AdminPage() {
 
                   <div className="flex gap-2">
                     <button
-                      onClick={() => { setNoticeMode(false); setNewNotice({ title: "", content: "", type: "info" }); }}
+                      onClick={() => {
+                        setNoticeMode(false);
+                        setEditingNotice(null);
+                        setNewNotice({ title: "", content: "", type: "info" });
+                      }}
                       className="flex-1 bg-gray-100 text-gray-500 py-3 rounded-xl text-sm font-medium"
                     >
                       취소
                     </button>
                     <button
-                      onClick={handleCreateNotice}
+                      onClick={editingNotice ? handleUpdateNotice : handleCreateNotice}
                       className="flex-1 bg-green-500 text-white py-3 rounded-xl text-sm font-bold"
                     >
-                      등록
+                      {editingNotice ? "수정 완료" : "등록"}
                     </button>
                   </div>
                 </div>
@@ -1028,6 +1122,17 @@ export default function AdminPage() {
                           {n.active ? "비활성화" : "활성화"}
                         </button>
                         <button
+                          onClick={() => {
+                            setEditingNotice(n);
+                            setNewNotice({ title: n.title, content: n.content, type: n.type || "info" });
+                            setNoticeMode(true);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                          className="flex-1 bg-blue-100 text-blue-600 py-1.5 rounded-lg text-xs font-medium"
+                        >
+                          수정
+                        </button>
+                        <button
                           onClick={() => handleDeleteNotice(n.id)}
                           className="flex-1 bg-red-100 text-red-600 py-1.5 rounded-lg text-xs font-medium"
                         >
@@ -1040,6 +1145,171 @@ export default function AdminPage() {
               )}
             </>
           )}
+
+          {/* ══════════════════════════════════════
+              ♻️ 에코스팟 탭
+          ══════════════════════════════════════ */}
+          {activeTab === "ecospots" && (() => {
+            const filteredEco = ecoCatFilter === "all"
+              ? ecoSpots
+              : ecoSpots.filter((e) => e.category === ecoCatFilter);
+            return (
+              <>
+                {/* 헤더 */}
+                <div className="flex justify-between items-center">
+                  <SectionTitle>♻️ 에코스팟 관리 ({ecoSpots.length}개)</SectionTitle>
+                  <button
+                    onClick={() => { setEcoMode((v) => !v); setEditingEco(null); setNewEco(EMPTY_ECO); }}
+                    className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-full font-bold"
+                  >
+                    {ecoMode ? "✕ 닫기" : "+ 장소 등록"}
+                  </button>
+                </div>
+
+                {/* 카테고리 필터 */}
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                  {[{ id: "all", label: `전체 (${ecoSpots.length})` }, ...ECO_CATEGORIES.map((c) => ({
+                    id: c.id,
+                    label: `${c.label} (${ecoSpots.filter((e) => e.category === c.id).length})`,
+                  }))].map((t) => (
+                    <button key={t.id} onClick={() => setEcoCatFilter(t.id)}
+                      className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all
+                        ${ecoCatFilter === t.id ? "bg-green-500 text-white" : "bg-white text-gray-500 border border-gray-200"}`}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* 등록/수정 폼 */}
+                {ecoMode && (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+                    <SectionTitle>{editingEco ? "✏️ 에코스팟 수정" : "✏️ 에코스팟 등록"}</SectionTitle>
+
+                    {/* 카테고리 선택 */}
+                    <div className="flex gap-2">
+                      {ECO_CATEGORIES.map((c) => (
+                        <button key={c.id} onClick={() => setNewEco((p) => ({ ...p, category: c.id }))}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-colors
+                            ${newEco.category === c.id ? "bg-green-500 text-white border-green-500" : "text-gray-400 border-gray-200"}`}>
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <input type="text" placeholder="장소명 *"
+                      value={newEco.name}
+                      onChange={(e) => setNewEco((p) => ({ ...p, name: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-green-400" />
+
+                    <input type="text" placeholder="주소 (예: 서울시 강남구 ...)"
+                      value={newEco.address}
+                      onChange={(e) => setNewEco((p) => ({ ...p, address: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-green-400" />
+
+                    <div className="flex gap-2">
+                      <input type="text" placeholder="위도 (예: 37.5665)"
+                        value={newEco.lat}
+                        onChange={(e) => setNewEco((p) => ({ ...p, lat: e.target.value }))}
+                        className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-green-400" />
+                      <input type="text" placeholder="경도 (예: 126.9780)"
+                        value={newEco.lng}
+                        onChange={(e) => setNewEco((p) => ({ ...p, lng: e.target.value }))}
+                        className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-green-400" />
+                    </div>
+
+                    <div className="bg-blue-50 rounded-xl px-3 py-2 text-xs text-blue-700">
+                      💡 위도/경도는 카카오맵 또는 구글맵에서 장소를 우클릭하면 확인할 수 있어요
+                    </div>
+
+                    <textarea placeholder="소개 (광고 문구, 간단 설명)"
+                      value={newEco.desc}
+                      onChange={(e) => setNewEco((p) => ({ ...p, desc: e.target.value }))}
+                      rows={2}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-green-400 resize-none" />
+
+                    <input type="text" placeholder="혜택 (예: 포인트 2배 적립)"
+                      value={newEco.benefit}
+                      onChange={(e) => setNewEco((p) => ({ ...p, benefit: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-green-400" />
+
+                    <input type="text" placeholder="연락처/링크 (선택)"
+                      value={newEco.contact}
+                      onChange={(e) => setNewEco((p) => ({ ...p, contact: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-green-400" />
+
+                    <input type="text" placeholder="아이콘 이모지 (예: 🌿 ♻️ 🏪)"
+                      value={newEco.icon}
+                      onChange={(e) => setNewEco((p) => ({ ...p, icon: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-green-400" />
+
+                    <div className="flex gap-2">
+                      <button onClick={() => { setEcoMode(false); setEditingEco(null); setNewEco(EMPTY_ECO); }}
+                        className="flex-1 bg-gray-100 text-gray-500 py-3 rounded-xl text-sm font-medium">취소</button>
+                      <button onClick={handleSaveEco}
+                        className="flex-1 bg-green-500 text-white py-3 rounded-xl text-sm font-bold">
+                        {editingEco ? "수정 완료" : "등록"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 목록 */}
+                {filteredEco.length === 0 ? (
+                  <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+                    <div className="text-4xl mb-2">♻️</div>
+                    <p className="text-gray-400 text-sm">등록된 에코스팟이 없어요</p>
+                  </div>
+                ) : (
+                  filteredEco.map((e) => {
+                    const cat = ECO_CATEGORIES.find((c) => c.id === e.category) || ECO_CATEGORIES[0];
+                    return (
+                      <div key={e.id} className={`bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 ${!e.active ? "opacity-50" : ""}`}
+                        style={{ borderLeftColor: cat.border }}>
+                        <div className="p-3">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl">{e.icon || cat.label.split(" ")[0]}</span>
+                              <div>
+                                <p className="font-bold text-sm text-gray-800">{e.name}</p>
+                                {e.address && <p className="text-xs text-gray-400">📍 {e.address}</p>}
+                              </div>
+                            </div>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${cat.color}`}>
+                              {cat.label}
+                            </span>
+                          </div>
+                          {e.desc && <p className="text-xs text-gray-600 mb-1">{e.desc}</p>}
+                          {e.benefit && <p className="text-xs text-green-700 font-medium">🎁 {e.benefit}</p>}
+                          <p className="text-xs text-gray-400 mt-1">위도 {e.lat} / 경도 {e.lng}</p>
+                        </div>
+                        <div className="flex border-t border-gray-100">
+                          <button onClick={() => handleToggleEco(e.id, e.active)}
+                            className="flex-1 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50">
+                            {e.active ? "비활성화" : "활성화"}
+                          </button>
+                          <button onClick={() => {
+                            setEditingEco(e);
+                            setNewEco({ name: e.name, address: e.address || "", lat: String(e.lat), lng: String(e.lng),
+                              category: e.category || "eco_store", desc: e.desc || "", benefit: e.benefit || "",
+                              contact: e.contact || "", icon: e.icon || "", active: e.active !== false });
+                            setEcoMode(true);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                            className="flex-1 py-2 text-xs font-medium text-blue-600 hover:bg-blue-50 border-l border-gray-100">
+                            수정
+                          </button>
+                          <button onClick={() => handleDeleteEco(e.id)}
+                            className="flex-1 py-2 text-xs font-medium text-red-500 hover:bg-red-50 border-l border-gray-100">
+                            삭제
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </>
+            );
+          })()}
 
           {/* ══════════════════════════════════════
               🖼️ 배너 탭

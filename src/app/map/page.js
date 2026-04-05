@@ -611,60 +611,79 @@ function PhotoRequiredModal({ onConfirm, onSkip, uploading, aiEnabled = true }) 
 }
 
 // ─── B. 제휴 상점 상세 팝업 ──────────────────────────────
-function PartnerDetailSheet({ partner, onClose }) {
-  return (
-    <div className="absolute inset-x-0 bottom-0 z-30 p-4">
-      <div className="bg-white rounded-3xl p-6 shadow-2xl border border-gray-100">
-        {/* 상단 핸들 */}
-        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+const ECO_CAT_STYLE = {
+  eco_store:   { label: "🌿 친환경매장",   bg: "bg-green-100",  text: "text-green-700",  headerBg: "from-green-400 to-emerald-500" },
+  recycle_bin: { label: "♻️ 재활용수거기",  bg: "bg-blue-100",   text: "text-blue-700",   headerBg: "from-blue-400 to-cyan-500" },
+  smart_bin:   { label: "🗑️ 스마트휴지통", bg: "bg-purple-100", text: "text-purple-700", headerBg: "from-purple-400 to-violet-500" },
+};
 
-        <div className="flex items-center gap-3 mb-3">
-          <div className="text-4xl w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center">
-            {partner.icon || "🏪"}
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-bold text-gray-800 text-lg">{partner.name}</h2>
-              {partner.badge && (
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${partner.badgeColor || "bg-green-100 text-green-700"}`}>
-                  {partner.badge}
-                </span>
+function PartnerDetailSheet({ partner, onClose }) {
+  const cat = ECO_CAT_STYLE[partner.category] || ECO_CAT_STYLE.eco_store;
+  const distM = partner.distanceKm !== undefined
+    ? partner.distanceKm < 1
+      ? `${(partner.distanceKm * 1000).toFixed(0)}m`
+      : `${partner.distanceKm.toFixed(1)}km`
+    : null;
+
+  return (
+    <div className="absolute inset-x-0 bottom-0 z-30 p-3">
+      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
+        {/* 컬러 헤더 배너 (광고 영역) */}
+        <div className={`bg-gradient-to-r ${cat.headerBg} p-4 text-white relative`}>
+          <button onClick={onClose}
+            className="absolute top-3 right-3 w-7 h-7 bg-white/20 rounded-full flex items-center justify-center text-white text-sm font-bold">
+            ✕
+          </button>
+          <div className="flex items-center gap-3">
+            <div className="text-4xl w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
+              {partner.icon || cat.label.split(" ")[0]}
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium bg-white/20 text-white mb-1 inline-block`}>
+                {cat.label}
+              </span>
+              <h2 className="font-black text-white text-lg leading-tight">{partner.name}</h2>
+              {partner.address && (
+                <p className="text-xs text-white/80 mt-0.5 truncate">📍 {partner.address}</p>
               )}
             </div>
-            {partner.address && (
-              <p className="text-xs text-gray-400 mt-0.5">📍 {partner.address}</p>
+          </div>
+          {distM && (
+            <div className="mt-2 bg-white/20 rounded-xl px-3 py-1.5 inline-flex items-center gap-1.5">
+              <span className="text-sm">📍</span>
+              <span className="text-xs font-bold text-white">내 위치에서 약 {distM}</span>
+            </div>
+          )}
+        </div>
+
+        {/* 본문 */}
+        <div className="p-4 space-y-3">
+          {partner.desc && (
+            <p className="text-sm text-gray-600 leading-relaxed">{partner.desc}</p>
+          )}
+
+          {partner.benefit && (
+            <div className="bg-green-50 rounded-2xl p-3 flex items-start gap-2">
+              <span className="text-xl">🎁</span>
+              <div>
+                <p className="text-xs text-gray-400 font-medium mb-0.5">플로거 특별 혜택</p>
+                <p className="text-sm font-bold text-green-700">{partner.benefit}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-1">
+            <button onClick={onClose}
+              className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-2xl font-bold text-sm">
+              닫기
+            </button>
+            {partner.contact && (
+              <a href={partner.contact} target="_blank" rel="noopener noreferrer"
+                className={`flex-1 bg-gradient-to-r ${cat.headerBg} text-white py-3 rounded-2xl font-bold text-sm text-center`}>
+                바로가기 →
+              </a>
             )}
           </div>
-        </div>
-
-        <p className="text-sm text-gray-600 mb-3">{partner.desc}</p>
-
-        <div className="bg-green-50 rounded-xl p-3 mb-4">
-          <p className="text-xs text-gray-500 mb-0.5">파트너 혜택</p>
-          <p className="text-sm font-medium text-green-700">🎁 {partner.benefit}</p>
-        </div>
-
-        {/* 거리 표시 */}
-        {partner.distanceKm !== undefined && (
-          <div className="bg-blue-50 rounded-xl p-2.5 mb-4 flex items-center gap-2">
-            <span className="text-lg">📍</span>
-            <span className="text-sm text-blue-700 font-medium">
-              현재 위치에서 약 {(partner.distanceKm * 1000).toFixed(0)}m
-            </span>
-          </div>
-        )}
-
-        <div className="flex gap-2">
-          <button onClick={onClose}
-            className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-2xl font-bold">
-            닫기
-          </button>
-          {partner.contact && (
-            <a href={partner.contact} target="_blank" rel="noopener noreferrer"
-              className="flex-1 bg-green-500 text-white py-3 rounded-2xl font-bold text-center">
-              바로가기 →
-            </a>
-          )}
         </div>
       </div>
     </div>
@@ -699,9 +718,11 @@ function MapPageInner() {
   const [duplicateMsg, setDuplicateMsg]                 = useState("");
   const noPointsOverride = useRef(false); // 경고 무시하고 시작할 때
 
-  // B. 파트너 마커
-  const [partnerMarkers, setPartnerMarkers]   = useState([]);
+  // B. 파트너 마커 (에코스팟)
+  const [allPartners,    setAllPartners]    = useState([]);   // 전체 목록 (필터 전)
+  const [partnerMarkers, setPartnerMarkers] = useState([]);   // 3km 필터 후
   const [selectedPartner, setSelectedPartner] = useState(null);
+  const [mapUserPos,      setMapUserPos]    = useState(null); // 지도페이지 GPS 위치
 
   // C. 타인 최근 경로
   const [nearbyRoutes, setNearbyRoutes] = useState([]);
@@ -766,7 +787,7 @@ function MapPageInner() {
     }
   }, [user]);
 
-  // ─── B. 파트너 마커 조회 ─────────────────────────────
+  // ─── B. 에코스팟 조회 (전체 로드 후 3km 필터 적용) ──────
   const fetchPartnerMarkers = useCallback(async () => {
     try {
       const snap = await getDocs(collection(db, "partners"));
@@ -777,11 +798,35 @@ function MapPageInner() {
           list.push({ id: d.id, ...data });
         }
       });
-      setPartnerMarkers(list);
+      setAllPartners(list);
     } catch (e) {
-      console.error("파트너 조회 실패:", e);
+      console.error("에코스팟 조회 실패:", e);
     }
   }, []);
+
+  // ─── GPS 위치 취득 (지도 페이지용) ────────────────────
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setMapUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 60000 }
+    );
+  }, []);
+
+  // ─── 3km 반경 필터 (위치 or 파트너 목록 변경 시) ──────
+  useEffect(() => {
+    if (!mapUserPos || allPartners.length === 0) {
+      setPartnerMarkers(allPartners);
+      return;
+    }
+    const RADIUS_KM = 3;
+    const nearby = allPartners
+      .map((p) => ({ ...p, distanceKm: haversineKm(mapUserPos.lat, mapUserPos.lng, p.lat, p.lng) }))
+      .filter((p) => p.distanceKm <= RADIUS_KM)
+      .sort((a, b) => a.distanceKm - b.distanceKm);
+    setPartnerMarkers(nearby);
+  }, [mapUserPos, allPartners]);
 
   // ─── C. 타인 최근 경로 조회 ──────────────────────────
   const fetchNearbyRoutes = useCallback(async () => {

@@ -123,52 +123,65 @@ export default function MapView({
         </CustomOverlayMap>
       )}
 
-      {/* ── B. 제휴 상점 마커 ────────────────────────────── */}
-      {mapLoaded && partnerMarkers.map((partner) => (
-        <CustomOverlayMap
-          key={`partner-${partner.id}`}
-          position={{ lat: partner.lat, lng: partner.lng }}
-          zIndex={15}
-        >
-          <button
-            onClick={() => onPartnerClick && onPartnerClick(partner)}
-            style={{
-              background: "white",
-              border: "2.5px solid #22C55E",
-              borderRadius: "50%",
-              width: 44,
-              height: 44,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 22,
-              cursor: "pointer",
-              boxShadow: "0 3px 10px rgba(0,0,0,0.25)",
-              transition: "transform 0.15s",
-            }}
-            onMouseOver={(e) => e.currentTarget.style.transform = "scale(1.15)"}
-            onMouseOut={(e) => e.currentTarget.style.transform = "scale(1)"}
-            title={partner.name}
+      {/* ── B. 에코스팟 마커 (카테고리별 색상) ──────────── */}
+      {mapLoaded && partnerMarkers.map((partner) => {
+        const catColor = {
+          eco_store:   { border: "#16A34A", label: "#166534" },
+          recycle_bin: { border: "#2563EB", label: "#1E3A8A" },
+          smart_bin:   { border: "#7C3AED", label: "#4C1D95" },
+        }[partner.category] || { border: "#22C55E", label: "#166534" };
+
+        const defaultIcon = {
+          eco_store: "🌿", recycle_bin: "♻️", smart_bin: "🗑️",
+        }[partner.category] || "🏪";
+
+        return (
+          <CustomOverlayMap
+            key={`partner-${partner.id}`}
+            position={{ lat: partner.lat, lng: partner.lng }}
+            zIndex={15}
           >
-            {partner.icon || "🏪"}
-          </button>
-          {/* 상점명 라벨 */}
-          <div style={{
-            marginTop: 2,
-            background: "white",
-            borderRadius: 8,
-            padding: "2px 6px",
-            fontSize: 10,
-            fontWeight: 700,
-            color: "#166534",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
-            whiteSpace: "nowrap",
-            textAlign: "center",
-          }}>
-            {partner.name}
-          </div>
-        </CustomOverlayMap>
-      ))}
+            <button
+              onClick={() => onPartnerClick && onPartnerClick(partner)}
+              style={{
+                background: "white",
+                border: `2.5px solid ${catColor.border}`,
+                borderRadius: "50%",
+                width: 44,
+                height: 44,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 22,
+                cursor: "pointer",
+                boxShadow: "0 3px 10px rgba(0,0,0,0.25)",
+                transition: "transform 0.15s",
+              }}
+              onMouseOver={(e) => e.currentTarget.style.transform = "scale(1.15)"}
+              onMouseOut={(e) => e.currentTarget.style.transform = "scale(1)"}
+              title={partner.name}
+            >
+              {partner.icon || defaultIcon}
+            </button>
+            {/* 장소명 라벨 */}
+            <div style={{
+              marginTop: 2,
+              background: "white",
+              borderRadius: 8,
+              padding: "2px 6px",
+              fontSize: 10,
+              fontWeight: 700,
+              color: catColor.label,
+              boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+              whiteSpace: "nowrap",
+              textAlign: "center",
+              borderLeft: `3px solid ${catColor.border}`,
+            }}>
+              {partner.name}
+            </div>
+          </CustomOverlayMap>
+        );
+      })}
 
       {/* 펄스 애니메이션 */}
       <style>{`

@@ -455,7 +455,7 @@ export default function HomePage() {
             >
               <span className="text-2xl">📲</span>
               <p className="font-bold text-sm leading-tight">홈 화면에 추가</p>
-              <p className="text-xs text-green-100">앱처럼 사용하기</p>
+              <p className="text-xs text-green-100">앱으로 사용하기</p>
             </button>
 
             {/* 친구 초대 */}
