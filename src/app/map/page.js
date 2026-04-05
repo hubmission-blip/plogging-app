@@ -626,7 +626,12 @@ function PartnerDetailSheet({ partner, onClose }) {
     : null;
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-30 p-3">
+    <>
+      {/* 반투명 딤 배경 — 탭바도 덮음 */}
+      <div className="fixed inset-0 bg-black/40 z-[98]" onClick={onClose} />
+      {/* 시트 본체 */}
+      <div className="fixed inset-x-0 bottom-0 z-[99] p-3"
+        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}>
       <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
         {/* 컬러 헤더 배너 (광고 영역) */}
         <div className={`bg-gradient-to-r ${cat.headerBg} p-4 text-white relative`}>
@@ -686,7 +691,8 @@ function PartnerDetailSheet({ partner, onClose }) {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
