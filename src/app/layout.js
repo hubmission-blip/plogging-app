@@ -39,6 +39,28 @@ export default function RootLayout({ children }) {
       </head>
       <body className="min-h-screen bg-gray-50">
 
+        {/* ✅ 추천인 코드 캡처: URL ?ref= 파라미터 → localStorage (30일 보관) */}
+        <Script
+          id="referral-capture"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var params = new URLSearchParams(window.location.search);
+                var ref = params.get('ref');
+                if (ref && ref.length >= 6) {
+                  var expires = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30일
+                  localStorage.setItem('pending_referral', JSON.stringify({ code: ref, expires: expires }));
+                  // URL에서 ref 파라미터 제거 (깔끔하게)
+                  params.delete('ref');
+                  var newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+                  window.history.replaceState({}, '', newUrl);
+                }
+              } catch(e) {}
+            `,
+          }}
+        />
+
         {/* ✅ Script 태그: 순수 JS만 사용 (useEffect 금지) */}
         <Script
           id="sw-register"

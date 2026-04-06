@@ -7,8 +7,24 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
 } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc, increment, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+
+// 추천인 코드(8자리)로 추천인 UID 조회
+async function resolveReferrer(refCode) {
+  if (!refCode || refCode.length < 6) return null;
+  const code = refCode.toUpperCase().slice(0, 8);
+  // 추천인 코드 = UID 앞 8자리 대문자 → 직접 prefix 검색
+  try {
+    const q = query(collection(db, "users"), where("refCode", "==", code));
+    const snap = await getDocs(q);
+    if (!snap.empty) return snap.docs[0].data().uid;
+    // refCode 필드 없는 구버전 유저: UID로 직접 조회
+    const byUid = await getDoc(doc(db, "users", code));
+    if (byUid.exists()) return code;
+  } catch {}
+  return null;
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -19,11 +35,14 @@ export default function RegisterPage() {
     email: "",
     password: "",
     passwordConfirm: "",
+    refInput: "",       // 수동 추천인 코드 입력
     agreeTerms: false,
     agreePrivacy: false,
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [referrerName, setReferrerName] = useState(""); // 추천인 닉네임 (확인용)
+  const [bonusPoints, setBonusPoints] = useState(0);    // 추천 보너스 포인트
 
   // ── 유효성 검사 ──────────────────────────────────────────
   const validate = () => {
@@ -52,6 +71,20 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
+      // ── 추천인 코드 확인 (localStorage 캐시 or 수동 입력) ──
+      let referrerUid = null;
+      let refCode = form.refInput.trim().toUpperCase();
+      if (!refCode) {
+        try {
+          const stored = localStorage.getItem("pending_referral");
+          if (stored) {
+            const { code, expires } = JSON.parse(stored);
+            if (Date.now() < expires) refCode = code.toUpperCase().slice(0, 8);
+          }
+        } catch {}
+      }
+      if (refCode) referrerUid = await resolveReferrer(refCode);
+
       // Firebase Auth 계정 생성
       const cred = await createUserWithEmailAndPassword(
         auth,
@@ -62,18 +95,40 @@ export default function RegisterPage() {
       // 닉네임 설정
       await updateProfile(cred.user, { displayName: form.displayName.trim() });
 
+      const myUid    = cred.user.uid;
+      const myRef    = myUid.slice(0, 8).toUpperCase(); // 내 추천 코드
+      const BONUS    = referrerUid ? 50 : 0;            // 추천 가입 보너스 +50P
+      const welcomeP = 100 + BONUS;
+
       // Firestore 유저 문서 생성
-      await setDoc(doc(db, "users", cred.user.uid), {
-        uid:          cred.user.uid,
-        email:        form.email,
-        displayName:  form.displayName.trim(),
-        photoURL:     "",
-        totalPoints:  100,   // 신규 가입 환영 포인트
+      await setDoc(doc(db, "users", myUid), {
+        uid:           myUid,
+        email:         form.email,
+        displayName:   form.displayName.trim(),
+        photoURL:      "",
+        totalPoints:   welcomeP,
         totalDistance: 0,
         ploggingCount: 0,
-        createdAt:    serverTimestamp(),
-        provider:     "email",
+        createdAt:     serverTimestamp(),
+        provider:      "email",
+        refCode:       myRef,                          // 내 추천 코드 저장
+        ...(referrerUid ? { referredBy: referrerUid } : {}),
       });
+
+      // 추천인에게 보너스 포인트 지급
+      if (referrerUid) {
+        try {
+          await updateDoc(doc(db, "users", referrerUid), {
+            totalPoints: increment(100),               // 추천인 +100P
+          });
+          // 추천인 닉네임 가져와서 완료 화면에 표시
+          const rSnap = await getDoc(doc(db, "users", referrerUid));
+          if (rSnap.exists()) setReferrerName(rSnap.data().displayName || "");
+        } catch {}
+        // localStorage 추천 코드 소비
+        try { localStorage.removeItem("pending_referral"); } catch {}
+        setBonusPoints(BONUS);
+      }
 
       setStep(2); // 완료 화면으로
     } catch (err) {
@@ -103,9 +158,15 @@ export default function RegisterPage() {
         <p className="text-gray-600 mb-1">
           <span className="font-bold text-green-600">{form.displayName}</span> 님,
         </p>
-        <p className="text-gray-500 text-sm mb-6">
+        <p className="text-gray-500 text-sm mb-2">
           가입 환영 포인트 <span className="font-bold text-orange-500">+100P</span>를 드렸어요! 🌿
         </p>
+        {bonusPoints > 0 && (
+          <div className="bg-green-50 rounded-2xl px-4 py-3 mb-4 text-sm text-green-700">
+            🎁 추천인 보너스 <span className="font-bold">+{bonusPoints}P</span> 추가 지급!
+            {referrerName && <span className="block text-xs text-green-500 mt-0.5">({referrerName}님의 추천)</span>}
+          </div>
+        )}
         <button
           onClick={() => router.push("/map")}
           className="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-lg mb-3"
@@ -213,6 +274,22 @@ export default function RegisterPage() {
             {errors.passwordConfirm && (
               <p className="text-red-400 text-xs mt-1">{errors.passwordConfirm}</p>
             )}
+          </div>
+
+          {/* 추천인 코드 (선택) */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              추천인 코드 <span className="text-gray-300">(선택)</span>
+            </label>
+            <input
+              type="text"
+              value={form.refInput}
+              onChange={(e) => handleChange("refInput", e.target.value.toUpperCase())}
+              placeholder="추천인에게 받은 8자리 코드"
+              maxLength={8}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-400 tracking-widest font-mono"
+            />
+            <p className="text-xs text-gray-400 mt-1">링크로 가입하면 자동 적용돼요 · 없으면 비워두세요</p>
           </div>
 
           {/* 약관 동의 */}

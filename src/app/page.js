@@ -277,16 +277,23 @@ export default function HomePage() {
     setShowGuide(false);
   };
 
+  // 내 추천 코드 (UID 앞 8자리 대문자)
+  const myRefCode = user ? user.uid.slice(0, 8).toUpperCase() : null;
+  const myRefUrl  = myRefCode ? `https://happy500.kr/?ref=${myRefCode}` : "https://happy500.kr";
+
   const handleShare = async () => {
+    const shareText = myRefCode
+      ? `🌿 플로깅으로 지구를 지키고 포인트도 받아요!\n\n아래 링크로 가입하면 추가 보너스 포인트!\n추천인 코드: ${myRefCode}`
+      : "🌿 플로깅으로 지구를 지키고 포인트도 받아요!";
     try {
       if (navigator.share) {
         await navigator.share({
           title: "오백원의 행복",
-          text: "🌿 플로깅으로 지구를 지키고 포인트도 받아요!",
-          url: window.location.href,
+          text: shareText,
+          url: myRefUrl,
         });
       } else {
-        await navigator.clipboard.writeText(window.location.href);
+        await navigator.clipboard.writeText(`${shareText}\n${myRefUrl}`);
         alert("링크가 복사됐어요! 📋");
       }
     } catch (e) {
@@ -465,9 +472,33 @@ export default function HomePage() {
             >
               <span className="text-2xl">📤</span>
               <p className="font-bold text-sm text-gray-700 leading-tight">친구 초대</p>
-              <p className="text-xs text-gray-400">그룹 보너스!</p>
+              <p className="text-xs text-gray-400">보너스 포인트!</p>
             </button>
           </div>
+
+          {/* ── 내 추천 코드 배너 ── */}
+          {myRefCode && (
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-green-100 font-medium mb-0.5">🎁 내 추천 코드</p>
+                  <p className="text-2xl font-black tracking-widest">{myRefCode}</p>
+                  <p className="text-xs text-green-100 mt-1">친구가 이 코드로 가입하면 서로 보너스 포인트!</p>
+                </div>
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(myRefCode);
+                      alert("추천 코드가 복사됐어요! 📋");
+                    } catch { alert(`추천 코드: ${myRefCode}`); }
+                  }}
+                  className="bg-white/20 text-white text-xs font-bold px-3 py-2 rounded-xl"
+                >
+                  복사
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* ── 이용 방법 ── */}
           <div>

@@ -10,7 +10,21 @@ import {
   GoogleAuthProvider,     // ✅ 추가
 } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, increment, collection, query, where, getDocs, serverTimestamp } from "firebase/firestore";
+
+// 추천인 코드로 추천인 UID 조회
+async function resolveReferrer(refCode) {
+  if (!refCode || refCode.length < 6) return null;
+  const code = refCode.toUpperCase().slice(0, 8);
+  try {
+    const q = query(collection(db, "users"), where("refCode", "==", code));
+    const snap = await getDocs(q);
+    if (!snap.empty) return snap.docs[0].data().uid;
+    const byUid = await getDoc(doc(db, "users", code));
+    if (byUid.exists()) return code;
+  } catch {}
+  return null;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -34,16 +48,40 @@ export default function LoginPage() {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
       if (!userSnap.exists()) {
+        // 신규 구글 가입 — 추천인 코드 처리
+        let referrerUid = null;
+        let refCode = "";
+        try {
+          const stored = localStorage.getItem("pending_referral");
+          if (stored) {
+            const { code, expires } = JSON.parse(stored);
+            if (Date.now() < expires) refCode = code.toUpperCase().slice(0, 8);
+          }
+        } catch {}
+        if (refCode) referrerUid = await resolveReferrer(refCode);
+
+        const myRef   = user.uid.slice(0, 8).toUpperCase();
+        const welcome = referrerUid ? 150 : 100; // 추천 가입 시 +50P 추가
+
         await setDoc(userRef, {
           uid: user.uid,
           email: user.email,
           displayName: user.displayName || "구글유저",
           provider: "google",
-          totalPoints: 100,   // 신규 가입 환영 포인트
+          totalPoints: welcome,
           totalDistance: 0,
           ploggingCount: 0,
           createdAt: serverTimestamp(),
+          refCode: myRef,
+          ...(referrerUid ? { referredBy: referrerUid } : {}),
         });
+
+        if (referrerUid) {
+          try {
+            await updateDoc(doc(db, "users", referrerUid), { totalPoints: increment(100) });
+            localStorage.removeItem("pending_referral");
+          } catch {}
+        }
       }
 
       router.push("/");

@@ -89,6 +89,10 @@ export default function AdminPage() {
   const [editingEco,   setEditingEco]   = useState(null);
   const [newEco,       setNewEco]       = useState(EMPTY_ECO);
   const [ecoCatFilter, setEcoCatFilter] = useState("all");
+  const [ecoBulkMode,  setEcoBulkMode]  = useState(false);   // 일괄 등록 모드
+  const [ecoBulkRows,  setEcoBulkRows]  = useState([]);      // 파싱된 미리보기 행
+  const [ecoBulkErr,   setEcoBulkErr]   = useState("");      // 파싱 에러
+  const [ecoBulkSaving,setEcoBulkSaving]= useState(false);   // 저장 중
 
   // ── 배너 ──────────────────────────────────────────────
   const [banners,      setBanners]      = useState([]);
@@ -465,6 +469,122 @@ export default function AdminPage() {
       setEcoSpots((prev) => prev.filter((e) => e.id !== id));
       showMsg("✅ 삭제되었습니다");
     } catch (e) { showMsg("❌ 삭제 실패: " + e.message); }
+  };
+
+  // ──────────────────────────────────────────────────────
+  //  Action: 에코스팟 CSV 템플릿 다운로드
+  // ──────────────────────────────────────────────────────
+  const handleDownloadTemplate = () => {
+    const headers = ["장소명*", "주소", "위도*", "경도*", "카테고리*", "노출지역", "소개", "혜택", "연락처", "아이콘이모지"];
+    const examples = [
+      ["초록상회", "서울시 마포구 합정동 123", "37.5500", "126.9100", "친환경매장", "서울특별시", "친환경 제품 전문점", "영수증 지참 시 5% 할인", "https://example.com", "🌿"],
+      ["재활용나라", "부산시 해운대구 우동 456", "35.1631", "129.1639", "재활용수거기", "부산광역시", "캔/페트 수거 기계", "", "", "♻️"],
+      ["스마트휴지통A", "대구시 중구 동성로 789", "35.8714", "128.6014", "스마트휴지통", "전국", "태양광 스마트 휴지통", "", "", "🗑️"],
+    ];
+    const rows = [headers, ...examples];
+    const csvContent = rows.map((r) =>
+      r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    ).join("\r\n");
+    const bom = "\uFEFF"; // Excel 한글 깨짐 방지 BOM
+    const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "에코스팟_일괄등록_템플릿.csv";
+    a.click(); URL.revokeObjectURL(url);
+  };
+
+  // ──────────────────────────────────────────────────────
+  //  Action: CSV 파일 파싱
+  // ──────────────────────────────────────────────────────
+  const handleCsvUpload = (e) => {
+    setEcoBulkErr(""); setEcoBulkRows([]);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const text = ev.target.result;
+        // BOM 제거
+        const cleaned = text.replace(/^\uFEFF/, "");
+        const lines = cleaned.split(/\r?\n/).filter((l) => l.trim());
+
+        // CSV 한 줄 파싱 (따옴표 처리 포함)
+        const parseRow = (line) => {
+          const result = [];
+          let cur = "", inQuote = false;
+          for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+              if (inQuote && line[i + 1] === '"') { cur += '"'; i++; }
+              else { inQuote = !inQuote; }
+            } else if (ch === ',' && !inQuote) {
+              result.push(cur.trim()); cur = "";
+            } else { cur += ch; }
+          }
+          result.push(cur.trim());
+          return result;
+        };
+
+        const CAT_MAP = { "친환경매장": "eco_store", "재활용수거기": "recycle_bin", "스마트휴지통": "smart_bin" };
+        const VALID_REGIONS = ["전국","서울특별시","부산광역시","대구광역시","인천광역시","광주광역시","대전광역시","울산광역시","세종특별자치시","경기도","강원도","충청북도","충청남도","전북특별자치도","전라남도","경상북도","경상남도","제주특별자치도"];
+
+        const rows = [];
+        const errors = [];
+        for (let i = 1; i < lines.length; i++) { // i=0 은 헤더
+          const cols = parseRow(lines[i]);
+          const [name, address, latStr, lngStr, catKo, regionRaw, desc, benefit, contact, icon] = cols;
+          const lat = parseFloat(latStr), lng = parseFloat(lngStr);
+          const rowErrors = [];
+          if (!name)          rowErrors.push("장소명 없음");
+          if (isNaN(lat))     rowErrors.push("위도 오류");
+          if (isNaN(lng))     rowErrors.push("경도 오류");
+          const category = CAT_MAP[catKo?.trim()] || "eco_store";
+          const region   = VALID_REGIONS.includes(regionRaw?.trim()) ? regionRaw.trim() : "전국";
+          if (rowErrors.length > 0) { errors.push(`${i}행: ${rowErrors.join(", ")}`); continue; }
+          rows.push({ name: name.trim(), address: address?.trim() || "", lat, lng, category, region, desc: desc?.trim() || "", benefit: benefit?.trim() || "", contact: contact?.trim() || "", icon: icon?.trim() || "", active: true });
+        }
+
+        if (errors.length > 0) setEcoBulkErr(`⚠️ 오류 행 제외됨 — ${errors.join(" / ")}`);
+        if (rows.length === 0) { setEcoBulkErr("✅ 유효한 데이터가 없습니다. 템플릿 형식을 확인하세요."); return; }
+        setEcoBulkRows(rows);
+      } catch (err) {
+        setEcoBulkErr("파일 파싱 실패: " + err.message);
+      }
+    };
+    reader.readAsText(file, "UTF-8");
+    e.target.value = ""; // 같은 파일 재업로드 허용
+  };
+
+  // ──────────────────────────────────────────────────────
+  //  Action: 에코스팟 일괄 저장
+  // ──────────────────────────────────────────────────────
+  const handleBulkSaveEco = async () => {
+    if (ecoBulkRows.length === 0) return;
+    if (!confirm(`${ecoBulkRows.length}개의 에코스팟을 일괄 등록할까요?`)) return;
+    setEcoBulkSaving(true);
+    try {
+      const BATCH_SIZE = 400; // Firestore 배치 한도 500 이하
+      const newIds = [];
+      for (let i = 0; i < ecoBulkRows.length; i += BATCH_SIZE) {
+        const batch = writeBatch(db);
+        const chunk = ecoBulkRows.slice(i, i + BATCH_SIZE);
+        chunk.forEach((row) => {
+          const ref = doc(collection(db, "partners"));
+          batch.set(ref, { ...row, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+          newIds.push({ id: ref.id, ...row });
+        });
+        await batch.commit();
+      }
+      setEcoSpots((prev) => [...newIds, ...prev]);
+      setEcoBulkRows([]);
+      setEcoBulkMode(false);
+      showMsg(`✅ ${newIds.length}개 에코스팟이 등록되었습니다`);
+    } catch (err) {
+      showMsg("❌ 일괄 저장 실패: " + err.message);
+    } finally {
+      setEcoBulkSaving(false);
+    }
   };
 
   // ──────────────────────────────────────────────────────
@@ -1158,13 +1278,107 @@ export default function AdminPage() {
                 {/* 헤더 */}
                 <div className="flex justify-between items-center">
                   <SectionTitle>♻️ 에코스팟 관리 ({ecoSpots.length}개)</SectionTitle>
-                  <button
-                    onClick={() => { setEcoMode((v) => !v); setEditingEco(null); setNewEco(EMPTY_ECO); }}
-                    className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-full font-bold"
-                  >
-                    {ecoMode ? "✕ 닫기" : "+ 장소 등록"}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setEcoBulkMode((v) => !v); setEcoBulkRows([]); setEcoBulkErr(""); setEcoMode(false); }}
+                      className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-full font-bold"
+                    >
+                      {ecoBulkMode ? "✕ 닫기" : "📋 일괄 등록"}
+                    </button>
+                    <button
+                      onClick={() => { setEcoMode((v) => !v); setEditingEco(null); setNewEco(EMPTY_ECO); setEcoBulkMode(false); }}
+                      className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-full font-bold"
+                    >
+                      {ecoMode ? "✕ 닫기" : "+ 장소 등록"}
+                    </button>
+                  </div>
                 </div>
+
+                {/* ── 일괄 등록 패널 ── */}
+                {ecoBulkMode && (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm space-y-4">
+                    <SectionTitle>📋 CSV 일괄 등록</SectionTitle>
+
+                    {/* Step 1: 템플릿 다운로드 */}
+                    <div className="bg-blue-50 rounded-2xl p-4">
+                      <p className="text-xs font-bold text-blue-700 mb-1">① 템플릿 다운로드</p>
+                      <p className="text-xs text-blue-600 mb-3">Excel에서 작성 후 <strong>CSV(UTF-8)</strong>로 저장하세요.</p>
+                      <button onClick={handleDownloadTemplate}
+                        className="bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl">
+                        ⬇️ 템플릿 다운로드 (.csv)
+                      </button>
+                    </div>
+
+                    {/* 컬럼 설명 */}
+                    <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-600 space-y-1">
+                      <p className="font-bold text-gray-700 mb-1">📌 컬럼 안내</p>
+                      <p><span className="font-bold text-red-500">장소명*</span> · <span className="font-bold text-red-500">위도*</span> · <span className="font-bold text-red-500">경도*</span> 는 필수 항목</p>
+                      <p><span className="font-bold">카테고리</span>: 친환경매장 / 재활용수거기 / 스마트휴지통</p>
+                      <p><span className="font-bold">노출지역</span>: 전국 / 서울특별시 / 부산광역시 등 시·도명 정확히 입력</p>
+                      <p><span className="font-bold">위도·경도</span>: 카카오맵·구글맵 우클릭으로 확인</p>
+                    </div>
+
+                    {/* Step 2: 파일 업로드 */}
+                    <div>
+                      <p className="text-xs font-bold text-gray-700 mb-2">② CSV 파일 업로드</p>
+                      <label className="block w-full border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center cursor-pointer hover:border-green-400 transition-colors">
+                        <div className="text-3xl mb-2">📂</div>
+                        <p className="text-sm font-bold text-gray-600">파일을 선택하거나 여기에 드롭</p>
+                        <p className="text-xs text-gray-400 mt-1">.csv 파일만 지원</p>
+                        <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvUpload} />
+                      </label>
+                    </div>
+
+                    {/* 에러 메시지 */}
+                    {ecoBulkErr && (
+                      <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 text-xs text-orange-700">
+                        {ecoBulkErr}
+                      </div>
+                    )}
+
+                    {/* Step 3: 미리보기 */}
+                    {ecoBulkRows.length > 0 && (
+                      <div>
+                        <p className="text-xs font-bold text-gray-700 mb-2">③ 미리보기 ({ecoBulkRows.length}개)</p>
+                        <div className="overflow-x-auto rounded-xl border border-gray-200">
+                          <table className="w-full text-xs">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                {["장소명", "카테고리", "지역", "위도", "경도", "소개"].map((h) => (
+                                  <th key={h} className="px-2 py-2 text-left text-gray-500 font-bold whitespace-nowrap">{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {ecoBulkRows.map((r, i) => {
+                                const catLabel = { eco_store: "🌿친환경", recycle_bin: "♻️재활용", smart_bin: "🗑️스마트" }[r.category] || r.category;
+                                return (
+                                  <tr key={i} className="border-t border-gray-100">
+                                    <td className="px-2 py-2 font-medium text-gray-800 whitespace-nowrap">{r.name}</td>
+                                    <td className="px-2 py-2 whitespace-nowrap">{catLabel}</td>
+                                    <td className="px-2 py-2 whitespace-nowrap text-gray-500">{r.region === "전국" ? "🌐전국" : `📍${r.region.slice(0,2)}`}</td>
+                                    <td className="px-2 py-2 text-gray-400">{r.lat}</td>
+                                    <td className="px-2 py-2 text-gray-400">{r.lng}</td>
+                                    <td className="px-2 py-2 text-gray-500 max-w-[120px] truncate">{r.desc || "-"}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* 저장 버튼 */}
+                        <button
+                          onClick={handleBulkSaveEco}
+                          disabled={ecoBulkSaving}
+                          className="w-full mt-3 bg-green-500 text-white py-3 rounded-2xl font-bold text-sm disabled:opacity-50"
+                        >
+                          {ecoBulkSaving ? "저장 중..." : `✅ ${ecoBulkRows.length}개 일괄 등록하기`}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* 카테고리 필터 */}
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
