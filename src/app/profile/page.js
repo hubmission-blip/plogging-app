@@ -46,6 +46,9 @@ export default function ProfilePage() {
   });
   const [recentRoutes, setRecentRoutes] = useState([]);
   const [loading, setLoading]           = useState(true);
+  // 추천 관련 상태
+  const [myRefCode, setMyRefCode]         = useState("");
+  const [referredUsers, setReferredUsers] = useState([]);
 
   // ── 관리자 여부 ──────────────────────────────────────────
   const isAdmin = user && ADMIN_EMAILS.includes(user.email);
@@ -65,6 +68,20 @@ export default function ProfilePage() {
           displayName:   d.displayName   || user.displayName || user.email?.split("@")[0] || "익명",
           photoURL:      d.photoURL      || user.photoURL    || "",
         });
+        // 내 추천 코드
+        const rc = d.refCode || user.uid.slice(0, 8).toUpperCase();
+        setMyRefCode(rc);
+        // 내 추천으로 가입한 사람들 조회
+        try {
+          const refQ = query(collection(db, "users"), where("referredBy", "==", user.uid));
+          const refSnap = await getDocs(refQ);
+          const referred = refSnap.docs.map((rd) => ({
+            uid:         rd.id,
+            displayName: rd.data().displayName || "익명",
+            createdAt:   rd.data().createdAt,
+          })).sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+          setReferredUsers(referred);
+        } catch {}
       }
 
       const q = query(collection(db, "routes"), where("userId", "==", user.uid));
@@ -156,6 +173,16 @@ export default function ProfilePage() {
               {stats.totalPoints.toLocaleString()}P
             </p>
           </div>
+
+          {/* 내 추천 코드 */}
+          {myRefCode && (
+            <div className="mt-3 pt-3 border-t border-white/20 flex items-center justify-between">
+              <p className="text-xs text-green-100">내 추천 코드</p>
+              <span className="font-mono font-black text-sm text-white tracking-widest bg-white/20 px-3 py-1 rounded-full">
+                {myRefCode}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -231,6 +258,34 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
+
+        {/* ── 내가 추천한 친구 목록 ── */}
+        {referredUsers.length > 0 && (
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <h2 className="font-bold text-gray-700 mb-3">🎁 내가 추천한 친구 ({referredUsers.length}명)</h2>
+            <div className="space-y-2">
+              {referredUsers.map((u) => {
+                const date    = u.createdAt?.toDate?.();
+                const dateStr = date
+                  ? `${date.getFullYear()}.${date.getMonth()+1}.${date.getDate()}`
+                  : "";
+                return (
+                  <div key={u.uid} className="flex justify-between items-center py-2 border-b last:border-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🌿</span>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">{u.displayName}</p>
+                        {dateStr && <p className="text-xs text-gray-400">{dateStr} 가입</p>}
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-green-600">+100P</span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-xs text-gray-400 mt-3 text-center">추천 성공 시 각 100P가 지급됩니다</p>
+          </div>
+        )}
 
         {/* ── 메뉴 바로가기 ── */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">

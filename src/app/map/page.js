@@ -767,6 +767,7 @@ function MapPageInner() {
   const {
     path, distance, isTracking, currentSpeed,
     isSpeedWarning, duration, stopCount,
+    wakeLockActive, isBackground,
     startTracking, stopTracking,
   } = useLocation({ onSpeedViolation: speedLimitEnabled ? handleSpeedViolation : undefined });
 
@@ -1200,6 +1201,33 @@ function MapPageInner() {
         </div>
       )}
 
+      {/* ── 백그라운드 전환 경고 배너 ────────────────────── */}
+      {isBackground && isTracking && (
+        <div className="absolute inset-0 bg-black/70 z-[60] flex flex-col items-center justify-center p-6 text-center">
+          <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-xs w-full">
+            <div className="text-5xl mb-3">📱</div>
+            <h3 className="font-black text-gray-800 text-lg mb-2">앱이 백그라운드로 전환됐어요</h3>
+            <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+              다른 앱으로 전환되면 GPS 추적이 중단될 수 있어요.<br />
+              플로깅 중에는 이 앱을 화면에 띄워두세요.
+            </p>
+            <p className="text-xs text-orange-500 font-medium bg-orange-50 rounded-xl px-3 py-2">
+              ⚠️ 화면을 끄고 주머니에 넣는 건 괜찮아요<br />(화면 꺼짐 방지 기능이 작동 중)
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Wake Lock 상태 표시 (플로깅 중) ─────────────── */}
+      {isTracking && (
+        <div className="absolute top-4 right-4 z-10">
+          <div className={`text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow
+            ${wakeLockActive ? "bg-green-500 text-white" : "bg-gray-200 text-gray-500"}`}>
+            {wakeLockActive ? "🔆 화면 켜짐 유지" : "⚠️ 화면 꺼짐 주의"}
+          </div>
+        </div>
+      )}
+
       {/* ── 속도 경고 배너 ──────────────────────────────── */}
       {speedLimitEnabled && isSpeedWarning && isTracking && (
         <div className="absolute top-36 left-0 right-0 flex justify-center z-10 px-4">
@@ -1273,12 +1301,17 @@ function MapPageInner() {
       )}
 
       {/* ── 하단 버튼 ────────────────────────────────────── */}
-      <div className="absolute bottom-24 left-0 right-0 flex justify-center z-10">
+      <div className="absolute bottom-24 left-0 right-0 flex flex-col items-center gap-2 z-10">
         {!isTracking ? (
-          <button onClick={() => setShowReadyCheck(true)}
-            className="bg-green-500 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform">
-            🚶 플로깅 시작
-          </button>
+          <>
+            <p className="text-xs text-white bg-black/40 rounded-full px-3 py-1">
+              🔆 시작 시 화면 꺼짐이 자동으로 방지돼요
+            </p>
+            <button onClick={() => setShowReadyCheck(true)}
+              className="bg-green-500 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform">
+              🚶 플로깅 시작
+            </button>
+          </>
         ) : (
           <button onClick={handleStop}
             className="bg-red-500 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform">

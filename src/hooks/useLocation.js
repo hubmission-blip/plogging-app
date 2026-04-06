@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 // ─── 상수 ───────────────────────────────────────────────
 const SPEED_LIMIT_KMH   = 30;    // 이동수단 경고 속도
@@ -43,6 +43,13 @@ export function useLocation({ onSpeedViolation } = {}) {
   const violationStartRef   = useRef(null);    // 속도 초과 시작 시각
   const autoStopCalledRef   = useRef(false);   // 자동 종료 중복 방지
 
+  // ── Wake Lock (화면 꺼짐 방지) ─────────────────────────
+  const [wakeLockActive, setWakeLockActive] = useState(false);
+  const [isBackground,   setIsBackground]   = useState(false); // 백그라운드 전환 여부
+  const wakeLockRef     = useRef(null);
+  const bgTimerRef      = useRef(null);       // 백그라운드 경과 시간 타이머
+  const isTrackingRef   = useRef(false);      // 백그라운드 핸들러에서 참조용
+
   // ③ 정지 패턴 감지용 ref
   const wasMovingRef        = useRef(false);   // 직전 상태가 "이동 중"이었는지
   // ② 타이머 ref
@@ -50,6 +57,50 @@ export function useLocation({ onSpeedViolation } = {}) {
   const durationIntervalRef = useRef(null);
   // 계속 플로깅하기 재개를 위해 현재 duration을 ref로 미러링
   const durationRef         = useRef(0);
+
+  // ─── Wake Lock 요청 ──────────────────────────────────
+  const requestWakeLock = useCallback(async () => {
+    try {
+      if ("wakeLock" in navigator) {
+        wakeLockRef.current = await navigator.wakeLock.request("screen");
+        setWakeLockActive(true);
+        wakeLockRef.current.addEventListener("release", () => {
+          setWakeLockActive(false);
+        });
+      }
+    } catch (e) {
+      // Wake Lock 거부 또는 미지원 — 조용히 실패
+      setWakeLockActive(false);
+    }
+  }, []);
+
+  const releaseWakeLock = useCallback(() => {
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release().catch(() => {});
+      wakeLockRef.current = null;
+    }
+    setWakeLockActive(false);
+  }, []);
+
+  // ─── 화면 복귀 시 Wake Lock 재요청 ────────────────────
+  useEffect(() => {
+    const handleVisibility = async () => {
+      if (document.visibilityState === "hidden") {
+        // 백그라운드 전환
+        if (isTrackingRef.current) setIsBackground(true);
+      } else {
+        // 포그라운드 복귀
+        setIsBackground(false);
+        if (bgTimerRef.current) { clearTimeout(bgTimerRef.current); bgTimerRef.current = null; }
+        // Wake Lock은 화면 꺼지면 자동 해제되므로 복귀 시 재요청
+        if (isTrackingRef.current && !wakeLockRef.current) {
+          await requestWakeLock();
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [requestWakeLock]);
 
   // ─── stopTracking ─────────────────────────────────────
   const stopTracking = useCallback(() => {
@@ -65,10 +116,13 @@ export function useLocation({ onSpeedViolation } = {}) {
     setIsTracking(false);
     setCurrentSpeed(0);
     setIsSpeedWarning(false);
+    setIsBackground(false);
     violationStartRef.current  = null;
     autoStopCalledRef.current  = false;
     wasMovingRef.current       = false;
-  }, []);
+    isTrackingRef.current      = false;
+    releaseWakeLock();
+  }, [releaseWakeLock]);
 
   // ─── startTracking ────────────────────────────────────
   // reset=true  → 처음 시작 (모든 값 초기화)
@@ -92,9 +146,14 @@ export function useLocation({ onSpeedViolation } = {}) {
 
     setCurrentSpeed(0);
     setIsSpeedWarning(false);
+    setIsBackground(false);
     violationStartRef.current  = null;
     autoStopCalledRef.current  = false;
     wasMovingRef.current       = false;
+    isTrackingRef.current      = true;
+
+    // Wake Lock 요청 (화면 꺼짐 방지)
+    requestWakeLock();
 
     // ② 1초 타이머 시작
     durationIntervalRef.current = setInterval(() => {
@@ -193,6 +252,8 @@ export function useLocation({ onSpeedViolation } = {}) {
     isSpeedWarning,    // true 이면 경고 배너
     duration,          // 경과 시간 (초) — ② 조건 검증용
     stopCount,         // 정지 횟수 — ③ 줍기 횟수 검증용
+    wakeLockActive,    // Wake Lock 활성 여부
+    isBackground,      // 백그라운드 전환 여부
     startTracking,
     stopTracking,
   };

@@ -4,8 +4,22 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { db, auth } from "@/lib/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, increment } from "firebase/firestore";
 import { updateProfile } from "firebase/auth";
+
+// ─── 추천인 코드로 추천인 UID 조회 ───────────────────────────
+async function resolveReferrer(refCode) {
+  if (!refCode || refCode.length < 6) return null;
+  const code = refCode.toUpperCase().slice(0, 8);
+  try {
+    const q = query(collection(db, "users"), where("refCode", "==", code));
+    const snap = await getDocs(q);
+    if (!snap.empty) return snap.docs[0].data().uid;
+    const byUid = await getDoc(doc(db, "users", code));
+    if (byUid.exists()) return code;
+  } catch {}
+  return null;
+}
 import Link from "next/link";
 
 const REGIONS = [
@@ -25,11 +39,15 @@ export default function ProfileEditPage() {
     region:       "",
     volunteerNo:  "", // 1365 회원번호
     bio:          "",
+    refInput:     "", // 추천인 코드 (1회 입력용)
   });
   const [loading, setSaving] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [errors, setErrors]   = useState({});
   const [successMsg, setSuccessMsg] = useState("");
+  // 추천인 관련 상태
+  const [alreadyReferred, setAlreadyReferred] = useState(false); // 이미 추천인 등록됨
+  const [myRefCode, setMyRefCode] = useState(""); // 내 추천 코드
 
   // ── 기존 데이터 불러오기 ─────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -45,7 +63,11 @@ export default function ProfileEditPage() {
           region:      d.region      || "",
           volunteerNo: d.volunteerNo || "",
           bio:         d.bio         || "",
+          refInput:    "",
         });
+        // 추천인 이미 등록됐으면 입력 불가
+        setAlreadyReferred(!!d.referredBy);
+        setMyRefCode(d.refCode || user.uid.slice(0, 8).toUpperCase());
       }
     } catch (e) {
       console.error("프로필 로드 실패:", e);
@@ -85,6 +107,40 @@ export default function ProfileEditPage() {
         volunteerNo: form.volunteerNo.trim(),
         bio:         form.bio.trim(),
       };
+
+      // ── 추천인 코드 처리 (미등록 상태에서 1회만) ───────────
+      if (!alreadyReferred && form.refInput.trim()) {
+        const refCode = form.refInput.trim().toUpperCase();
+        // 자기 자신 코드 방지
+        if (refCode === myRefCode) {
+          setErrors({ refInput: "내 추천 코드는 사용할 수 없어요" });
+          setSaving(false);
+          return;
+        }
+        const referrerUid = await resolveReferrer(refCode);
+        if (referrerUid) {
+          updates.referredBy = referrerUid;
+          updates.totalPoints = (updates.totalPoints || 0); // increment separately
+          // 내 포인트 +50P 추가
+          await updateDoc(doc(db, "users", user.uid), {
+            ...updates,
+            totalPoints: increment(50),
+          });
+          // 추천인 +100P
+          try {
+            await updateDoc(doc(db, "users", referrerUid), { totalPoints: increment(100) });
+          } catch {}
+          setAlreadyReferred(true);
+          setSuccessMsg("✅ 추천인 등록 완료! +50P가 지급됐어요!");
+          setTimeout(() => { setSuccessMsg(""); router.push("/profile"); }, 2000);
+          return; // 이미 저장 완료
+        } else {
+          setErrors({ refInput: "유효하지 않은 추천 코드예요" });
+          setSaving(false);
+          return;
+        }
+      }
+
       // Firestore 업데이트
       await updateDoc(doc(db, "users", user.uid), updates);
       // Firebase Auth displayName 동기화
@@ -281,6 +337,54 @@ export default function ProfileEditPage() {
               </div>
             )}
 
+          </div>
+        </div>
+
+        {/* ── 추천인 코드 카드 ── */}
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+            <span className="text-base">🎁</span>
+            <p className="font-black text-gray-700 text-sm">추천인 코드</p>
+          </div>
+          <div className="px-4 py-4 space-y-3">
+
+            {/* 내 추천 코드 표시 */}
+            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center justify-between">
+              <div>
+                <p className="text-green-700 text-xs font-bold mb-0.5">내 추천 코드</p>
+                <p className="text-green-800 font-mono font-black text-base tracking-widest">{myRefCode}</p>
+              </div>
+              <span className="text-green-400 text-xs">친구에게 공유하세요</span>
+            </div>
+
+            {/* 추천인 코드 입력 (미등록 시 1회만) */}
+            {alreadyReferred ? (
+              <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                <span className="text-xl">✅</span>
+                <div>
+                  <p className="text-gray-600 text-xs font-bold">추천인이 이미 등록되어 있어요</p>
+                  <p className="text-gray-400 text-xs">추천인 코드는 1회만 등록할 수 있어요</p>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="text-xs font-bold text-gray-500 mb-1.5 block">
+                  추천인 코드 입력 <span className="text-gray-400 font-normal">(1회만 가능)</span>
+                </label>
+                <input
+                  value={form.refInput}
+                  onChange={(e) => set("refInput", e.target.value.toUpperCase())}
+                  placeholder="8자리 추천 코드"
+                  maxLength={8}
+                  className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-400 tracking-widest font-mono
+                    ${errors.refInput ? "border-red-300 bg-red-50" : "border-gray-200"}`}
+                />
+                {errors.refInput && (
+                  <p className="text-red-400 text-xs mt-1">{errors.refInput}</p>
+                )}
+                <p className="text-gray-400 text-xs mt-1">등록 시 나에게 +50P, 추천인에게 +100P가 지급돼요</p>
+              </div>
+            )}
           </div>
         </div>
 
