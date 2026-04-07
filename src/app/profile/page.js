@@ -344,6 +344,13 @@ export default function ProfilePage() {
             <p className="font-bold text-gray-700 text-sm">내 계정 정보</p>
           </div>
           <div className="px-4 py-3 space-y-2">
+            {/* 이메일 */}
+            {user?.email && !user.email.includes("kakao-auth") && (
+              <div>
+                <p className="text-xs text-gray-400 mb-0.5">이메일</p>
+                <p className="text-xs text-gray-600">{user.email}</p>
+              </div>
+            )}
             {/* 회원 UID */}
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
@@ -361,13 +368,6 @@ export default function ProfilePage() {
                 {uidCopied ? "✅ 복사됨" : "복사"}
               </button>
             </div>
-            {/* 이메일 */}
-            {user?.email && !user.email.includes("kakao-auth") && (
-              <div>
-                <p className="text-xs text-gray-400 mb-0.5">이메일</p>
-                <p className="text-xs text-gray-600">{user.email}</p>
-              </div>
-            )}
             <p className="text-[11px] text-gray-300 pt-1">
               포인트·리워드 문의 시 위 번호를 관리자에게 알려주세요
             </p>
