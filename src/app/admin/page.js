@@ -989,86 +989,127 @@ export default function AdminPage() {
                 ))}
               </div>
 
-              {/* ── 리워드 목록 ── */}
+              {/* ── 리워드 목록 (제목별 그룹 카드) ── */}
               {filteredRewards.length === 0 ? (
                 <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
                   <div className="text-4xl mb-2">✅</div>
                   <p className="text-gray-400 text-sm">해당하는 리워드 신청이 없어요</p>
                 </div>
               ) : (
-                filteredRewards.map((r) => {
-                  const date    = r.createdAt?.toDate?.();
-                  const dateStr = date ? `${date.getMonth()+1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2,"0")}` : "-";
-                  const execDate    = r.executedAt?.toDate?.();
-                  const execDateStr = execDate ? `${execDate.getMonth()+1}/${execDate.getDate()}` : "";
+                (() => {
+                  // 제목별 그룹핑
+                  const groups = filteredRewards.reduce((acc, r) => {
+                    const key = r.rewardTitle || "기타";
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(r);
+                    return acc;
+                  }, {});
+
                   const statusStyle = {
                     pending:   "bg-yellow-100 text-yellow-700",
                     completed: "bg-green-100 text-green-700",
                     rejected:  "bg-red-100 text-red-600",
                   };
-                  return (
-                    <div key={r.id} className={`bg-white rounded-2xl p-4 shadow-sm border-l-4 ${
-                      r.executed ? "border-purple-400" :
-                      r.status === "pending" ? "border-yellow-300" :
-                      r.status === "completed" ? "border-green-400" : "border-red-300"
-                    }`}>
-                      {/* 상단: 제목 + 상태 뱃지 */}
-                      <div className="flex justify-between items-start mb-1">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-gray-800 text-sm">{r.rewardTitle}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">{dateStr} · {(r.cost||0).toLocaleString()}P</p>
-                          <p className="text-[11px] text-gray-300 mt-0.5 truncate">UID: {r.userId}</p>
-                        </div>
-                        <div className="flex flex-col items-end gap-1 ml-2 flex-shrink-0">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[r.status] || statusStyle.pending}`}>
-                            {r.status === "pending" ? "대기" : r.status === "completed" ? "완료" : "반려"}
-                          </span>
-                          {r.executed && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-purple-100 text-purple-700">
-                              🚀 집행완료{execDateStr ? ` ${execDateStr}` : ""}
-                            </span>
-                          )}
-                        </div>
-                      </div>
 
-                      {/* 하단 버튼 영역 */}
-                      <div className="flex gap-2 mt-3">
-                        {/* 대기 상태: 반려 + 처리완료 */}
-                        {r.status === "pending" && (
-                          <>
-                            <button
-                              onClick={() => handleRewardStatus(r.id, "rejected")}
-                              className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl text-xs font-medium"
-                            >
-                              반려
-                            </button>
-                            <button
-                              onClick={() => handleRewardStatus(r.id, "completed")}
-                              className="flex-1 bg-green-500 text-white py-2 rounded-xl text-xs font-bold"
-                            >
-                              ✅ 처리 완료
-                            </button>
-                          </>
-                        )}
-                        {/* 완료 상태 + 미집행: 집행완료 버튼 */}
-                        {r.status === "completed" && !r.executed && (
-                          <button
-                            onClick={() => handleRewardExecute(r.id)}
-                            className="flex-1 bg-purple-500 text-white py-2 rounded-xl text-xs font-bold"
-                          >
-                            🚀 집행완료
-                          </button>
-                        )}
-                        {/* 집행완료 상태 표시 */}
-                        {r.executed && (
-                          <div className="flex-1 text-center text-xs text-purple-400 font-medium py-2 bg-purple-50 rounded-xl">
-                            🚀 집행 완료됨
+                  return Object.entries(groups).map(([title, items]) => {
+                    const totalPoints   = items.reduce((s, r) => s + (r.cost || 0), 0);
+                    const executedCount = items.filter(r => r.executed).length;
+                    const pendingCount  = items.filter(r => r.status === "pending").length;
+                    const allExecuted   = items.every(r => r.executed);
+
+                    return (
+                      <div key={title} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+
+                        {/* ── 카드 헤더: 제목 + 합계 ── */}
+                        <div className={`px-4 py-3 border-b border-gray-100 flex justify-between items-center
+                          ${allExecuted ? "bg-purple-50" : pendingCount > 0 ? "bg-yellow-50" : "bg-green-50"}`}>
+                          <div>
+                            <p className="font-black text-gray-800 text-sm">{title}</p>
+                            <p className="text-[11px] text-gray-400 mt-0.5">
+                              {items.length}건 요청
+                              {executedCount > 0 && ` · 집행완료 ${executedCount}건`}
+                            </p>
                           </div>
-                        )}
+                          {/* 합산 포인트 */}
+                          <div className="text-right">
+                            <p className="text-base font-black text-orange-500">{totalPoints.toLocaleString()}P</p>
+                            <p className="text-[10px] text-gray-400">합산 포인트</p>
+                          </div>
+                        </div>
+
+                        {/* ── 건별 리스트 ── */}
+                        <div className="divide-y divide-gray-50">
+                          {items.map((r) => {
+                            const date    = r.createdAt?.toDate?.();
+                            const dateStr = date
+                              ? `${date.getMonth()+1}/${date.getDate()} ${String(date.getHours()).padStart(2,"0")}:${String(date.getMinutes()).padStart(2,"0")}`
+                              : "-";
+                            const execDate    = r.executedAt?.toDate?.();
+                            const execDateStr = execDate ? `${execDate.getMonth()+1}/${execDate.getDate()}` : "";
+
+                            return (
+                              <div key={r.id} className="px-4 py-3">
+                                {/* 건별 정보 행 */}
+                                <div className="flex justify-between items-center mb-2">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-600 font-medium">{dateStr}</span>
+                                      <span className="text-xs font-bold text-orange-500">{(r.cost||0).toLocaleString()}P</span>
+                                    </div>
+                                    <p className="text-[11px] text-gray-300 mt-0.5 truncate">UID: {r.userId}</p>
+                                  </div>
+                                  <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusStyle[r.status] || statusStyle.pending}`}>
+                                      {r.status === "pending" ? "대기" : r.status === "completed" ? "완료" : "반려"}
+                                    </span>
+                                    {r.executed && (
+                                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-purple-100 text-purple-700">
+                                        🚀{execDateStr}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* 건별 버튼 */}
+                                <div className="flex gap-2">
+                                  {r.status === "pending" && (
+                                    <>
+                                      <button
+                                        onClick={() => handleRewardStatus(r.id, "rejected")}
+                                        className="flex-1 bg-gray-100 text-gray-500 py-1.5 rounded-xl text-xs font-medium"
+                                      >
+                                        반려
+                                      </button>
+                                      <button
+                                        onClick={() => handleRewardStatus(r.id, "completed")}
+                                        className="flex-1 bg-green-500 text-white py-1.5 rounded-xl text-xs font-bold"
+                                      >
+                                        ✅ 처리 완료
+                                      </button>
+                                    </>
+                                  )}
+                                  {r.status === "completed" && !r.executed && (
+                                    <button
+                                      onClick={() => handleRewardExecute(r.id)}
+                                      className="flex-1 bg-purple-500 text-white py-1.5 rounded-xl text-xs font-bold"
+                                    >
+                                      🚀 집행완료
+                                    </button>
+                                  )}
+                                  {r.executed && (
+                                    <div className="flex-1 text-center text-xs text-purple-400 py-1.5 bg-purple-50 rounded-xl">
+                                      🚀 집행 완료됨
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })
+                    );
+                  });
+                })()
               )}
             </>
           )}
