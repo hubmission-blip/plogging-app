@@ -132,6 +132,7 @@ export default function LoginPage() {
           ploggingCount: 0,
           provider: "email",
           createdAt: serverTimestamp(),
+          refCode: cred.user.uid.slice(0, 8).toUpperCase(), // 내 추천 코드 저장
         });
       } else {
         await signInWithEmailAndPassword(auth, email, password);

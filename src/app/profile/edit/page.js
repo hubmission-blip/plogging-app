@@ -67,7 +67,14 @@ export default function ProfileEditPage() {
         });
         // 추천인 이미 등록됐으면 입력 불가
         setAlreadyReferred(!!d.referredBy);
-        setMyRefCode(d.refCode || user.uid.slice(0, 8).toUpperCase());
+        const computedRefCode = user.uid.slice(0, 8).toUpperCase();
+        setMyRefCode(computedRefCode);
+        // refCode 필드 없는 구버전 유저면 Firestore에 저장 (추천 검색 가능하도록)
+        if (!d.refCode) {
+          try {
+            await updateDoc(doc(db, "users", user.uid), { refCode: computedRefCode });
+          } catch {}
+        }
       }
     } catch (e) {
       console.error("프로필 로드 실패:", e);

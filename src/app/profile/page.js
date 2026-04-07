@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-  doc, getDoc,
+  doc, getDoc, updateDoc,
   collection, query, where, getDocs,
 } from "firebase/firestore";
 import { signOut } from "firebase/auth";
@@ -68,9 +68,12 @@ export default function ProfilePage() {
           displayName:   d.displayName   || user.displayName || user.email?.split("@")[0] || "익명",
           photoURL:      d.photoURL      || user.photoURL    || "",
         });
-        // 내 추천 코드
+        // 내 추천 코드 (없으면 Firestore에 자동 저장)
         const rc = d.refCode || user.uid.slice(0, 8).toUpperCase();
         setMyRefCode(rc);
+        if (!d.refCode) {
+          try { await updateDoc(doc(db, "users", user.uid), { refCode: rc }); } catch {}
+        }
         // 내 추천으로 가입한 사람들 조회
         try {
           const refQ = query(collection(db, "users"), where("referredBy", "==", user.uid));
