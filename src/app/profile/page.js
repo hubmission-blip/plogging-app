@@ -50,6 +50,27 @@ export default function ProfilePage() {
   // 추천 관련 상태
   const [myRefCode, setMyRefCode]         = useState("");
   const [referredUsers, setReferredUsers] = useState([]);
+  // UID 복사 상태
+  const [uidCopied, setUidCopied] = useState(false);
+
+  const handleCopyUid = async () => {
+    if (!user?.uid) return;
+    try {
+      await navigator.clipboard.writeText(user.uid);
+      setUidCopied(true);
+      setTimeout(() => setUidCopied(false), 2000);
+    } catch {
+      // clipboard API 미지원 시 fallback
+      const el = document.createElement("textarea");
+      el.value = user.uid;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setUidCopied(true);
+      setTimeout(() => setUidCopied(false), 2000);
+    }
+  };
 
   // ── 관리자 여부 ──────────────────────────────────────────
   const isAdmin = user && ADMIN_EMAILS.includes(user.email);
@@ -315,6 +336,43 @@ export default function ProfilePage() {
             <p className="text-xs text-gray-400 mt-3 text-center">추천 성공 시 각 100P가 지급됩니다</p>
           </div>
         )}
+
+        {/* ── 내 계정 정보 (UID) ── */}
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+            <span className="text-base">🪪</span>
+            <p className="font-bold text-gray-700 text-sm">내 계정 정보</p>
+          </div>
+          <div className="px-4 py-3 space-y-2">
+            {/* 회원 UID */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-gray-400 mb-0.5">회원 고유번호 (UID)</p>
+                <p className="text-xs font-mono text-gray-600 truncate">{user?.uid}</p>
+              </div>
+              <button
+                onClick={handleCopyUid}
+                className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-lg font-bold transition-all
+                  ${uidCopied
+                    ? "bg-green-500 text-white"
+                    : "bg-gray-100 text-gray-500 active:bg-gray-200"
+                  }`}
+              >
+                {uidCopied ? "✅ 복사됨" : "복사"}
+              </button>
+            </div>
+            {/* 이메일 */}
+            {user?.email && !user.email.includes("kakao-auth") && (
+              <div>
+                <p className="text-xs text-gray-400 mb-0.5">이메일</p>
+                <p className="text-xs text-gray-600">{user.email}</p>
+              </div>
+            )}
+            <p className="text-[11px] text-gray-300 pt-1">
+              포인트·리워드 문의 시 위 번호를 관리자에게 알려주세요
+            </p>
+          </div>
+        </div>
 
         {/* ── 메뉴 바로가기 ── */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">

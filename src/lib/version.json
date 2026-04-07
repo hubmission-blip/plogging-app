@@ -1,7 +1,18 @@
 {
-  "version": "v1.20",
-  "build": 20,
+  "version": "v1.21",
+  "build": 21,
   "changelog": [
+    {
+      "version": "v1.21",
+      "build": 21,
+      "date": "2026-04-08",
+      "emoji": "🚀",
+      "title": "추천인 시스템 구축",
+      "items": [
+        "관리자페이지 개선",
+        "리워드시스템 개선"
+      ]
+    },
     {
       "version": "v1.20",
       "build": 20,
