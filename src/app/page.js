@@ -453,9 +453,8 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ── 친구 초대 + 내 추천코드 (나란히) ── */}
+          {/* ── 친구 초대 + 홈 화면에 추가 (나란히) ── */}
           <div className="grid grid-cols-2 gap-2">
-            {/* 친구 초대 */}
             <button
               onClick={handleShare}
               className="bg-green-50 border border-green-200 rounded-2xl p-4 flex flex-col items-start gap-1 active:scale-95 transition-transform"
@@ -464,44 +463,15 @@ export default function HomePage() {
               <p className="font-bold text-sm text-gray-700 leading-tight">친구 초대</p>
               <p className="text-xs text-gray-400">보너스 포인트!</p>
             </button>
-
-            {/* 내 추천 코드 */}
-            {myRefCode ? (
-              <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex flex-col items-start gap-1">
-                <p className="text-xs text-green-600 font-medium">🎁 내 추천 코드</p>
-                <p className="text-lg font-black tracking-widest text-green-700">{myRefCode}</p>
-                <button
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(myRefCode);
-                      alert("추천 코드가 복사됐어요! 📋");
-                    } catch { alert(`추천 코드: ${myRefCode}`); }
-                  }}
-                  className="text-xs bg-green-500 text-white px-3 py-1 rounded-lg font-bold mt-0.5"
-                >
-                  복사
-                </button>
-              </div>
-            ) : (
-              <div className="bg-gray-50 rounded-2xl p-4 flex flex-col items-start gap-1">
-                <span className="text-2xl">🔑</span>
-                <p className="font-bold text-sm text-gray-500 leading-tight">추천 코드</p>
-                <p className="text-xs text-gray-400">로그인 후 확인</p>
-              </div>
-            )}
-          </div>
-
-          {/* ── 홈 화면에 추가 ── */}
-          <button
-            onClick={handleInstallClick}
-            className="w-full bg-green-500 text-white rounded-2xl px-4 py-3 flex items-center gap-3 shadow-sm active:scale-95 transition-transform"
-          >
-            <span className="text-2xl">📲</span>
-            <div className="text-left">
+            <button
+              onClick={handleInstallClick}
+              className="bg-green-500 text-white rounded-2xl p-4 flex flex-col items-start gap-1 shadow-sm active:scale-95 transition-transform"
+            >
+              <span className="text-2xl">📲</span>
               <p className="font-bold text-sm leading-tight">홈 화면에 추가</p>
               <p className="text-xs text-green-100">앱으로 사용하기</p>
-            </div>
-          </button>
+            </button>
+          </div>
 
           {/* ── 이용 방법 ── */}
           <div>

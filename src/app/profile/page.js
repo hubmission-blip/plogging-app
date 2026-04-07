@@ -51,7 +51,8 @@ export default function ProfilePage() {
   const [myRefCode, setMyRefCode]         = useState("");
   const [referredUsers, setReferredUsers] = useState([]);
   // UID 복사 상태
-  const [uidCopied, setUidCopied] = useState(false);
+  const [uidCopied,  setUidCopied]  = useState(false);
+  const [refCopied,  setRefCopied]  = useState(false);
 
   const handleCopyUid = async () => {
     if (!user?.uid) return;
@@ -226,11 +227,24 @@ export default function ProfilePage() {
 
           {/* 내 추천 코드 */}
           {myRefCode && (
-            <div className="mt-3 pt-3 border-t border-white/20 flex items-center justify-between">
-              <p className="text-xs text-green-100">내 추천 코드</p>
-              <span className="font-mono font-black text-sm text-white tracking-widest bg-white/20 px-3 py-1 rounded-full">
-                {myRefCode}
-              </span>
+            <div className="mt-3 pt-3 border-t border-white/20 flex items-center justify-between gap-2">
+              <p className="text-xs text-green-100 flex-shrink-0">내 추천 코드</p>
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-black text-sm text-white tracking-widest bg-white/20 px-3 py-1 rounded-full">
+                  {myRefCode}
+                </span>
+                <button
+                  onClick={async () => {
+                    try { await navigator.clipboard.writeText(myRefCode); } catch {}
+                    setRefCopied(true);
+                    setTimeout(() => setRefCopied(false), 2000);
+                  }}
+                  className={`text-[10px] px-2 py-0.5 rounded-lg font-bold flex-shrink-0 transition-all
+                    ${refCopied ? "bg-white text-green-600" : "bg-white/20 text-white active:bg-white/40"}`}
+                >
+                  {refCopied ? "✅" : "복사"}
+                </button>
+              </div>
             </div>
           )}
 
