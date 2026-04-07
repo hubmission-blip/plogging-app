@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-  doc, getDoc, updateDoc,
+  doc, getDoc, setDoc, updateDoc,
   collection, query, where, getDocs,
+  serverTimestamp,
 } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -58,7 +59,32 @@ export default function ProfilePage() {
     if (!user) return;
     setLoading(true);
     try {
-      const userSnap = await getDoc(doc(db, "users", user.uid));
+      const userRef  = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      // 카카오 로그인 후 Firestore 저장 실패했을 경우 여기서 자동 복구
+      if (!userSnap.exists()) {
+        const kakaoRaw = typeof window !== "undefined" ? localStorage.getItem("kakaoUser") : null;
+        if (kakaoRaw) {
+          try {
+            const kd = JSON.parse(kakaoRaw);
+            await setDoc(userRef, {
+              uid:           user.uid,
+              kakaoUid:      kd.kakaoUid || "",
+              email:         kd.email    || "",
+              displayName:   kd.nickname || user.displayName || "카카오유저",
+              nickname:      kd.nickname || user.displayName || "카카오유저",
+              provider:      "kakao",
+              totalPoints:   100,
+              totalDistance: 0,
+              ploggingCount: 0,
+              createdAt:     serverTimestamp(),
+              refCode:       user.uid.slice(0, 8).toUpperCase(),
+            });
+          } catch (e) { console.warn("카카오 유저 문서 복구 실패:", e); }
+        }
+      }
+
       if (userSnap.exists()) {
         const d = userSnap.data();
         setStats({

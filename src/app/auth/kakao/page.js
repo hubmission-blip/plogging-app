@@ -64,6 +64,7 @@ export default function KakaoCallbackPage() {
         const displayName  = kakaoUser.nickname || "카카오유저";
 
         let firebaseUser;
+        let isNewUser = false;
         try {
           // 기존 계정이면 로그인
           const cred = await signInWithEmailAndPassword(auth, fakeEmail, fakePassword);
@@ -78,47 +79,53 @@ export default function KakaoCallbackPage() {
             // 신규 계정 생성
             const cred = await createUserWithEmailAndPassword(auth, fakeEmail, fakePassword);
             await updateProfile(cred.user, { displayName });
+            // 신규 생성 직후 토큰 강제 갱신 → Firestore 인증 전파 대기
+            await cred.user.getIdToken(true);
             firebaseUser = cred.user;
+            isNewUser = true;
             console.log("📌 Firebase 신규 계정 생성:", firebaseUser.uid);
           } else {
             throw loginErr;
           }
         }
 
-        // ─── 3단계: Firestore에 사용자 정보 저장 ──────────────────
-        // Firebase UID가 request.auth.uid가 되므로 규칙 통과
-        setStatus("사용자 정보 저장 중...");
-
-        // users 컬렉션: Firebase UID 기준 (앱 전체에서 사용하는 기본 컬렉션)
-        const userRef  = doc(db, "users", firebaseUser.uid);
-        const userSnap = await getDoc(userRef);
-        if (!userSnap.exists()) {
-          await setDoc(userRef, {
-            uid:          firebaseUser.uid,
-            kakaoUid,                              // 카카오 원본 UID도 저장
-            email:        kakaoUser.email || "",
-            nickname:     displayName,
-            displayName,
-            provider:     "kakao",
-            totalPoints:  100,   // 신규 가입 환영 포인트
-            totalDistance: 0,
-            ploggingCount: 0,
-            createdAt:    serverTimestamp(),
-            refCode:      firebaseUser.uid.slice(0, 8).toUpperCase(), // 추천 코드 저장
-          });
-          console.log("📌 users 컬렉션 문서 생성 완료");
-        }
-
-        // localStorage: AuthContext가 카카오 로그인 여부를 감지하는 데 사용
+        // ─── 3단계: localStorage 먼저 저장 (인증 확보) ────────────
         localStorage.setItem(
           "kakaoUser",
           JSON.stringify({
-            uid:        firebaseUser.uid,   // Firebase UID 사용 (앱 전체 통일)
-            kakaoUid,                       // 카카오 원본 UID
-            email:      kakaoUser.email || "",
-            nickname:   displayName,
+            uid:      firebaseUser.uid,
+            kakaoUid,
+            email:    kakaoUser.email || "",
+            nickname: displayName,
           })
         );
+
+        // ─── 4단계: Firestore에 사용자 정보 저장 (실패해도 계속) ──
+        setStatus("사용자 정보 저장 중...");
+        try {
+          const userRef  = doc(db, "users", firebaseUser.uid);
+          const userSnap = await getDoc(userRef);
+          if (!userSnap.exists()) {
+            await setDoc(userRef, {
+              uid:           firebaseUser.uid,
+              kakaoUid,
+              email:         kakaoUser.email || "",
+              nickname:      displayName,
+              displayName,
+              provider:      "kakao",
+              totalPoints:   100,
+              totalDistance: 0,
+              ploggingCount: 0,
+              createdAt:     serverTimestamp(),
+              refCode:       firebaseUser.uid.slice(0, 8).toUpperCase(),
+            });
+            console.log("📌 users 컬렉션 문서 생성 완료");
+          }
+        } catch (fsErr) {
+          // Firestore 저장 실패해도 인증은 됐으므로 홈으로 이동
+          // (다음 로그인 시 또는 프로필 방문 시 문서 자동 생성됨)
+          console.warn("⚠️ Firestore 저장 실패 (로그인은 유지됨):", fsErr.code, fsErr.message);
+        }
 
         setStatus("완료! 이동 중...");
         router.push("/");
