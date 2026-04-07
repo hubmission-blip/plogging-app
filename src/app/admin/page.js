@@ -1038,28 +1038,67 @@ export default function AdminPage() {
                   };
 
                   return Object.entries(groups).map(([title, items]) => {
-                    const totalPoints   = items.reduce((s, r) => s + (r.cost || 0), 0);
-                    const executedCount = items.filter(r => r.executed).length;
-                    const pendingCount  = items.filter(r => r.status === "pending").length;
-                    const allExecuted   = items.every(r => r.executed);
+                    const executedCount  = items.filter(r => r.executed).length;
+                    const pendingCount   = items.filter(r => r.status === "pending").length;
+                    const allExecuted    = items.every(r => r.executed);
+                    const executableIds  = items.filter(r => r.status === "completed" && !r.executed).map(r => r.id);
+                    const selectedInGroup = executableIds.filter(id => checkedIds.has(id));
+                    const isAllChecked   = executableIds.length > 0 && selectedInGroup.length === executableIds.length;
+                    const isPartChecked  = selectedInGroup.length > 0 && selectedInGroup.length < executableIds.length;
+                    const selectedPoints = items
+                      .filter(r => r.status === "completed" && !r.executed && checkedIds.has(r.id))
+                      .reduce((s, r) => s + (r.cost || 0), 0);
+
+                    const toggleAllInGroup = () => {
+                      setCheckedIds((prev) => {
+                        const next = new Set(prev);
+                        if (isAllChecked) {
+                          executableIds.forEach(id => next.delete(id));
+                        } else {
+                          executableIds.forEach(id => next.add(id));
+                        }
+                        return next;
+                      });
+                    };
 
                     return (
                       <div key={title} className="bg-white rounded-2xl shadow-sm overflow-hidden">
 
-                        {/* ── 카드 헤더: 제목 + 합계 ── */}
+                        {/* ── 카드 헤더: 전체선택 + 제목 + 선택 포인트 ── */}
                         <div className={`px-4 py-3 border-b border-gray-100 flex justify-between items-center
                           ${allExecuted ? "bg-purple-50" : pendingCount > 0 ? "bg-yellow-50" : "bg-green-50"}`}>
-                          <div>
-                            <p className="font-black text-gray-800 text-sm">{title}</p>
-                            <p className="text-[11px] text-gray-400 mt-0.5">
-                              {items.length}건 요청
-                              {executedCount > 0 && ` · 집행완료 ${executedCount}건`}
-                            </p>
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            {/* 전체선택 체크박스 (접수 미집행 항목 있을 때만) */}
+                            {executableIds.length > 0 && (
+                              <input
+                                type="checkbox"
+                                checked={isAllChecked}
+                                ref={el => { if (el) el.indeterminate = isPartChecked; }}
+                                onChange={toggleAllInGroup}
+                                className="w-4 h-4 accent-green-500 flex-shrink-0 cursor-pointer"
+                              />
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-black text-gray-800 text-sm">{title}</p>
+                              <p className="text-[11px] text-gray-400 mt-0.5">
+                                {items.length}건 요청
+                                {executedCount > 0 && ` · 집행완료 ${executedCount}건`}
+                              </p>
+                            </div>
                           </div>
-                          {/* 합산 포인트 */}
-                          <div className="text-right">
-                            <p className="text-base font-black text-orange-500">{totalPoints.toLocaleString()}P</p>
-                            <p className="text-[10px] text-gray-400">합산 포인트</p>
+                          {/* 선택 포인트 합산 */}
+                          <div className="text-right flex-shrink-0 ml-2">
+                            {selectedInGroup.length > 0 ? (
+                              <>
+                                <p className="text-base font-black text-orange-500">{selectedPoints.toLocaleString()}P</p>
+                                <p className="text-[10px] text-orange-300">{selectedInGroup.length}건 선택</p>
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-base font-black text-gray-300">—</p>
+                                <p className="text-[10px] text-gray-300">선택 없음</p>
+                              </>
+                            )}
                           </div>
                         </div>
 
@@ -1088,9 +1127,12 @@ export default function AdminPage() {
                                   )}
                                   <div className="flex justify-between items-center flex-1">
                                     <div className="min-w-0 flex-1">
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-2 flex-wrap">
                                         <span className="text-xs text-gray-600 font-medium">{dateStr}</span>
                                         <span className="text-xs font-bold text-orange-500">{(r.cost||0).toLocaleString()}P</span>
+                                        {r.userName && (
+                                          <span className="text-xs text-gray-700 font-medium">{r.userName}</span>
+                                        )}
                                       </div>
                                       <p className="text-[11px] text-gray-300 mt-0.5 truncate">UID: {r.userId}</p>
                                     </div>
@@ -1136,32 +1178,26 @@ export default function AdminPage() {
                         </div>
 
                         {/* ── 카드 하단 집행완료 버튼 (접수 상태 미집행 항목이 있을 때만) ── */}
-                        {items.some(r => r.status === "completed" && !r.executed) && (() => {
-                          const executableIds = items
-                            .filter(r => r.status === "completed" && !r.executed)
-                            .map(r => r.id);
-                          const selectedInGroup = executableIds.filter(id => checkedIds.has(id));
-                          return (
-                            <div className="px-4 pb-4 pt-2 border-t border-gray-100">
-                              <button
-                                onClick={() => {
-                                  if (selectedInGroup.length === 0) {
-                                    alert("집행완료할 항목을 체크해주세요");
-                                    return;
-                                  }
-                                  handleBatchExecute(selectedInGroup);
-                                }}
-                                className={`w-full py-3 rounded-2xl text-sm font-bold transition-colors
-                                  ${selectedInGroup.length > 0
-                                    ? "bg-purple-500 text-white"
-                                    : "bg-gray-100 text-gray-400"}`}
-                              >
-                                🚀 집행완료
-                                {selectedInGroup.length > 0 && ` (${selectedInGroup.length}건 선택)`}
-                              </button>
-                            </div>
-                          );
-                        })()}
+                        {executableIds.length > 0 && (
+                          <div className="px-4 pb-4 pt-2 border-t border-gray-100">
+                            <button
+                              onClick={() => {
+                                if (selectedInGroup.length === 0) {
+                                  alert("집행완료할 항목을 체크해주세요");
+                                  return;
+                                }
+                                handleBatchExecute(selectedInGroup);
+                              }}
+                              className={`w-full py-3 rounded-2xl text-sm font-bold transition-colors
+                                ${selectedInGroup.length > 0
+                                  ? "bg-purple-500 text-white"
+                                  : "bg-gray-100 text-gray-400"}`}
+                            >
+                              🚀 집행완료
+                              {selectedInGroup.length > 0 && ` (${selectedInGroup.length}건 선택)`}
+                            </button>
+                          </div>
+                        )}
 
                       </div>
                     );

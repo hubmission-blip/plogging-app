@@ -141,6 +141,7 @@ export default function RewardPage() {
   const router   = useRouter();
 
   const [myPoints, setMyPoints]       = useState(0);
+  const [myName,   setMyName]         = useState("");
   const [category, setCategory]       = useState("전체");
   const [selectedItem, setSelectedItem] = useState(null);
   const [confirming, setConfirming]   = useState(false);
@@ -156,6 +157,7 @@ export default function RewardPage() {
       const snap = await getDoc(doc(db, "users", user.uid));
       if (snap.exists()) {
         setMyPoints(snap.data().totalPoints || 0);
+        setMyName(snap.data().displayName || snap.data().name || user.displayName || "");
       }
     } catch (e) {
       console.error("포인트 로드 실패:", e);
@@ -185,12 +187,13 @@ export default function RewardPage() {
 
       // 교환 내역 기록
       await addDoc(collection(db, "reward_history"), {
-        userId:    user.uid,
-        rewardId:  selectedItem.id,
+        userId:      user.uid,
+        userName:    myName || user.displayName || "",
+        rewardId:    selectedItem.id,
         rewardTitle: selectedItem.title,
-        cost:      selectedItem.cost,
-        createdAt: serverTimestamp(),
-        status:    "pending", // 관리자 처리 대기
+        cost:        selectedItem.cost,
+        createdAt:   serverTimestamp(),
+        status:      "pending", // 관리자 처리 대기
       });
 
       setMyPoints((prev) => prev - selectedItem.cost);
