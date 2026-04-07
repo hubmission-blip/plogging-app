@@ -453,16 +453,8 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ── 친구 초대 + 홈 화면에 추가 (나란히) ── */}
+          {/* ── 홈 화면에 추가 + 친구 초대 (나란히) ── */}
           <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={handleShare}
-              className="bg-green-50 border border-green-200 rounded-2xl p-4 flex flex-col items-start gap-1 active:scale-95 transition-transform"
-            >
-              <span className="text-2xl">📤</span>
-              <p className="font-bold text-sm text-gray-700 leading-tight">친구 초대</p>
-              <p className="text-xs text-gray-400">보너스 포인트!</p>
-            </button>
             <button
               onClick={handleInstallClick}
               className="bg-green-500 text-white rounded-2xl p-4 flex flex-col items-start gap-1 shadow-sm active:scale-95 transition-transform"
@@ -470,6 +462,14 @@ export default function HomePage() {
               <span className="text-2xl">📲</span>
               <p className="font-bold text-sm leading-tight">홈 화면에 추가</p>
               <p className="text-xs text-green-100">앱으로 사용하기</p>
+            </button>
+            <button
+              onClick={handleShare}
+              className="bg-green-50 border border-green-200 rounded-2xl p-4 flex flex-col items-start gap-1 active:scale-95 transition-transform"
+            >
+              <span className="text-2xl">📤</span>
+              <p className="font-bold text-sm text-gray-700 leading-tight">친구 초대</p>
+              <p className="text-xs text-gray-400">보너스 포인트!</p>
             </button>
           </div>
 
