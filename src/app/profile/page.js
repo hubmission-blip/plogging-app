@@ -259,16 +259,14 @@ export default function ProfilePage() {
             )}
             <div className="flex items-center gap-2">
               <p className="text-[11px] text-green-600 font-medium w-14 flex-shrink-0">고유번호</p>
-              <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-end">
-                <p className="text-[11px] font-mono text-gray-700 truncate">{user?.uid}</p>
-                <button
-                  onClick={handleCopyUid}
-                  className={`flex-shrink-0 text-[10px] px-2 py-0.5 rounded-lg font-bold transition-all
-                    ${uidCopied ? "bg-green-500 text-white" : "bg-green-100 text-green-600"}`}
-                >
-                  {uidCopied ? "✅" : "복사"}
-                </button>
-              </div>
+              <p className="text-[11px] font-mono text-gray-700 truncate flex-1">{user?.uid}</p>
+              <button
+                onClick={handleCopyUid}
+                className={`flex-shrink-0 text-[10px] px-2 py-0.5 rounded-lg font-bold transition-all
+                  ${uidCopied ? "bg-green-500 text-white" : "bg-green-100 text-green-600"}`}
+              >
+                {uidCopied ? "✅" : "복사"}
+              </button>
             </div>
             <p className="text-[10px] text-gray-400">포인트·리워드 문의 시 고유번호를 알려주세요</p>
           </div>

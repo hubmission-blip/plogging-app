@@ -935,7 +935,7 @@ function MapPageInner() {
         } else {
           // ── 주차 색상: createdAt 기준 실제 경과 일수로 계산 ──
           // (weekNumber 저장값은 ISO주 기준이라 불일치 발생 → 직접 계산)
-          const WEEK_COLORS = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0"];
+          const WEEK_COLORS = ["#4CAF50", "#FF9800", "#FF5722", "#B71C1C"];
           const createdMs   = data.createdAt?.toMillis?.() || Date.now();
           const daysAgo     = Math.floor((Date.now() - createdMs) / (1000 * 60 * 60 * 24));
           const weeksAgo    = Math.min(Math.floor(daysAgo / 7), 3); // 0~3
@@ -1257,9 +1257,9 @@ function MapPageInner() {
           <p className="text-xs font-bold text-gray-500 mb-1">내 동선</p>
           {[
             { color: "#4CAF50", label: "이번 주 (0~6일)" },
-            { color: "#2196F3", label: "1주 전 (7~13일)" },
-            { color: "#FF9800", label: "2주 전 (14~20일)" },
-            { color: "#9C27B0", label: "3주+ (21일~)" },
+            { color: "#FF9800", label: "1주 전 (7~13일)" },
+            { color: "#FF5722", label: "2주 전 (14~20일)" },
+            { color: "#B71C1C", label: "3주+ (21일~)" },
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-1.5 mb-0.5">
               <div className="w-4 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
