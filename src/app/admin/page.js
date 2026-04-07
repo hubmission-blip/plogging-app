@@ -66,8 +66,8 @@ export default function AdminPage() {
   const [rewards,         setRewards]         = useState([]);
   const [rewardFilter,    setRewardFilter]    = useState("pending");
   const [checkedIds,      setCheckedIds]      = useState(new Set());
-  const [collapsedGroups, setCollapsedGroups] = useState(new Set());
-  const [userNameMap,     setUserNameMap]     = useState({});
+  const [expandedGroups, setExpandedGroups] = useState(new Set()); // 기본값: 모두 접힘
+  const [userNameMap,    setUserNameMap]    = useState({});
 
   const toggleCheck = (id) => {
     setCheckedIds((prev) => {
@@ -78,7 +78,7 @@ export default function AdminPage() {
   };
 
   const toggleGroupCollapse = (title) => {
-    setCollapsedGroups((prev) => {
+    setExpandedGroups((prev) => {
       const next = new Set(prev);
       if (next.has(title)) next.delete(title); else next.add(title);
       return next;
@@ -1081,7 +1081,7 @@ export default function AdminPage() {
                       });
                     };
 
-                    const isCollapsed = collapsedGroups.has(title);
+                    const isCollapsed = !expandedGroups.has(title); // 기본 접힘
 
                     return (
                       <div key={title} className="bg-white rounded-2xl shadow-sm overflow-hidden">

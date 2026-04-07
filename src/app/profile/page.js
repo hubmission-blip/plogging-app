@@ -51,8 +51,9 @@ export default function ProfilePage() {
   const [myRefCode, setMyRefCode]         = useState("");
   const [referredUsers, setReferredUsers] = useState([]);
   // UID 복사 상태
-  const [uidCopied,  setUidCopied]  = useState(false);
-  const [refCopied,  setRefCopied]  = useState(false);
+  const [uidCopied,       setUidCopied]       = useState(false);
+  const [refCopied,       setRefCopied]       = useState(false);
+  const [friendsExpanded, setFriendsExpanded] = useState(false); // 기본값: 접힘
 
   const handleCopyUid = async () => {
     if (!user?.uid) return;
@@ -230,7 +231,7 @@ export default function ProfilePage() {
             <div className="mt-3 pt-3 border-t border-white/20 flex items-center justify-between gap-2">
               <p className="text-xs text-green-100 flex-shrink-0">내 추천 코드</p>
               <div className="flex items-center gap-2">
-                <span className="font-mono font-black text-sm text-white tracking-widest bg-white/20 px-3 py-1 rounded-full">
+                <span className="font-mono font-black text-base text-white tracking-widest">
                   {myRefCode}
                 </span>
                 <button
@@ -248,18 +249,18 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* 계정 정보 */}
-          <div className="mt-3 pt-3 border-t border-white/20 space-y-2">
+          {/* 계정 정보 — 흰색 인터박스 */}
+          <div className="mt-3 bg-white/15 rounded-xl px-3 py-3 space-y-2">
             {user?.email && !user.email.includes("kakao-auth") && (
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs text-green-100 flex-shrink-0">이메일</p>
-                <p className="text-xs text-white truncate ml-2">{user.email}</p>
+                <p className="text-[11px] text-green-100 flex-shrink-0">이메일</p>
+                <p className="text-[11px] text-white truncate ml-2">{user.email}</p>
               </div>
             )}
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs text-green-100 flex-shrink-0">고유번호</p>
+              <p className="text-[11px] text-green-100 flex-shrink-0">고유번호</p>
               <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-end">
-                <p className="text-xs font-mono text-white truncate">{user?.uid}</p>
+                <p className="text-[11px] font-mono text-white truncate">{user?.uid}</p>
                 <button
                   onClick={handleCopyUid}
                   className={`flex-shrink-0 text-[10px] px-2 py-0.5 rounded-lg font-bold transition-all
@@ -349,29 +350,47 @@ export default function ProfilePage() {
 
         {/* ── 내가 추천한 친구 목록 ── */}
         {referredUsers.length > 0 && (
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <h2 className="font-bold text-gray-700 mb-3">🎁 내가 추천한 친구 ({referredUsers.length}명)</h2>
-            <div className="space-y-2">
-              {referredUsers.map((u) => {
-                const date    = u.createdAt?.toDate?.();
-                const dateStr = date
-                  ? `${date.getFullYear()}.${date.getMonth()+1}.${date.getDate()}`
-                  : "";
-                return (
-                  <div key={u.uid} className="flex justify-between items-center py-2 border-b last:border-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">🌿</span>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">{u.displayName}</p>
-                        {dateStr && <p className="text-xs text-gray-400">{dateStr} 가입</p>}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            {/* 헤더 + 접기/펼치기 버튼 */}
+            <button
+              className="w-full flex items-center justify-between px-4 py-4"
+              onClick={() => setFriendsExpanded((v) => !v)}
+            >
+              <h2 className="font-bold text-gray-700">🎁 내가 추천한 친구 ({referredUsers.length}명)</h2>
+              <svg
+                width="16" height="16" viewBox="0 0 14 14" fill="none"
+                style={{ transform: friendsExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }}
+              >
+                <path d="M3 5l4 4 4-4" stroke="#9CA3AF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+
+            {/* 리스트 (펼침 시만 표시) */}
+            {friendsExpanded && (
+              <div className="px-4 pb-4">
+                <div className="space-y-2">
+                  {referredUsers.map((u) => {
+                    const date    = u.createdAt?.toDate?.();
+                    const dateStr = date
+                      ? `${date.getFullYear()}.${date.getMonth()+1}.${date.getDate()}`
+                      : "";
+                    return (
+                      <div key={u.uid} className="flex justify-between items-center py-2 border-b last:border-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🌿</span>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">{u.displayName}</p>
+                            {dateStr && <p className="text-xs text-gray-400">{dateStr} 가입</p>}
+                          </div>
+                        </div>
+                        <span className="text-xs font-bold text-green-600">+100P</span>
                       </div>
-                    </div>
-                    <span className="text-xs font-bold text-green-600">+100P</span>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="text-xs text-gray-400 mt-3 text-center">추천 성공 시 각 100P가 지급됩니다</p>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-gray-400 mt-3 text-center">추천 성공 시 각 100P가 지급됩니다</p>
+              </div>
+            )}
           </div>
         )}
 
