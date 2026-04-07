@@ -231,7 +231,7 @@ export default function ProfilePage() {
             <div className="mt-3 pt-3 border-t border-white/20 flex items-center justify-between gap-2">
               <p className="text-xs text-green-100 flex-shrink-0">내 추천 코드</p>
               <div className="flex items-center gap-2">
-                <span className="font-mono font-black text-2xl text-white tracking-widest">
+                <span className="font-mono font-normal text-2xl text-white tracking-widest">
                   {myRefCode}
                 </span>
                 <button
@@ -250,7 +250,7 @@ export default function ProfilePage() {
           )}
 
           {/* 계정 정보 — 완전 흰색 인터박스 */}
-          <div className="mt-3 bg-white rounded-xl px-3 py-3 space-y-2">
+          <div className="mt-3 bg-white/80 rounded-xl px-3 py-3 space-y-2">
             {user?.email && !user.email.includes("kakao-auth") && (
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[11px] text-green-600 font-medium flex-shrink-0">이메일</p>
