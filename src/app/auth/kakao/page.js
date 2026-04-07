@@ -109,24 +109,6 @@ export default function KakaoCallbackPage() {
           console.log("📌 users 컬렉션 문서 생성 완료");
         }
 
-        // kakaoUsers 컬렉션: 카카오 UID → Firebase UID 매핑
-        const kakaoRef  = doc(db, "kakaoUsers", kakaoUid);
-        const kakaoSnap = await getDoc(kakaoRef);
-        if (!kakaoSnap.exists()) {
-          await setDoc(kakaoRef, {
-            kakaoUid,
-            firebaseUid:  firebaseUser.uid,        // Firebase UID 매핑
-            email:        kakaoUser.email || "",
-            nickname:     displayName,
-            provider:     "kakao",
-            totalPoints:  0,
-            totalDistance: 0,
-            ploggingCount: 0,
-            createdAt:    serverTimestamp(),
-          });
-          console.log("📌 kakaoUsers 컬렉션 문서 생성 완료");
-        }
-
         // localStorage: AuthContext가 카카오 로그인 여부를 감지하는 데 사용
         localStorage.setItem(
           "kakaoUser",
