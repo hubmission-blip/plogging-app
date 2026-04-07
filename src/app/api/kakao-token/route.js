@@ -6,16 +6,21 @@ export async function POST(request) {
       return Response.json({ error: "code 또는 redirectUri 누락" }, { status: 400 });
     }
 
-    // ✅ 클라이언트 시크릿 없이 토큰 교환
+    // 토큰 교환 (client_secret 있으면 포함)
+    const tokenParams = {
+      grant_type: "authorization_code",
+      client_id: process.env.KAKAO_REST_API_KEY,
+      redirect_uri: redirectUri,
+      code,
+    };
+    if (process.env.KAKAO_CLIENT_SECRET) {
+      tokenParams.client_secret = process.env.KAKAO_CLIENT_SECRET;
+    }
+
     const tokenRes = await fetch("https://kauth.kakao.com/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded;charset=utf-8" },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        client_id: process.env.KAKAO_REST_API_KEY,
-        redirect_uri: redirectUri,
-        code,
-      }),
+      body: new URLSearchParams(tokenParams),
     });
 
     const tokenData = await tokenRes.json();

@@ -104,6 +104,7 @@ export default function KakaoCallbackPage() {
             totalDistance: 0,
             ploggingCount: 0,
             createdAt:    serverTimestamp(),
+            refCode:      firebaseUser.uid.slice(0, 8).toUpperCase(), // 추천 코드 저장
           });
           console.log("📌 users 컬렉션 문서 생성 완료");
         }
