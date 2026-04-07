@@ -14,6 +14,7 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(""); // ✅ 에러 표시용
   const [totalStats, setTotalStats] = useState({ count: 0, distance: 0, points: 0 });
+  const [lightboxImg, setLightboxImg] = useState(null); // 사진 크게 보기
   const router = useRouter();
 
   // ✅ fetchHistory를 useCallback으로 정의 + useEffect 안으로 이동
@@ -81,6 +82,28 @@ export default function HistoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
+
+      {/* ── 사진 라이트박스 모달 ── */}
+      {lightboxImg && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4"
+          onClick={() => setLightboxImg(null)}
+        >
+          <button
+            className="absolute top-5 right-5 text-white text-3xl font-bold leading-none"
+            onClick={() => setLightboxImg(null)}
+          >
+            ✕
+          </button>
+          <img
+            src={lightboxImg}
+            alt="플로깅 인증 사진"
+            className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <p className="text-white/50 text-xs mt-3">화면을 탭하면 닫힙니다</p>
+        </div>
+      )}
       {/* 헤더 */}
       <div className="bg-gradient-to-b from-green-600 to-green-500 px-4 pt-12 pb-6 text-white">
         <h1 className="text-2xl font-bold">📋 플로깅 기록</h1>
@@ -147,6 +170,7 @@ export default function HistoryPage() {
               const weekLabel = getWeekLabel(record.createdAt);
               return (
                 <div key={record.id} className="bg-white rounded-2xl shadow-sm p-4">
+                  {/* 상단: 날짜/시간 (좌) + 포인트/주차 (우) */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div
@@ -158,16 +182,26 @@ export default function HistoryPage() {
                           {formatDate(record.createdAt)}
                         </p>
                         <p className="text-xs text-gray-400 mt-0.5">
-                          {formatTime(record.createdAt)} · {weekLabel}
+                          {formatTime(record.createdAt)}
                         </p>
                       </div>
                     </div>
-                    <span className="text-lg font-bold text-green-600">
-                      +{record.points || 0}P
-                    </span>
+                    {/* 포인트 + 주차 레이블 (항상 표시) */}
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-lg font-bold text-green-600">
+                        +{record.points || 0}P
+                      </span>
+                      <span
+                        className="text-[11px] px-2 py-0.5 rounded-full text-white font-medium"
+                        style={{ backgroundColor: color }}
+                      >
+                        {weekLabel}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex gap-4 mt-3 pt-3 border-t">
+                  {/* 하단: 거리 / 좌표 / 사진 */}
+                  <div className="flex gap-4 mt-3 pt-3 border-t items-center">
                     <div className="flex items-center gap-1.5">
                       <span className="text-gray-400 text-sm">📏</span>
                       <span className="text-sm font-medium">
@@ -180,21 +214,21 @@ export default function HistoryPage() {
                         {record.coords?.length || 0}개 좌표
                       </span>
                     </div>
-                    {/* ✅ 사진 있으면 표시 */}
-                    {record.photoURL && (
-                      <img
-                        src={record.photoURL}
-                        alt="플로깅 사진"
-                        className="ml-auto w-12 h-12 rounded-lg object-cover"
-                      />
-                    )}
-                    {!record.photoURL && (
-                      <div
-                        className="ml-auto text-xs px-2 py-0.5 rounded-full text-white"
-                        style={{ backgroundColor: color }}
+                    {/* 사진 (photoUrl 또는 photoURL 모두 처리) */}
+                    {(record.photoUrl || record.photoURL) && (
+                      <button
+                        className="ml-auto flex-shrink-0 relative group"
+                        onClick={() => setLightboxImg(record.photoUrl || record.photoURL)}
                       >
-                        {weekLabel}
-                      </div>
+                        <img
+                          src={record.photoUrl || record.photoURL}
+                          alt="플로깅 인증 사진"
+                          className="w-16 h-16 rounded-xl object-cover shadow-sm ring-2 ring-green-200"
+                        />
+                        <div className="absolute inset-0 bg-black/30 rounded-xl flex items-center justify-center opacity-0 group-active:opacity-100 transition-opacity">
+                          <span className="text-white text-xs font-bold">🔍</span>
+                        </div>
+                      </button>
                     )}
                   </div>
                 </div>

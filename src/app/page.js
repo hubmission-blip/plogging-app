@@ -126,7 +126,7 @@ const KOREAN_REGIONS = [
 
 // 공지사항 유형별 스타일
 const NOTICE_STYLE = {
-  info:    { bg: "bg-orange-50", border: "border-orange-300", text: "text-orange-700", icon: "📌" },
+  info:    { bg: "bg-blue-50",   border: "border-blue-300",   text: "text-blue-700",   icon: "📌" },
   warning: { bg: "bg-red-50",    border: "border-red-300",    text: "text-red-700",    icon: "⚠️" },
   event:   { bg: "bg-purple-50", border: "border-purple-300", text: "text-purple-700", icon: "🎉" },
 };
@@ -458,7 +458,7 @@ export default function HomePage() {
             {/* 친구 초대 */}
             <button
               onClick={handleShare}
-              className="bg-white border border-green-200 rounded-2xl p-4 flex flex-col items-start gap-1 shadow-sm active:scale-95 transition-transform"
+              className="bg-green-50 border border-green-200 rounded-2xl p-4 flex flex-col items-start gap-1 active:scale-95 transition-transform"
             >
               <span className="text-2xl">📤</span>
               <p className="font-bold text-sm text-gray-700 leading-tight">친구 초대</p>
