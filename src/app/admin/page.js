@@ -1015,21 +1015,22 @@ export default function AdminPage() {
               )}
 
               {/* ── 상태 필터 ── */}
-              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+              <div className="flex gap-2">
                 {[
-                  { id: "pending",   label: `대기 (${rewards.filter(r=>r.status==="pending"&&!r.executed).length})` },
-                  { id: "completed", label: `접수 (${rewards.filter(r=>r.status==="completed"&&!r.executed).length})` },
-                  { id: "rejected",  label: `반려 (${rewards.filter(r=>r.status==="rejected"&&!r.executed).length})` },
-                  { id: "executed",  label: `완료 (${rewards.filter(r=>r.executed).length})` },
-                  { id: "all",       label: `전체 (${rewards.length})` },
+                  { id: "pending",   name: "대기",  count: rewards.filter(r=>r.status==="pending"&&!r.executed).length },
+                  { id: "completed", name: "접수",  count: rewards.filter(r=>r.status==="completed"&&!r.executed).length },
+                  { id: "rejected",  name: "반려",  count: rewards.filter(r=>r.status==="rejected"&&!r.executed).length },
+                  { id: "executed",  name: "완료",  count: rewards.filter(r=>r.executed).length },
+                  { id: "all",       name: "전체",  count: rewards.length },
                 ].map((f) => (
                   <button
                     key={f.id}
                     onClick={() => setRewardFilter(f.id)}
-                    className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-medium border transition-colors
+                    className={`flex-1 flex flex-col items-center py-2 rounded-2xl text-xs font-medium border transition-colors
                       ${rewardFilter === f.id ? "bg-green-500 text-white border-green-500" : "bg-white text-gray-500 border-gray-200"}`}
                   >
-                    {f.label}
+                    <span className="font-semibold">{f.name}</span>
+                    <span className={`text-sm font-black mt-0.5 ${rewardFilter === f.id ? "text-white" : "text-gray-700"}`}>{f.count}</span>
                   </button>
                 ))}
               </div>
