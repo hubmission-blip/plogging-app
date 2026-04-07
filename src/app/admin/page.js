@@ -65,6 +65,15 @@ export default function AdminPage() {
   // ── 리워드 ────────────────────────────────────────────
   const [rewards,      setRewards]      = useState([]);
   const [rewardFilter, setRewardFilter] = useState("pending");
+  const [checkedIds,   setCheckedIds]   = useState(new Set());
+
+  const toggleCheck = (id) => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   // ── 유지관리 ──────────────────────────────────────────
   const [appSettings,   setAppSettings]   = useState(null);
@@ -334,6 +343,22 @@ export default function AdminPage() {
       });
       setRewards((prev) => prev.map((r) => r.id === rewardId ? { ...r, executed: true } : r));
       showMsg("✅ 집행완료 처리되었습니다");
+    } catch (e) { showMsg("❌ 처리 실패: " + e.message); }
+  };
+
+  // 체크된 항목 일괄 집행완료
+  const handleBatchExecute = async (ids) => {
+    if (!ids.length) return;
+    if (!confirm(`선택한 ${ids.length}건을 집행완료 처리하시겠어요?`)) return;
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          updateDoc(doc(db, "reward_history", id), { executed: true, executedAt: serverTimestamp() })
+        )
+      );
+      setRewards((prev) => prev.map((r) => ids.includes(r.id) ? { ...r, executed: true } : r));
+      setCheckedIds((prev) => { const n = new Set(prev); ids.forEach((id) => n.delete(id)); return n; });
+      showMsg(`✅ ${ids.length}건 집행완료 처리되었습니다`);
     } catch (e) { showMsg("❌ 처리 실패: " + e.message); }
   };
 
@@ -694,9 +719,9 @@ export default function AdminPage() {
   const filteredUsers   = users.filter((u) =>
     !userSearch || (u.displayName || u.email || "").toLowerCase().includes(userSearch.toLowerCase())
   );
-  const filteredRewards = rewardFilter === "all"
-    ? rewards
-    : rewards.filter((r) => r.status === rewardFilter);
+  const filteredRewards = rewardFilter === "all"      ? rewards
+    : rewardFilter === "executed" ? rewards.filter((r) => r.executed)
+    : rewards.filter((r) => r.status === rewardFilter && !r.executed);
 
   const TAB_LIST = [
     { id: "dashboard",   label: "📊",  name: "통계" },
@@ -973,9 +998,10 @@ export default function AdminPage() {
               {/* ── 상태 필터 ── */}
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                 {[
-                  { id: "pending",   label: `⏳ 대기 (${rewards.filter(r=>r.status==="pending").length})` },
-                  { id: "completed", label: `✅ 완료 (${rewards.filter(r=>r.status==="completed").length})` },
-                  { id: "rejected",  label: `❌ 반려 (${rewards.filter(r=>r.status==="rejected").length})` },
+                  { id: "pending",   label: `대기 (${rewards.filter(r=>r.status==="pending"&&!r.executed).length})` },
+                  { id: "completed", label: `접수 (${rewards.filter(r=>r.status==="completed"&&!r.executed).length})` },
+                  { id: "rejected",  label: `반려 (${rewards.filter(r=>r.status==="rejected"&&!r.executed).length})` },
+                  { id: "executed",  label: `완료 (${rewards.filter(r=>r.executed).length})` },
                   { id: "all",       label: `전체 (${rewards.length})` },
                 ].map((f) => (
                   <button
@@ -1050,62 +1076,93 @@ export default function AdminPage() {
                             return (
                               <div key={r.id} className="px-4 py-3">
                                 {/* 건별 정보 행 */}
-                                <div className="flex justify-between items-center mb-2">
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-600 font-medium">{dateStr}</span>
-                                      <span className="text-xs font-bold text-orange-500">{(r.cost||0).toLocaleString()}P</span>
+                                <div className="flex items-center gap-2">
+                                  {/* 체크박스: 접수 상태이고 미집행인 경우만 */}
+                                  {r.status === "completed" && !r.executed && (
+                                    <input
+                                      type="checkbox"
+                                      checked={checkedIds.has(r.id)}
+                                      onChange={() => toggleCheck(r.id)}
+                                      className="w-4 h-4 accent-green-500 flex-shrink-0 cursor-pointer"
+                                    />
+                                  )}
+                                  <div className="flex justify-between items-center flex-1">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs text-gray-600 font-medium">{dateStr}</span>
+                                        <span className="text-xs font-bold text-orange-500">{(r.cost||0).toLocaleString()}P</span>
+                                      </div>
+                                      <p className="text-[11px] text-gray-300 mt-0.5 truncate">UID: {r.userId}</p>
                                     </div>
-                                    <p className="text-[11px] text-gray-300 mt-0.5 truncate">UID: {r.userId}</p>
-                                  </div>
-                                  <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusStyle[r.status] || statusStyle.pending}`}>
-                                      {r.status === "pending" ? "대기" : r.status === "completed" ? "완료" : "반려"}
-                                    </span>
-                                    {r.executed && (
-                                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-purple-100 text-purple-700">
-                                        🚀{execDateStr}
+                                    <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+                                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusStyle[r.status] || statusStyle.pending}`}>
+                                        {r.status === "pending" ? "대기" : r.status === "completed" ? "접수" : "반려"}
                                       </span>
-                                    )}
+                                      {r.executed && (
+                                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-purple-100 text-purple-700">
+                                          집행{execDateStr}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
 
-                                {/* 건별 버튼 */}
-                                <div className="flex gap-2">
-                                  {r.status === "pending" && (
-                                    <>
-                                      <button
-                                        onClick={() => handleRewardStatus(r.id, "rejected")}
-                                        className="flex-1 bg-gray-100 text-gray-500 py-1.5 rounded-xl text-xs font-medium"
-                                      >
-                                        반려
-                                      </button>
-                                      <button
-                                        onClick={() => handleRewardStatus(r.id, "completed")}
-                                        className="flex-1 bg-green-500 text-white py-1.5 rounded-xl text-xs font-bold"
-                                      >
-                                        ✅ 처리 완료
-                                      </button>
-                                    </>
-                                  )}
-                                  {r.status === "completed" && !r.executed && (
+                                {/* 대기 상태 버튼 (반려 / 접수) */}
+                                {r.status === "pending" && (
+                                  <div className="flex gap-2 mt-2">
                                     <button
-                                      onClick={() => handleRewardExecute(r.id)}
-                                      className="flex-1 bg-purple-500 text-white py-1.5 rounded-xl text-xs font-bold"
+                                      onClick={() => handleRewardStatus(r.id, "rejected")}
+                                      className="flex-1 bg-gray-100 text-gray-500 py-1.5 rounded-xl text-xs font-medium"
                                     >
-                                      🚀 집행완료
+                                      반려
                                     </button>
-                                  )}
-                                  {r.executed && (
-                                    <div className="flex-1 text-center text-xs text-purple-400 py-1.5 bg-purple-50 rounded-xl">
-                                      🚀 집행 완료됨
-                                    </div>
-                                  )}
-                                </div>
+                                    <button
+                                      onClick={() => handleRewardStatus(r.id, "completed")}
+                                      className="flex-1 bg-green-500 text-white py-1.5 rounded-xl text-xs font-bold"
+                                    >
+                                      ✅ 접수
+                                    </button>
+                                  </div>
+                                )}
+                                {/* 집행 완료된 항목 표시 */}
+                                {r.executed && (
+                                  <div className="mt-2 text-center text-xs text-purple-400 py-1.5 bg-purple-50 rounded-xl">
+                                    🚀 집행 완료됨
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
                         </div>
+
+                        {/* ── 카드 하단 집행완료 버튼 (접수 상태 미집행 항목이 있을 때만) ── */}
+                        {items.some(r => r.status === "completed" && !r.executed) && (() => {
+                          const executableIds = items
+                            .filter(r => r.status === "completed" && !r.executed)
+                            .map(r => r.id);
+                          const selectedInGroup = executableIds.filter(id => checkedIds.has(id));
+                          return (
+                            <div className="px-4 pb-4 pt-2 border-t border-gray-100">
+                              <button
+                                onClick={() => {
+                                  if (selectedInGroup.length === 0) {
+                                    alert("집행완료할 항목을 체크해주세요");
+                                    return;
+                                  }
+                                  handleBatchExecute(selectedInGroup);
+                                }}
+                                className={`w-full py-3 rounded-2xl text-sm font-bold transition-colors
+                                  ${selectedInGroup.length > 0
+                                    ? "bg-purple-500 text-white"
+                                    : "bg-gray-100 text-gray-400"}`}
+                              >
+                                🚀 집행완료
+                                {selectedInGroup.length > 0 && ` (${selectedInGroup.length}건 선택)`}
+                              </button>
+                            </div>
+                          );
+                        })()}
+
                       </div>
                     );
                   });
