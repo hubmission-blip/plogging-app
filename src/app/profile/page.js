@@ -231,7 +231,7 @@ export default function ProfilePage() {
             <div className="mt-3 pt-3 border-t border-white/20 flex items-center justify-between gap-2">
               <p className="text-xs text-green-100 flex-shrink-0">내 추천 코드</p>
               <div className="flex items-center gap-2">
-                <span className="font-mono font-black text-base text-white tracking-widest">
+                <span className="font-mono font-black text-2xl text-white tracking-widest">
                   {myRefCode}
                 </span>
                 <button
@@ -249,28 +249,28 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* 계정 정보 — 흰색 인터박스 */}
-          <div className="mt-3 bg-white/15 rounded-xl px-3 py-3 space-y-2">
+          {/* 계정 정보 — 완전 흰색 인터박스 */}
+          <div className="mt-3 bg-white rounded-xl px-3 py-3 space-y-2">
             {user?.email && !user.email.includes("kakao-auth") && (
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] text-green-100 flex-shrink-0">이메일</p>
-                <p className="text-[11px] text-white truncate ml-2">{user.email}</p>
+                <p className="text-[11px] text-green-600 font-medium flex-shrink-0">이메일</p>
+                <p className="text-[11px] text-gray-700 truncate ml-2">{user.email}</p>
               </div>
             )}
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[11px] text-green-100 flex-shrink-0">고유번호</p>
+              <p className="text-[11px] text-green-600 font-medium flex-shrink-0">고유번호</p>
               <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-end">
-                <p className="text-[11px] font-mono text-white truncate">{user?.uid}</p>
+                <p className="text-[11px] font-mono text-gray-700 truncate">{user?.uid}</p>
                 <button
                   onClick={handleCopyUid}
                   className={`flex-shrink-0 text-[10px] px-2 py-0.5 rounded-lg font-bold transition-all
-                    ${uidCopied ? "bg-white text-green-600" : "bg-white/20 text-white"}`}
+                    ${uidCopied ? "bg-green-500 text-white" : "bg-green-100 text-green-600"}`}
                 >
                   {uidCopied ? "✅" : "복사"}
                 </button>
               </div>
             </div>
-            <p className="text-[10px] text-green-200/60">포인트·리워드 문의 시 고유번호를 알려주세요</p>
+            <p className="text-[10px] text-gray-400">포인트·리워드 문의 시 고유번호를 알려주세요</p>
           </div>
         </div>
       </div>

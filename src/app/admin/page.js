@@ -736,7 +736,7 @@ export default function AdminPage() {
   //  필터
   // ──────────────────────────────────────────────────────
   const filteredUsers   = users.filter((u) =>
-    !userSearch || (u.displayName || u.email || "").toLowerCase().includes(userSearch.toLowerCase())
+    !userSearch || (u.displayName || u.email || "").toLowerCase().includes(userSearch.toLowerCase()) || (u.id || "").toLowerCase().includes(userSearch.toLowerCase())
   );
   const filteredRewards = rewardFilter === "all"      ? rewards
     : rewardFilter === "executed" ? rewards.filter((r) => r.executed)
@@ -894,7 +894,7 @@ export default function AdminPage() {
                   type="text"
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
-                  placeholder="이름 또는 이메일 검색..."
+                  placeholder="이름 · 이메일 · UID 검색..."
                   className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm outline-none focus:border-green-400"
                 />
                 {userSearch && (
