@@ -252,13 +252,13 @@ export default function ProfilePage() {
           {/* 계정 정보 — 완전 흰색 인터박스 */}
           <div className="mt-3 bg-white/80 rounded-xl px-3 py-3 space-y-2">
             {user?.email && !user.email.includes("kakao-auth") && (
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] text-green-600 font-medium flex-shrink-0">이메일</p>
-                <p className="text-[11px] text-gray-700 truncate ml-2">{user.email}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-[11px] text-green-600 font-medium w-14 flex-shrink-0">이메일</p>
+                <p className="text-[11px] text-gray-700 truncate flex-1">{user.email}</p>
               </div>
             )}
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[11px] text-green-600 font-medium flex-shrink-0">고유번호</p>
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] text-green-600 font-medium w-14 flex-shrink-0">고유번호</p>
               <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-end">
                 <p className="text-[11px] font-mono text-gray-700 truncate">{user?.uid}</p>
                 <button
