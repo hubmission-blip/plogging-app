@@ -12,6 +12,17 @@ import {
 // ─── 리워드 아이템 목록 ────────────────────────────────────
 const REWARDS = [
   {
+    id: "donate_gia",
+    category: "기부",
+    icon: "🌿",
+    title: "기아대책 후원",
+    desc: "온마을 프로젝트 — 소외된 이웃을 위한 기부",
+    cost: 1000,
+    stock: 999,
+    badge: "추천",
+    badgeColor: "bg-red-100 text-red-600",
+  },
+  {
     id: "bag_1000",
     category: "환경",
     icon: "🛍️",
@@ -120,17 +131,6 @@ const REWARDS = [
     stock: 50,
     badge: "NEW",
     badgeColor: "bg-blue-100 text-blue-700",
-  },
-  {
-    id: "donate_gia",
-    category: "기부",
-    icon: "🤝",
-    title: "기아대책 후원",
-    desc: "온마을 프로젝트 — 굶주린 이웃을 위한 기부",
-    cost: 1000,
-    stock: 999,
-    badge: "추천",
-    badgeColor: "bg-red-100 text-red-600",
   },
 ];
 
