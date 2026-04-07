@@ -49,9 +49,9 @@ function InstallModal({ onClose }) {
               </div>
             ))}
             {/* iOS 안내 팁 */}
-            <div className="bg-blue-50 rounded-2xl px-4 py-3 flex items-center gap-2">
+            <div className="bg-orange-50 rounded-2xl px-4 py-3 flex items-center gap-2">
               <span className="text-xl">💡</span>
-              <p className="text-xs text-blue-700">
+              <p className="text-xs text-orange-700">
                 Safari 하단 오른쪽 끝의 <strong>···</strong> 버튼을 먼저 누르면 공유 메뉴가 열려요
               </p>
             </div>
@@ -126,8 +126,8 @@ const KOREAN_REGIONS = [
 
 // 공지사항 유형별 스타일
 const NOTICE_STYLE = {
-  info:    { bg: "bg-blue-50",   border: "border-blue-300",   text: "text-blue-700",   icon: "📌" },
-  warning: { bg: "bg-orange-50", border: "border-orange-300", text: "text-orange-700", icon: "⚠️" },
+  info:    { bg: "bg-orange-50", border: "border-orange-300", text: "text-orange-700", icon: "📌" },
+  warning: { bg: "bg-red-50",    border: "border-red-300",    text: "text-red-700",    icon: "⚠️" },
   event:   { bg: "bg-purple-50", border: "border-purple-300", text: "text-purple-700", icon: "🎉" },
 };
 
@@ -401,7 +401,7 @@ export default function HomePage() {
                       </div>
                     </button>
                     {isExpanded && (
-                      <p className={`text-xs ${style.text} mt-2 leading-relaxed whitespace-pre-line`}>
+                      <p className="text-xs text-gray-800 mt-2 leading-relaxed whitespace-pre-line">
                         {notice.content}
                       </p>
                     )}
@@ -458,7 +458,7 @@ export default function HomePage() {
             {/* 친구 초대 */}
             <button
               onClick={handleShare}
-              className="bg-white rounded-2xl p-4 flex flex-col items-start gap-1 shadow-sm active:scale-95 transition-transform"
+              className="bg-white border border-green-200 rounded-2xl p-4 flex flex-col items-start gap-1 shadow-sm active:scale-95 transition-transform"
             >
               <span className="text-2xl">📤</span>
               <p className="font-bold text-sm text-gray-700 leading-tight">친구 초대</p>
