@@ -63,14 +63,24 @@ export default function AdminPage() {
   const [pointReason,  setPointReason]  = useState("");
 
   // ── 리워드 ────────────────────────────────────────────
-  const [rewards,      setRewards]      = useState([]);
-  const [rewardFilter, setRewardFilter] = useState("pending");
-  const [checkedIds,   setCheckedIds]   = useState(new Set());
+  const [rewards,         setRewards]         = useState([]);
+  const [rewardFilter,    setRewardFilter]    = useState("pending");
+  const [checkedIds,      setCheckedIds]      = useState(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState(new Set());
+  const [userNameMap,     setUserNameMap]     = useState({});
 
   const toggleCheck = (id) => {
     setCheckedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleGroupCollapse = (title) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(title)) next.delete(title); else next.add(title);
       return next;
     });
   };
@@ -219,8 +229,17 @@ export default function AdminPage() {
   const fetchRewards = useCallback(async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(collection(db, "reward_history"));
-      const arr  = snap.docs
+      const [rewardSnap, usersSnap] = await Promise.all([
+        getDocs(collection(db, "reward_history")),
+        getDocs(collection(db, "users")),
+      ]);
+      // uid → displayName 맵 생성
+      const nameMap = {};
+      usersSnap.docs.forEach((d) => {
+        nameMap[d.id] = d.data().displayName || d.data().name || "";
+      });
+      setUserNameMap(nameMap);
+      const arr = rewardSnap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
         .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
       setRewards(arr);
@@ -1061,10 +1080,12 @@ export default function AdminPage() {
                       });
                     };
 
+                    const isCollapsed = collapsedGroups.has(title);
+
                     return (
                       <div key={title} className="bg-white rounded-2xl shadow-sm overflow-hidden">
 
-                        {/* ── 카드 헤더: 전체선택 + 제목 + 선택 포인트 ── */}
+                        {/* ── 카드 헤더: 전체선택 + 제목 + 선택 포인트 + 접기 버튼 ── */}
                         <div className={`px-4 py-3 border-b border-gray-100 flex justify-between items-center
                           ${allExecuted ? "bg-purple-50" : pendingCount > 0 ? "bg-yellow-50" : "bg-green-50"}`}>
                           <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -1086,24 +1107,36 @@ export default function AdminPage() {
                               </p>
                             </div>
                           </div>
-                          {/* 선택 포인트 합산 */}
-                          <div className="text-right flex-shrink-0 ml-2">
-                            {selectedInGroup.length > 0 ? (
-                              <>
-                                <p className="text-base font-black text-orange-500">{selectedPoints.toLocaleString()}P</p>
-                                <p className="text-[10px] text-orange-300">{selectedInGroup.length}건 선택</p>
-                              </>
-                            ) : (
-                              <>
-                                <p className="text-base font-black text-gray-300">—</p>
-                                <p className="text-[10px] text-gray-300">선택 없음</p>
-                              </>
-                            )}
+                          {/* 선택 포인트 합산 + 접기 버튼 */}
+                          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                            <div className="text-right">
+                              {selectedInGroup.length > 0 ? (
+                                <>
+                                  <p className="text-base font-black text-orange-500">{selectedPoints.toLocaleString()}P</p>
+                                  <p className="text-[10px] text-orange-300">{selectedInGroup.length}건 선택</p>
+                                </>
+                              ) : (
+                                <>
+                                  <p className="text-base font-black text-gray-300">—</p>
+                                  <p className="text-[10px] text-gray-300">선택 없음</p>
+                                </>
+                              )}
+                            </div>
+                            {/* 접기/펼치기 버튼 */}
+                            <button
+                              onClick={() => toggleGroupCollapse(title)}
+                              className="w-7 h-7 flex items-center justify-center rounded-full bg-white bg-opacity-60 text-gray-400 hover:text-gray-600 transition-transform flex-shrink-0"
+                              style={{ transform: isCollapsed ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M3 5l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </button>
                           </div>
                         </div>
 
-                        {/* ── 건별 리스트 ── */}
-                        <div className="divide-y divide-gray-50">
+                        {/* ── 건별 리스트 (접기 가능) ── */}
+                        {!isCollapsed && <div className="divide-y divide-gray-50">
                           {items.map((r) => {
                             const date    = r.createdAt?.toDate?.();
                             const dateStr = date
@@ -1130,8 +1163,10 @@ export default function AdminPage() {
                                       <div className="flex items-center gap-2 flex-wrap">
                                         <span className="text-xs text-gray-600 font-medium">{dateStr}</span>
                                         <span className="text-xs font-bold text-orange-500">{(r.cost||0).toLocaleString()}P</span>
-                                        {r.userName && (
-                                          <span className="text-xs text-gray-700 font-medium">{r.userName}</span>
+                                        {(r.userName || userNameMap[r.userId]) && (
+                                          <span className="text-xs text-gray-700 font-medium">
+                                            {r.userName || userNameMap[r.userId]}
+                                          </span>
                                         )}
                                       </div>
                                       <p className="text-[11px] text-gray-300 mt-0.5 truncate">UID: {r.userId}</p>
@@ -1175,9 +1210,9 @@ export default function AdminPage() {
                               </div>
                             );
                           })}
-                        </div>
+                        </div>}
 
-                        {/* ── 카드 하단 집행완료 버튼 (접수 상태 미집행 항목이 있을 때만) ── */}
+                        {/* ── 카드 하단 집행완료 버튼 (접수 상태 미집행 항목이 있을 때만, 접혀도 표시) ── */}
                         {executableIds.length > 0 && (
                           <div className="px-4 pb-4 pt-2 border-t border-gray-100">
                             <button
