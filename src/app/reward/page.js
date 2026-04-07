@@ -121,6 +121,17 @@ const REWARDS = [
     badge: "NEW",
     badgeColor: "bg-blue-100 text-blue-700",
   },
+  {
+    id: "donate_gia",
+    category: "기부",
+    icon: "🤝",
+    title: "기아대책 후원",
+    desc: "온마을 프로젝트 — 굶주린 이웃을 위한 기부",
+    cost: 1000,
+    stock: 999,
+    badge: "추천",
+    badgeColor: "bg-red-100 text-red-600",
+  },
 ];
 
 const CATEGORIES = ["전체", "환경", "음료", "기부", "포인트"];

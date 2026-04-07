@@ -323,6 +323,21 @@ export default function AdminPage() {
   };
 
   // ──────────────────────────────────────────────────────
+  //  Action: 리워드 집행완료 처리
+  // ──────────────────────────────────────────────────────
+  const handleRewardExecute = async (rewardId) => {
+    if (!confirm("집행완료로 표시하시겠어요? 실제 지출이 완료된 경우에만 처리하세요.")) return;
+    try {
+      await updateDoc(doc(db, "reward_history", rewardId), {
+        executed: true,
+        executedAt: serverTimestamp(),
+      });
+      setRewards((prev) => prev.map((r) => r.id === rewardId ? { ...r, executed: true } : r));
+      showMsg("✅ 집행완료 처리되었습니다");
+    } catch (e) { showMsg("❌ 처리 실패: " + e.message); }
+  };
+
+  // ──────────────────────────────────────────────────────
   //  Action: 앱 설정 저장
   // ──────────────────────────────────────────────────────
   const handleSaveSettings = async () => {
@@ -911,12 +926,56 @@ export default function AdminPage() {
           ══════════════════════════════════════ */}
           {activeTab === "rewards" && (
             <>
-              {/* 상태 필터 */}
+              {/* ── 요약 통계 카드 ── */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  {
+                    icon: "📋",
+                    label: "총 신청 건수",
+                    value: `${rewards.length}건`,
+                    color: "text-blue-600",
+                    bg: "bg-blue-50",
+                  },
+                  {
+                    icon: "💰",
+                    label: "총 신청 포인트",
+                    value: `${rewards.reduce((s, r) => s + (r.cost || 0), 0).toLocaleString()}P`,
+                    color: "text-orange-600",
+                    bg: "bg-orange-50",
+                  },
+                  {
+                    icon: "🚀",
+                    label: "집행완료",
+                    value: `${rewards.filter(r => r.executed).length}건`,
+                    color: "text-purple-600",
+                    bg: "bg-purple-50",
+                  },
+                ].map((s) => (
+                  <div key={s.label} className={`${s.bg} rounded-2xl p-3 text-center`}>
+                    <div className="text-lg mb-0.5">{s.icon}</div>
+                    <p className={`text-sm font-black ${s.color}`}>{s.value}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── 대기 포인트 합계 안내 ── */}
+              {rewards.filter(r => r.status === "pending").length > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2 flex justify-between items-center">
+                  <span className="text-xs text-yellow-700 font-medium">⏳ 처리 대기 중</span>
+                  <span className="text-xs font-black text-yellow-800">
+                    {rewards.filter(r=>r.status==="pending").length}건 ·{" "}
+                    {rewards.filter(r=>r.status==="pending").reduce((s,r)=>s+(r.cost||0),0).toLocaleString()}P
+                  </span>
+                </div>
+              )}
+
+              {/* ── 상태 필터 ── */}
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                 {[
-                  { id: "pending",   label: `대기 (${rewards.filter(r=>r.status==="pending").length})` },
-                  { id: "completed", label: `완료 (${rewards.filter(r=>r.status==="completed").length})` },
-                  { id: "rejected",  label: `반려 (${rewards.filter(r=>r.status==="rejected").length})` },
+                  { id: "pending",   label: `⏳ 대기 (${rewards.filter(r=>r.status==="pending").length})` },
+                  { id: "completed", label: `✅ 완료 (${rewards.filter(r=>r.status==="completed").length})` },
+                  { id: "rejected",  label: `❌ 반려 (${rewards.filter(r=>r.status==="rejected").length})` },
                   { id: "all",       label: `전체 (${rewards.length})` },
                 ].map((f) => (
                   <button
@@ -930,7 +989,7 @@ export default function AdminPage() {
                 ))}
               </div>
 
-              {/* 리워드 목록 */}
+              {/* ── 리워드 목록 ── */}
               {filteredRewards.length === 0 ? (
                 <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
                   <div className="text-4xl mb-2">✅</div>
@@ -940,39 +999,73 @@ export default function AdminPage() {
                 filteredRewards.map((r) => {
                   const date    = r.createdAt?.toDate?.();
                   const dateStr = date ? `${date.getMonth()+1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2,"0")}` : "-";
+                  const execDate    = r.executedAt?.toDate?.();
+                  const execDateStr = execDate ? `${execDate.getMonth()+1}/${execDate.getDate()}` : "";
                   const statusStyle = {
                     pending:   "bg-yellow-100 text-yellow-700",
                     completed: "bg-green-100 text-green-700",
                     rejected:  "bg-red-100 text-red-600",
                   };
                   return (
-                    <div key={r.id} className="bg-white rounded-2xl p-4 shadow-sm">
-                      <div className="flex justify-between items-start mb-2">
+                    <div key={r.id} className={`bg-white rounded-2xl p-4 shadow-sm border-l-4 ${
+                      r.executed ? "border-purple-400" :
+                      r.status === "pending" ? "border-yellow-300" :
+                      r.status === "completed" ? "border-green-400" : "border-red-300"
+                    }`}>
+                      {/* 상단: 제목 + 상태 뱃지 */}
+                      <div className="flex justify-between items-start mb-1">
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-gray-800 text-sm">{r.rewardTitle}</p>
                           <p className="text-xs text-gray-400 mt-0.5">{dateStr} · {(r.cost||0).toLocaleString()}P</p>
-                          <p className="text-xs text-gray-300 mt-0.5 truncate">UID: {r.userId}</p>
+                          <p className="text-[11px] text-gray-300 mt-0.5 truncate">UID: {r.userId}</p>
                         </div>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ml-2 ${statusStyle[r.status] || statusStyle.pending}`}>
-                          {r.status === "pending" ? "대기" : r.status === "completed" ? "완료" : "반려"}
-                        </span>
+                        <div className="flex flex-col items-end gap-1 ml-2 flex-shrink-0">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[r.status] || statusStyle.pending}`}>
+                            {r.status === "pending" ? "대기" : r.status === "completed" ? "완료" : "반려"}
+                          </span>
+                          {r.executed && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-purple-100 text-purple-700">
+                              🚀 집행완료{execDateStr ? ` ${execDateStr}` : ""}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      {r.status === "pending" && (
-                        <div className="flex gap-2 mt-3">
+
+                      {/* 하단 버튼 영역 */}
+                      <div className="flex gap-2 mt-3">
+                        {/* 대기 상태: 반려 + 처리완료 */}
+                        {r.status === "pending" && (
+                          <>
+                            <button
+                              onClick={() => handleRewardStatus(r.id, "rejected")}
+                              className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl text-xs font-medium"
+                            >
+                              반려
+                            </button>
+                            <button
+                              onClick={() => handleRewardStatus(r.id, "completed")}
+                              className="flex-1 bg-green-500 text-white py-2 rounded-xl text-xs font-bold"
+                            >
+                              ✅ 처리 완료
+                            </button>
+                          </>
+                        )}
+                        {/* 완료 상태 + 미집행: 집행완료 버튼 */}
+                        {r.status === "completed" && !r.executed && (
                           <button
-                            onClick={() => handleRewardStatus(r.id, "rejected")}
-                            className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl text-xs font-medium"
+                            onClick={() => handleRewardExecute(r.id)}
+                            className="flex-1 bg-purple-500 text-white py-2 rounded-xl text-xs font-bold"
                           >
-                            반려
+                            🚀 집행완료
                           </button>
-                          <button
-                            onClick={() => handleRewardStatus(r.id, "completed")}
-                            className="flex-1 bg-green-500 text-white py-2 rounded-xl text-xs font-bold"
-                          >
-                            ✅ 처리 완료
-                          </button>
-                        </div>
-                      )}
+                        )}
+                        {/* 집행완료 상태 표시 */}
+                        {r.executed && (
+                          <div className="flex-1 text-center text-xs text-purple-400 font-medium py-2 bg-purple-50 rounded-xl">
+                            🚀 집행 완료됨
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })
