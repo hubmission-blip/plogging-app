@@ -1218,15 +1218,6 @@ function MapPageInner() {
         </div>
       )}
 
-      {/* ── Wake Lock 상태 표시 (플로깅 중) ─────────────── */}
-      {isTracking && (
-        <div className="absolute bottom-44 left-0 right-0 flex justify-center z-10">
-          <div className={`text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow
-            ${wakeLockActive ? "bg-green-500 text-white" : "bg-gray-200 text-gray-500"}`}>
-            {wakeLockActive ? "🔆 화면 켜짐 유지" : "⚠️ 화면 꺼짐 주의"}
-          </div>
-        </div>
-      )}
 
       {/* ── 속도 경고 배너 ──────────────────────────────── */}
       {speedLimitEnabled && isSpeedWarning && isTracking && (
@@ -1313,10 +1304,16 @@ function MapPageInner() {
             </button>
           </>
         ) : (
-          <button onClick={handleStop}
-            className="bg-red-500 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform">
-            🏁 플로깅 종료
-          </button>
+          <>
+            <div className={`text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow
+              ${wakeLockActive ? "bg-green-500 text-white" : "bg-gray-200 text-gray-500"}`}>
+              {wakeLockActive ? "🔆 화면 켜짐 유지" : "⚠️ 화면 꺼짐 주의"}
+            </div>
+            <button onClick={handleStop}
+              className="bg-red-500 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform">
+              🏁 플로깅 종료
+            </button>
+          </>
         )}
       </div>
 
