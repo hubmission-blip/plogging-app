@@ -1220,8 +1220,8 @@ function MapPageInner() {
 
       {/* ── Wake Lock 상태 표시 (플로깅 중) ─────────────── */}
       {isTracking && (
-        <div className="absolute bottom-32 right-4 z-10">
-          <div className={`text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow
+        <div className="absolute bottom-44 left-0 right-0 flex justify-center z-10">
+          <div className={`text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow
             ${wakeLockActive ? "bg-green-500 text-white" : "bg-gray-200 text-gray-500"}`}>
             {wakeLockActive ? "🔆 화면 켜짐 유지" : "⚠️ 화면 꺼짐 주의"}
           </div>
