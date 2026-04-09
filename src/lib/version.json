@@ -1,7 +1,18 @@
 {
-  "version": "v1.21",
-  "build": 21,
+  "version": "v1.22",
+  "build": 22,
   "changelog": [
+    {
+      "version": "v1.22",
+      "build": 22,
+      "date": "2026-04-09",
+      "emoji": "🛠️",
+      "title": "쇼츠 비율 영상 적용",
+      "items": [
+        "쇼츠 비율 영상 적용",
+        "앱 새로고침 버튼 추가"
+      ]
+    },
     {
       "version": "v1.21",
       "build": 21,
