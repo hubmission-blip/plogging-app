@@ -445,7 +445,8 @@ export default function HomePage() {
               onClick={() => setShowManual(false)}
             >
               <div
-                className="w-full max-w-lg bg-black rounded-2xl overflow-hidden shadow-2xl"
+                className="bg-black rounded-2xl overflow-hidden shadow-2xl"
+                style={{ width: "min(320px, calc(100vw - 32px))", maxHeight: "calc(100vh - 80px)" }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between px-4 py-3 bg-gray-900">
@@ -455,7 +456,8 @@ export default function HomePage() {
                     className="text-gray-400 text-xl font-bold leading-none"
                   >✕</button>
                 </div>
-                <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                {/* 9:16 세로 비율 (쇼츠) */}
+                <div className="relative w-full" style={{ paddingBottom: "177.78%" }}>
                   <iframe
                     className="absolute inset-0 w-full h-full"
                     src="https://www.youtube.com/embed/AtwsXXCiFmY?autoplay=1"
