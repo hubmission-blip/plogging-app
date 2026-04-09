@@ -585,6 +585,18 @@ export default function HomePage() {
             <p className="text-xs text-gray-300 mt-0.5">hubmission@gmail.com</p>
             <p className="text-xs text-gray-300 mt-0.5">개발 : 이상민 &nbsp;·&nbsp; 자문 : 박정석</p>
             <p className="text-xs text-gray-300 mt-0.5">{versionData.version}</p>
+            <button
+              onClick={async () => {
+                try {
+                  const keys = await caches.keys();
+                  await Promise.all(keys.map((k) => caches.delete(k)));
+                } catch {}
+                window.location.reload();
+              }}
+              className="mt-2 text-xs text-gray-400 border border-gray-200 px-3 py-1 rounded-full"
+            >
+              🔄 앱 새로고침
+            </button>
           </div>
         </div>
       </div>
