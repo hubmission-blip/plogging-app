@@ -112,7 +112,7 @@ const HOW_TO = [
   { step: 3, icon: "🏁", title: "플로깅 종료",    desc: "종료 후 거리·포인트가 자동 계산돼요" },
   { step: 4, icon: "🤖", title: "AI 사진 인증",   desc: "주운 쓰레기를 찍으면 AI가 활동을 확인해요" },
   { step: 5, icon: "🎁", title: "리워드 교환",    desc: "모은 포인트로 다양한 리워드를 받아보세요" },
-  { step: 6, icon: "💚", title: "포인트 후원",    desc: "포인트를 기아대책·환경정화 등 좋은 일에 기부할 수 있어요" },
+  { step: 6, icon: "💚", title: "포인트 후원",    desc: "기아대책·환경정화 등 좋은 일에 기부할 수 있어요" },
 ];
 
 // localStorage 키 (첫 방문 가이드)
