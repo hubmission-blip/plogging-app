@@ -107,10 +107,12 @@ function InstallModal({ onClose }) {
 }
 
 const HOW_TO = [
-  { step: 1, icon: "📍", title: "위치 허용",   desc: "앱 첫 실행 시 위치 권한을 허용해주세요" },
-  { step: 2, icon: "🚶", title: "플로깅 시작", desc: "지도 페이지에서 시작 버튼을 누르세요" },
-  { step: 3, icon: "🏁", title: "플로깅 종료", desc: "종료 후 거리·포인트가 자동 계산돼요" },
-  { step: 4, icon: "🎁", title: "리워드 교환", desc: "모은 포인트로 리워드를 받아보세요" },
+  { step: 1, icon: "📍", title: "위치 허용",      desc: "앱 첫 실행 시 위치 권한을 허용해주세요" },
+  { step: 2, icon: "🚶", title: "플로깅 시작",    desc: "지도 페이지에서 시작 버튼을 누르세요" },
+  { step: 3, icon: "🏁", title: "플로깅 종료",    desc: "종료 후 거리·포인트가 자동 계산돼요" },
+  { step: 4, icon: "🤖", title: "AI 사진 인증",   desc: "주운 쓰레기를 찍으면 AI가 활동을 확인해요" },
+  { step: 5, icon: "🎁", title: "리워드 교환",    desc: "모은 포인트로 다양한 리워드를 받아보세요" },
+  { step: 6, icon: "💚", title: "포인트 후원",    desc: "포인트를 기아대책·환경정화 등 좋은 일에 기부할 수 있어요" },
 ];
 
 // localStorage 키 (첫 방문 가이드)
@@ -525,13 +527,13 @@ export default function HomePage() {
                 가이드 다시 보기
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 items-stretch">
               {HOW_TO.map((item) => (
-                <div key={item.step} className="bg-white rounded-2xl p-4 shadow-sm">
+                <div key={item.step} className="bg-white rounded-2xl p-4 shadow-sm flex flex-col">
                   <span className="text-xs font-bold text-green-500">STEP {item.step}</span>
                   <div className="text-2xl mt-1">{item.icon}</div>
                   <p className="font-bold text-sm mt-1 text-gray-900">{item.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </div>
