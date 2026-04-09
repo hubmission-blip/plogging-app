@@ -1,7 +1,18 @@
 {
-  "version": "v1.26",
-  "build": 26,
+  "version": "v1.27",
+  "build": 27,
   "changelog": [
+    {
+      "version": "v1.27",
+      "build": 27,
+      "date": "2026-04-09",
+      "emoji": "🔧",
+      "title": "이용방법 6단계로 확장",
+      "items": [
+        "이용방법 6단계로 확장",
+        "AI 인증·포인트 후원 스텝 추가"
+      ]
+    },
     {
       "version": "v1.26",
       "build": 26,

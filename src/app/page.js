@@ -532,7 +532,7 @@ export default function HomePage() {
                 <div key={item.step} className="bg-white rounded-2xl p-4 shadow-sm flex flex-col">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-green-500">STEP {item.step}</span>
-                    <span className="text-xs font-bold text-gray-900">{item.title}</span>
+                    <span className="text-sm font-bold text-gray-900">{item.title}</span>
                   </div>
                   <div className="text-2xl mt-2">{item.icon}</div>
                   <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">{item.desc}</p>
