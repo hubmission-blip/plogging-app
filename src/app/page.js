@@ -583,8 +583,7 @@ export default function HomePage() {
           <div className="text-center py-2">
             <p className="text-xs text-gray-400">사단법인 국제청년환경연합회 (GYEA)</p>
             <p className="text-xs text-gray-300 mt-0.5">hubmission@gmail.com</p>
-            <p className="text-xs text-gray-300 mt-0.5">개발 : 이상민 &nbsp;·&nbsp; 자문 : 박정석</p>
-            <p className="text-xs text-gray-300 mt-0.5">{versionData.version}</p>
+            <p className="text-xs text-gray-300 mt-0.5">기획 : 이상민 &nbsp;·&nbsp; 개발 : HubM &nbsp;·&nbsp; 자문 : 박정석</p>
             <button
               onClick={async () => {
                 try {

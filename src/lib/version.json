@@ -1,7 +1,18 @@
 {
-  "version": "v1.22",
-  "build": 22,
+  "version": "v1.23",
+  "build": 23,
   "changelog": [
+    {
+      "version": "v1.23",
+      "build": 23,
+      "date": "2026-04-09",
+      "emoji": "⚡",
+      "title": "푸터 크레딧 수정",
+      "items": [
+        "푸터 크레딧 수정",
+        "하단 버전 표기 제거"
+      ]
+    },
     {
       "version": "v1.22",
       "build": 22,
