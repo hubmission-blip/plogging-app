@@ -135,6 +135,7 @@ export default function HomePage() {
   const { user } = useAuth();
   const [showGuide,   setShowGuide]   = useState(false);
   const [showInstall, setShowInstall] = useState(false);  // 홈화면 추가 모달
+  const [showManual,  setShowManual]  = useState(false);  // 사용법 영상 모달
   const [deferredPrompt, setDeferredPrompt] = useState(null); // Android 네이티브 프롬프트
   const [notices, setNotices] = useState([]); // 활성 공지사항
   const [expandedNotice, setExpandedNotice] = useState(null); // 펼친 공지 id
@@ -414,10 +415,9 @@ export default function HomePage() {
           {/* ── 빠른 메뉴 ── */}
           <div className="grid grid-cols-4 gap-2">
             {[
-              { href: "/map",     icon: "🗺️",  label: "지도" },
-              { href: "/ranking", icon: "🏆",  label: "랭킹" },
-              { href: "/group",   icon: "👥",  label: "그룹" },
-              { href: "/reward",  icon: "🎁",  label: "리워드" },
+              { href: "/map",    icon: "🗺️", label: "지도" },
+              { href: "/group",  icon: "👥", label: "그룹" },
+              { href: "/reward", icon: "🎁", label: "리워드" },
             ].map((item) => (
               <Link
                 key={item.href}
@@ -428,7 +428,46 @@ export default function HomePage() {
                 <span className="text-xs text-gray-600 font-medium">{item.label}</span>
               </Link>
             ))}
+            {/* 매뉴얼 버튼 (유튜브 영상) */}
+            <button
+              onClick={() => setShowManual(true)}
+              className="bg-white rounded-2xl py-3 flex flex-col items-center gap-1 shadow-sm active:scale-95 transition-transform"
+            >
+              <span className="text-2xl">▶️</span>
+              <span className="text-xs text-gray-600 font-medium">매뉴얼</span>
+            </button>
           </div>
+
+          {/* ── 사용법 영상 모달 ── */}
+          {showManual && (
+            <div
+              className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4"
+              onClick={() => setShowManual(false)}
+            >
+              <div
+                className="w-full max-w-lg bg-black rounded-2xl overflow-hidden shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-4 py-3 bg-gray-900">
+                  <p className="text-white font-bold text-sm">▶️ 앱 사용법 영상</p>
+                  <button
+                    onClick={() => setShowManual(false)}
+                    className="text-gray-400 text-xl font-bold leading-none"
+                  >✕</button>
+                </div>
+                <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                  <iframe
+                    className="absolute inset-0 w-full h-full"
+                    src="https://www.youtube.com/embed/AtwsXXCiFmY?autoplay=1"
+                    title="오백원의 행복 사용법"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+              <p className="text-white/40 text-xs mt-3">화면을 탭하면 닫힙니다</p>
+            </div>
+          )}
 
           {/* ── 커뮤니티 현황 ── */}
           <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-4 text-white shadow">
