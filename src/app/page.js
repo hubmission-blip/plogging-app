@@ -530,10 +530,12 @@ export default function HomePage() {
             <div className="grid grid-cols-2 gap-3 items-stretch">
               {HOW_TO.map((item) => (
                 <div key={item.step} className="bg-white rounded-2xl p-4 shadow-sm flex flex-col">
-                  <span className="text-xs font-bold text-green-500">STEP {item.step}</span>
-                  <div className="text-2xl mt-1">{item.icon}</div>
-                  <p className="font-bold text-sm mt-1 text-gray-900">{item.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{item.desc}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-green-500">STEP {item.step}</span>
+                    <span className="text-xs font-bold text-gray-900">{item.title}</span>
+                  </div>
+                  <div className="text-2xl mt-2">{item.icon}</div>
+                  <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </div>
