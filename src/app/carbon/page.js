@@ -119,6 +119,71 @@ const SECTIONS = [
     ],
     tip: "💡 항목별 포인트는 예산 및 실적에 따라 변동될 수 있으니 공식 누리집에서 최신 단가를 확인하세요",
   },
+  {
+    id: "ecomileage",
+    emoji: "🏙️",
+    title: "에코마일리지",
+    subtitle: "서울시 운영 · 에너지 절감 마일리지",
+    color: "from-sky-400 to-cyan-500",
+    bgLight: "bg-sky-50",
+    borderColor: "border-sky-200",
+    textColor: "text-sky-700",
+    badgeBg: "bg-sky-100 text-sky-700",
+    url: "https://ecomileage.seoul.go.kr",
+    urlLabel: "ecomileage.seoul.go.kr",
+    overview: "서울시가 독자적으로 운영하는 에너지 절감 인센티브 제도입니다. 서울 거주자라면 탄소중립포인트 에너지 대신 에코마일리지에 가입하게 됩니다. 2026년부터 녹색실천 마일리지가 신설되고 참여신청제가 도입되어 혜택이 더욱 확대되었어요.",
+    targets: [
+      { label: "참여 대상", value: "서울시 거주자·사업장 (주민등록 기준)" },
+      { label: "측정 항목", value: "전기·수도·도시가스 사용량" },
+      { label: "지급 주기", value: "반기별 1회 평가 후 지급" },
+      { label: "지급 방법", value: "상품권·ETAX포인트·관리비 차감·기부 (유효기간 5년)" },
+    ],
+    incentives: [
+      { icon: "🏠", label: "건물 에너지 절감 (반기별)",   point: "10,000~50,000 마일리지" },
+      { icon: "🚗", label: "승용차 주행거리 감축",          point: "최대 10,000 마일리지" },
+      { icon: "🌱", label: "녹색실천 마일리지 (2026 신설)", point: "최대 5,000 마일리지" },
+    ],
+    howto: [
+      "ecomileage.seoul.go.kr 접속 또는 구청·동주민센터 방문",
+      "회원가입 후 참여 신청",
+      "에너지 사용량 자동 수집 및 집계",
+      "반기별 절감량 확인 후 마일리지 수령 및 사용",
+    ],
+    tip: "⚠️ 서울 거주자는 탄소중립포인트 에너지 대신 에코마일리지에만 가입 가능 (중복 불가)",
+  },
+  {
+    id: "greencard",
+    emoji: "💳",
+    title: "그린카드 (에코머니)",
+    subtitle: "친환경 소비로 포인트 적립",
+    color: "from-emerald-400 to-green-500",
+    bgLight: "bg-emerald-50",
+    borderColor: "border-emerald-200",
+    textColor: "text-emerald-700",
+    badgeBg: "bg-emerald-100 text-emerald-700",
+    url: "https://www.green-card.co.kr",
+    urlLabel: "green-card.co.kr",
+    overview: "환경부가 도입한 친환경 신용·체크카드로, 친환경 제품 구매 및 대중교통 이용 시 에코머니 포인트가 적립됩니다. 탄소중립포인트와도 연계되며, 국립공원·휴양림 등 공공시설 할인 혜택도 받을 수 있어요.",
+    targets: [
+      { label: "발급 대상", value: "전 국민 (만 14세 이상)" },
+      { label: "발급 카드사", value: "BC·농협·기업·KB국민·수협·우리·하나·롯데 등" },
+      { label: "포인트 명칭", value: "에코머니 포인트 (현금처럼 사용 가능)" },
+      { label: "연계 제도", value: "탄소중립포인트·에코마일리지 연동 가능" },
+    ],
+    incentives: [
+      { icon: "🌿", label: "친환경 인증제품 구매 시",     point: "추가 포인트 적립" },
+      { icon: "🚌", label: "대중교통 이용 시",             point: "최대 20% 적립" },
+      { icon: "⚡", label: "전기차 충전 시 (V3 카드)",     point: "최대 40% 적립" },
+      { icon: "🏞️", label: "국립공원·휴양림 이용 시",    point: "무료입장 또는 할인" },
+    ],
+    howto: [
+      "green-card.co.kr 접속 후 카드사 선택",
+      "원하는 카드사에서 그린카드 발급 신청",
+      "탄소중립포인트·에코마일리지 계정과 연동",
+      "친환경 소비 시 에코머니 포인트 자동 적립",
+    ],
+    tip: "💡 그린카드로 탄소중립포인트 인센티브를 에코머니 포인트로 받으면 현금처럼 사용 가능",
+  },
 ];
 
 // ── 아코디언 섹션 컴포넌트 ──────────────────────────────
@@ -286,12 +351,14 @@ export default function CarbonPage() {
           </p>
         </div>
 
-        {/* ── 빠른 요약 카드 3개 ── */}
+        {/* ── 빠른 요약 카드 ── */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { emoji: "⚡", label: "에너지",   sub: "최대\n21만원/년",  color: "bg-orange-50 border-orange-200" },
-            { emoji: "🚗", label: "자동차",   sub: "최대\n10만원/년",  color: "bg-blue-50 border-blue-200" },
-            { emoji: "🌿", label: "녹색생활", sub: "17가지\n실천항목", color: "bg-green-50 border-green-200" },
+            { emoji: "⚡", label: "에너지",    sub: "최대\n21만원/년",  color: "bg-orange-50 border-orange-200" },
+            { emoji: "🚗", label: "자동차",    sub: "최대\n10만원/년",  color: "bg-blue-50 border-blue-200" },
+            { emoji: "🌿", label: "녹색생활",  sub: "17가지\n실천항목", color: "bg-green-50 border-green-200" },
+            { emoji: "🏙️", label: "에코마일리지", sub: "서울시\n전용",  color: "bg-sky-50 border-sky-200" },
+            { emoji: "💳", label: "그린카드",  sub: "친환경\n소비카드", color: "bg-emerald-50 border-emerald-200" },
           ].map((c) => (
             <div key={c.label} className={`${c.color} border rounded-2xl p-3 text-center`}>
               <div className="text-2xl">{c.emoji}</div>
@@ -309,11 +376,16 @@ export default function CarbonPage() {
 
         {/* ── 중복참여 안내 ── */}
         <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-4 text-white">
-          <p className="font-black text-sm mb-2">✅ 3개 사업 모두 중복 참여 가능!</p>
+          <p className="font-black text-sm mb-2">✅ 중복 참여로 혜택 극대화!</p>
           <p className="text-xs text-green-100 leading-relaxed">
-            에너지 절약 + 자동차 주행거리 감축 + 녹색생활 실천을 모두 동시에 참여하면
+            에너지(또는 에코마일리지) + 자동차 + 녹색생활 + 그린카드를 모두 활용하면
             연간 최대 <strong className="text-white">30만원 이상</strong>의 인센티브를 받을 수 있어요.
           </p>
+          <div className="mt-2 bg-white/20 rounded-xl px-3 py-2">
+            <p className="text-[11px] text-white/90 leading-relaxed">
+              ⚠️ <strong>서울 거주자</strong>는 탄소중립포인트 에너지 대신 <strong>에코마일리지</strong>에 가입해야 합니다.
+            </p>
+          </div>
         </div>
 
         {/* ── 플로깅 연계 안내 ── */}
@@ -334,6 +406,8 @@ export default function CarbonPage() {
               { label: "⚡ 탄소중립포인트 에너지",       url: "https://cpoint.or.kr",                      sub: "cpoint.or.kr" },
               { label: "🚗 탄소중립포인트 자동차",        url: "https://car.cpoint.or.kr",                  sub: "car.cpoint.or.kr" },
               { label: "🌿 탄소중립포인트 녹색생활 실천", url: "https://www.cpoint.or.kr/netzero/main.do",  sub: "cpoint.or.kr/netzero" },
+              { label: "🏙️ 에코마일리지 (서울시)",       url: "https://ecomileage.seoul.go.kr",            sub: "ecomileage.seoul.go.kr" },
+              { label: "💳 그린카드 (에코머니)",          url: "https://www.green-card.co.kr",              sub: "green-card.co.kr" },
             ].map((link) => (
               <a
                 key={link.label}

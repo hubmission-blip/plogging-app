@@ -1,7 +1,17 @@
 {
-  "version": "v1.31",
-  "build": 31,
+  "version": "v1.32",
+  "build": 32,
   "changelog": [
+    {
+      "version": "v1.32",
+      "build": 32,
+      "date": "2026-04-14",
+      "emoji": "🛠️",
+      "title": "탄소중립포인트 페이지에 에코마일리지·그린카드 추가",
+      "items": [
+        "탄소중립포인트 페이지에 에코마일리지·그린카드 추가"
+      ]
+    },
     {
       "version": "v1.31",
       "build": 31,
