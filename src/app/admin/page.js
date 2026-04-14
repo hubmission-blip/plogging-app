@@ -7,7 +7,7 @@ import { db } from "@/lib/firebase";
 import {
   collection, query, getDocs, orderBy, limit,
   doc, updateDoc, where, getCountFromServer,
-  deleteDoc, addDoc, setDoc, getDoc,
+  deleteDoc, addDoc, setDoc, getDoc, increment,
   serverTimestamp, writeBatch, Timestamp,
 } from "firebase/firestore";
 
@@ -112,6 +112,10 @@ export default function AdminPage() {
   const [ecoBulkRows,  setEcoBulkRows]  = useState([]);      // 파싱된 미리보기 행
   const [ecoBulkErr,   setEcoBulkErr]   = useState("");      // 파싱 에러
   const [ecoBulkSaving,setEcoBulkSaving]= useState(false);   // 저장 중
+
+  // ── 구매 검토 ─────────────────────────────────────────
+  const [purchases,       setPurchases]       = useState([]);
+  const [purchaseFilter,  setPurchaseFilter]  = useState("pending"); // pending / approved / rejected
 
   // ── 쇼핑 상품 ────────────────────────────────────────
   const EMPTY_PRODUCT = {
@@ -328,6 +332,56 @@ export default function AdminPage() {
     }
   }, []);
 
+  // ── Fetch: 구매 신청 목록 ──────────────────────────────
+  const fetchPurchases = useCallback(async () => {
+    setLoading(true);
+    try {
+      const snap = await getDocs(collection(db, "shopPurchases"));
+      const arr  = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (b.appliedAt?.toMillis?.() || 0) - (a.appliedAt?.toMillis?.() || 0));
+      setPurchases(arr);
+    } catch (e) { console.error("구매 신청 로드 실패:", e); }
+    finally { setLoading(false); }
+  }, []);
+
+  // ── 구매 승인 → 포인트 지급 ──────────────────────────
+  const handleApprovePurchase = async (purchase) => {
+    try {
+      // 상태 업데이트
+      await updateDoc(doc(db, "shopPurchases", purchase.id), {
+        status:      "approved",
+        verified:    true,
+        processedAt: serverTimestamp(),
+      });
+      // 유저 포인트 지급
+      const userRef = doc(db, "users", purchase.userId);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        await updateDoc(userRef, { totalPoints: increment(purchase.bonusPoints || 0) });
+      }
+      setPurchases((prev) =>
+        prev.map((p) => p.id === purchase.id ? { ...p, status: "approved", verified: true } : p)
+      );
+      showMsg(`✅ 승인 완료! +${purchase.bonusPoints}P 지급 → ${purchase.userEmail}`);
+    } catch (e) { showMsg("❌ 승인 실패: " + e.message); }
+  };
+
+  // ── 구매 반려 ──────────────────────────────────────
+  const handleRejectPurchase = async (id) => {
+    if (!confirm("이 구매 신청을 반려하시겠어요?")) return;
+    try {
+      await updateDoc(doc(db, "shopPurchases", id), {
+        status:      "rejected",
+        processedAt: serverTimestamp(),
+      });
+      setPurchases((prev) =>
+        prev.map((p) => p.id === id ? { ...p, status: "rejected" } : p)
+      );
+      showMsg("반려 처리되었습니다");
+    } catch (e) { showMsg("❌ 반려 실패: " + e.message); }
+  };
+
   const handleSaveProduct = async () => {
     const p = editingProduct || newProduct;
     if (!p.title || !p.link) { alert("상품명과 링크는 필수예요"); return; }
@@ -375,6 +429,7 @@ export default function AdminPage() {
     if (activeTab === "banners")     fetchBanners();
     if (activeTab === "ecospots")    fetchEcoSpots();
     if (activeTab === "shop")        fetchProducts();
+    if (activeTab === "purchases")   fetchPurchases();
   }, [activeTab, user, isAdmin]);
 
   useEffect(() => {
@@ -808,6 +863,7 @@ export default function AdminPage() {
     { id: "users",       label: "👥",  name: "유저" },
     { id: "rewards",     label: "🎁",  name: `리워드${rewards.filter(r=>r.status==="pending").length > 0 ? ` (${rewards.filter(r=>r.status==="pending").length})` : ""}` },
     { id: "shop",        label: "🛒",  name: "쇼핑상품" },
+    { id: "purchases",   label: "📋",  name: `구매검토${purchases.filter(p=>p.status==="pending").length > 0 ? ` (${purchases.filter(p=>p.status==="pending").length})` : ""}` },
     { id: "banners",     label: "🖼️",  name: "배너" },
     { id: "ecospots",    label: "♻️",  name: "에코스팟" },
     { id: "maintenance", label: "🔧",  name: "유지관리" },
@@ -837,6 +893,7 @@ export default function AdminPage() {
               if (activeTab === "rewards")     fetchRewards();
               if (activeTab === "maintenance") fetchMaintenance();
               if (activeTab === "notices")     fetchNotices();
+              if (activeTab === "purchases")   fetchPurchases();
             }}
             className="bg-gray-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
           >
@@ -2081,6 +2138,97 @@ export default function AdminPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ══════════════════════════════════════
+              📋 구매 검토 탭
+          ══════════════════════════════════════ */}
+          {activeTab === "purchases" && (
+            <>
+              {/* 안내 배너 */}
+              <div className="bg-blue-50 rounded-2xl p-3 mb-3 text-xs text-blue-700">
+                <p className="font-bold mb-1">📋 쿠팡 파트너스 구매 검토</p>
+                <p>users가 구매 완료 신청한 내역입니다. 쿠팡 파트너스 정산 내역과 대조하여 승인/반려하세요.</p>
+                <p className="mt-1 text-blue-500">✅ 승인 시 해당 유저에게 포인트가 즉시 지급됩니다.</p>
+              </div>
+
+              {/* 상태 필터 */}
+              <div className="flex gap-2 mb-3">
+                {[
+                  { key: "pending",  label: `대기 (${purchases.filter(p=>p.status==="pending").length})`, color: "bg-orange-500" },
+                  { key: "approved", label: `승인 (${purchases.filter(p=>p.status==="approved").length})`, color: "bg-green-500" },
+                  { key: "rejected", label: `반려 (${purchases.filter(p=>p.status==="rejected").length})`, color: "bg-red-400" },
+                ].map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setPurchaseFilter(f.key)}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all
+                      ${purchaseFilter === f.key ? `${f.color} text-white` : "bg-white text-gray-400 border border-gray-100"}`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* 구매 신청 목록 */}
+              {purchases.filter(p => p.status === purchaseFilter).length === 0 ? (
+                <div className="text-center py-10 text-gray-400">
+                  <p className="text-3xl mb-2">📋</p>
+                  <p className="text-sm">
+                    {purchaseFilter === "pending" ? "대기 중인 구매 신청이 없어요" :
+                     purchaseFilter === "approved" ? "승인된 내역이 없어요" : "반려된 내역이 없어요"}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {purchases
+                    .filter((p) => p.status === purchaseFilter)
+                    .map((p) => {
+                      const date = p.appliedAt?.toDate?.()?.toLocaleDateString("ko-KR") || "-";
+                      return (
+                        <div key={p.id} className="bg-white rounded-2xl shadow-sm p-3">
+                          <div className="flex items-start gap-3">
+                            {/* 상품 이미지 */}
+                            <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                              {p.productImage
+                                ? <img src={p.productImage} alt="" className="w-full h-full object-cover" />
+                                : <div className="w-full h-full flex items-center justify-center text-2xl">🛒</div>
+                              }
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-gray-800 leading-tight truncate">{p.productTitle}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">{p.userEmail || p.userId}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-orange-600 font-bold">+{p.bonusPoints}P</span>
+                                <span className="text-[10px] text-gray-400">{date}</span>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full
+                                  ${p.status === "pending"  ? "bg-orange-100 text-orange-600" :
+                                    p.status === "approved" ? "bg-green-100 text-green-600"   :
+                                                              "bg-red-100 text-red-500"}`}>
+                                  {p.status === "pending" ? "대기" : p.status === "approved" ? "승인" : "반려"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          {/* 승인/반려 버튼 (pending만) */}
+                          {p.status === "pending" && (
+                            <div className="flex gap-2 mt-2.5">
+                              <button
+                                onClick={() => handleRejectPurchase(p.id)}
+                                className="flex-1 py-2 bg-red-50 text-red-500 rounded-xl text-xs font-bold"
+                              >✕ 반려</button>
+                              <button
+                                onClick={() => handleApprovePurchase(p)}
+                                className="flex-1 py-2 bg-green-500 text-white rounded-xl text-xs font-bold"
+                              >✓ 승인 (+{p.bonusPoints}P)</button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                 </div>
               )}
             </>

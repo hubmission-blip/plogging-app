@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
   collection, query, where, onSnapshot, orderBy,
-  doc, addDoc, updateDoc, getDoc, increment, serverTimestamp,
+  addDoc, serverTimestamp,
 } from "firebase/firestore";
 
 // ─── 기본 상품 (Firestore 미등록 시 표시) ───────────────────
@@ -143,13 +143,16 @@ function PurchaseSheet({ product, onConfirm, onClose }) {
     await onConfirm(product);
     setConfirmed(true);
     setLoading(false);
-    setTimeout(onClose, 1800); // 1.8초 후 자동 닫힘
+    setTimeout(onClose, 2500); // 2.5초 후 자동 닫힘
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
+      {/* 딤 배경 */}
+      <div className="absolute inset-0 bg-black/40" />
       <div
-        className="w-full bg-white rounded-t-3xl shadow-2xl p-5 pb-8"
+        className="relative w-full bg-white rounded-t-3xl shadow-2xl p-5"
+        style={{ paddingBottom: "calc(1.5rem + 4rem + env(safe-area-inset-bottom, 20px))" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* 핸들 */}
@@ -165,9 +168,21 @@ function PurchaseSheet({ product, onConfirm, onClose }) {
               </div>
             </div>
 
-            <div className="bg-orange-50 rounded-2xl p-3 mb-4 flex items-center justify-between">
-              <p className="text-sm text-orange-700">구매 완료 시 보너스 포인트</p>
+            <div className="bg-orange-50 rounded-2xl p-3 mb-3 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-orange-700 font-bold">구매 완료 시 보너스 포인트</p>
+                <p className="text-[11px] text-orange-500 mt-0.5">관리자 검토 후 1~3일 내 지급</p>
+              </div>
               <p className="text-base font-black text-orange-600">+{product.bonusPoints}P</p>
+            </div>
+
+            {/* 안내 문구 */}
+            <div className="bg-blue-50 rounded-xl px-3 py-2 mb-4 flex items-start gap-2">
+              <span className="text-base mt-0.5">ℹ️</span>
+              <p className="text-[11px] text-blue-600 leading-relaxed">
+                쿠팡에서 구매를 완료하셨나요? 아래 버튼을 누르면 구매 내역이 관리자에게 전달돼요.
+                쿠팡 파트너스 정산 확인 후 포인트가 지급됩니다.
+              </p>
             </div>
 
             <button
@@ -175,7 +190,7 @@ function PurchaseSheet({ product, onConfirm, onClose }) {
               disabled={loading}
               className="w-full bg-gradient-to-r from-orange-400 to-orange-500 text-white py-3.5 rounded-2xl text-sm font-bold mb-2 active:scale-95 transition-transform"
             >
-              {loading ? "처리 중…" : `✅ 구매 완료! (+${product.bonusPoints}P 받기)`}
+              {loading ? "신청 중…" : `✅ 구매했어요! (포인트 신청)`}
             </button>
             <button
               onClick={onClose}
@@ -186,9 +201,10 @@ function PurchaseSheet({ product, onConfirm, onClose }) {
           </>
         ) : (
           <div className="text-center py-4">
-            <p className="text-4xl mb-2">🎉</p>
-            <p className="font-bold text-green-600 text-base">+{product.bonusPoints}P 적립 완료!</p>
-            <p className="text-xs text-gray-400 mt-1">포인트가 내 계정에 쌓였어요</p>
+            <p className="text-4xl mb-2">📋</p>
+            <p className="font-bold text-blue-600 text-base">포인트 지급 신청 완료!</p>
+            <p className="text-xs text-gray-500 mt-1">관리자 검토 후 <span className="font-bold text-orange-500">+{product.bonusPoints}P</span> 지급 예정</p>
+            <p className="text-xs text-gray-400 mt-0.5">통상 1~3일 소요됩니다</p>
           </div>
         )}
       </div>
@@ -350,26 +366,25 @@ export default function ShopPage() {
     } catch {}
   }, [user]);
 
-  // ── 구매 확인 → 포인트 지급 ──────────────────────────────
+  // ── 구매 확인 → 포인트 지급 신청 (관리자 검토 후 지급) ──
   const handleConfirm = useCallback(async (product) => {
     if (!user) { router.push("/login"); return; }
     try {
-      // 포인트 지급 기록
+      // 구매 신청 기록 (pending 상태 — 관리자가 검토 후 포인트 지급)
       await addDoc(collection(db, "shopPurchases"), {
         productId:    product.id,
         productTitle: product.title,
+        productImage: product.image || "",
         platform:     product.platform || "coupang",
         bonusPoints:  product.bonusPoints,
         userId:       user.uid,
-        confirmedAt:  serverTimestamp(),
-        verified:     false, // 관리자가 나중에 검증
+        userEmail:    user.email || "",
+        appliedAt:    serverTimestamp(),
+        status:       "pending",   // pending → approved / rejected
+        verified:     false,       // 관리자 승인 시 true
       });
-      // 포인트 적립
-      await updateDoc(doc(db, "users", user.uid), {
-        totalPoints: increment(product.bonusPoints),
-      }).catch(() => {});
-      setToast({ msg: `🎉 +${product.bonusPoints}P 적립 완료!`, type: "success" });
-      setTimeout(() => setToast(null), 3000);
+      setToast({ msg: `📋 구매 신청 완료! 검토 후 +${product.bonusPoints}P 지급 예정`, type: "success" });
+      setTimeout(() => setToast(null), 4000);
     } catch (e) {
       setToast({ msg: "오류가 발생했습니다. 다시 시도해주세요.", type: "error" });
       setTimeout(() => setToast(null), 3000);
