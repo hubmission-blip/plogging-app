@@ -113,6 +113,18 @@ export default function AdminPage() {
   const [ecoBulkErr,   setEcoBulkErr]   = useState("");      // 파싱 에러
   const [ecoBulkSaving,setEcoBulkSaving]= useState(false);   // 저장 중
 
+  // ── 쇼핑 상품 ────────────────────────────────────────
+  const EMPTY_PRODUCT = {
+    title: "", brand: "", desc: "", price: "", originalPrice: "",
+    image: "", link: "", category: "물·음료", bonusPoints: 50,
+    tag: "", platform: "coupang", active: true, order: 99,
+  };
+  const SHOP_CATEGORIES = ["물·음료", "텀블러·컵", "플로깅용품", "에코백·가방", "기타"];
+  const [products,       setProducts]       = useState([]);
+  const [productMode,    setProductMode]    = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [newProduct,     setNewProduct]     = useState(EMPTY_PRODUCT);
+
   // ── 배너 ──────────────────────────────────────────────
   const [banners,      setBanners]      = useState([]);
   const [bannerMode,   setBannerMode]   = useState(false);   // 등록 폼 표시
@@ -304,6 +316,54 @@ export default function AdminPage() {
     } catch (e) { console.error("에코스팟 로드 실패:", e); }
   }, []);
 
+  // ── Fetch: 쇼핑 상품 ─────────────────────────────────
+  const fetchProducts = useCallback(async () => {
+    try {
+      const snap = await getDocs(query(collection(db, "products"), orderBy("order", "asc")));
+      setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    } catch {
+      // order 필드 없으면 정렬 없이
+      const snap = await getDocs(collection(db, "products"));
+      setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    }
+  }, []);
+
+  const handleSaveProduct = async () => {
+    const p = editingProduct || newProduct;
+    if (!p.title || !p.link) { alert("상품명과 링크는 필수예요"); return; }
+    const data = {
+      ...p,
+      price:         Number(p.price) || 0,
+      originalPrice: Number(p.originalPrice) || 0,
+      bonusPoints:   Number(p.bonusPoints) || 0,
+      order:         Number(p.order) || 99,
+      active:        p.active !== false,
+      updatedAt:     serverTimestamp(),
+    };
+    if (editingProduct?.id) {
+      await updateDoc(doc(db, "products", editingProduct.id), data);
+    } else {
+      await addDoc(collection(db, "products"), { ...data, createdAt: serverTimestamp() });
+    }
+    setEditingProduct(null);
+    setNewProduct(EMPTY_PRODUCT);
+    setProductMode(false);
+    fetchProducts();
+    setActionMsg("✅ 상품 저장 완료");
+    setTimeout(() => setActionMsg(""), 2000);
+  };
+
+  const handleDeleteProduct = async (id) => {
+    if (!confirm("상품을 삭제하시겠어요?")) return;
+    await deleteDoc(doc(db, "products", id));
+    fetchProducts();
+  };
+
+  const handleToggleProduct = async (id, active) => {
+    await updateDoc(doc(db, "products", id), { active: !active });
+    fetchProducts();
+  };
+
   // ── 탭 전환 시 데이터 로드 ─────────────────────────────
   useEffect(() => {
     if (!user || !isAdmin) return;
@@ -314,6 +374,7 @@ export default function AdminPage() {
     if (activeTab === "notices")     fetchNotices();
     if (activeTab === "banners")     fetchBanners();
     if (activeTab === "ecospots")    fetchEcoSpots();
+    if (activeTab === "shop")        fetchProducts();
   }, [activeTab, user, isAdmin]);
 
   useEffect(() => {
@@ -746,6 +807,7 @@ export default function AdminPage() {
     { id: "dashboard",   label: "📊",  name: "통계" },
     { id: "users",       label: "👥",  name: "유저" },
     { id: "rewards",     label: "🎁",  name: `리워드${rewards.filter(r=>r.status==="pending").length > 0 ? ` (${rewards.filter(r=>r.status==="pending").length})` : ""}` },
+    { id: "shop",        label: "🛒",  name: "쇼핑상품" },
     { id: "banners",     label: "🖼️",  name: "배너" },
     { id: "ecospots",    label: "♻️",  name: "에코스팟" },
     { id: "maintenance", label: "🔧",  name: "유지관리" },
@@ -1806,6 +1868,147 @@ export default function AdminPage() {
               </>
             );
           })()}
+
+          {/* ══════════════════════════════════════
+              🛒 쇼핑 상품 탭
+          ══════════════════════════════════════ */}
+          {activeTab === "shop" && (
+            <>
+              {/* 상단 안내 */}
+              <div className="bg-orange-50 rounded-2xl p-3 mb-3 text-xs text-orange-700">
+                <p className="font-bold mb-1">🛒 쿠팡 파트너스 연동 안내 (AF9554119)</p>
+                <p>① partners.coupang.com 로그인 → 상품 검색 → 추천 URL 생성</p>
+                <p>② 생성된 <code className="bg-white px-1 rounded">link.coupang.com/a/xxxxx</code> 링크를 아래 등록</p>
+                <p className="mt-1 text-orange-500">※ 클릭 후 24시간 내 구매 시 수수료 자동 정산</p>
+              </div>
+
+              {/* 상품 추가 버튼 */}
+              <button
+                onClick={() => { setProductMode(true); setEditingProduct(null); setNewProduct(EMPTY_PRODUCT); }}
+                className="w-full bg-green-500 text-white py-3 rounded-2xl font-bold text-sm mb-3"
+              >
+                + 새 상품 등록
+              </button>
+
+              {/* 상품 등록/수정 폼 */}
+              {(productMode || editingProduct) && (
+                <div className="bg-white rounded-2xl p-4 mb-3 shadow-sm space-y-3">
+                  <p className="font-bold text-gray-700 text-sm">{editingProduct ? "✏️ 상품 수정" : "➕ 새 상품 등록"}</p>
+                  {[
+                    { key: "title",         label: "상품명 *",          placeholder: "무라벨 생수 2L × 20병" },
+                    { key: "brand",         label: "브랜드",             placeholder: "아이시스 ECO" },
+                    { key: "desc",          label: "설명",               placeholder: "친환경 무라벨 생수" },
+                    { key: "price",         label: "판매가 (원) *",       placeholder: "13900", type: "number" },
+                    { key: "originalPrice", label: "정가 (원, 할인 전)",  placeholder: "17900", type: "number" },
+                    { key: "bonusPoints",   label: "구매 보너스 포인트",  placeholder: "50",    type: "number" },
+                    { key: "image",         label: "이미지 URL",          placeholder: "https://..." },
+                    { key: "link",          label: "쿠팡 파트너스 링크 *", placeholder: "https://link.coupang.com/a/xxxxx" },
+                    { key: "tag",           label: "태그",               placeholder: "베스트 / NEW / 필수템 / 친환경" },
+                    { key: "order",         label: "노출 순서",           placeholder: "1 (낮을수록 앞)", type: "number" },
+                  ].map(({ key, label, placeholder, type }) => (
+                    <div key={key}>
+                      <p className="text-xs text-gray-500 mb-1">{label}</p>
+                      <input
+                        type={type || "text"}
+                        value={(editingProduct || newProduct)[key] || ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (editingProduct) setEditingProduct((p) => ({ ...p, [key]: val }));
+                          else setNewProduct((p) => ({ ...p, [key]: val }));
+                        }}
+                        placeholder={placeholder}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                      />
+                    </div>
+                  ))}
+                  {/* 카테고리 선택 */}
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">카테고리</p>
+                    <select
+                      value={(editingProduct || newProduct).category}
+                      onChange={(e) => {
+                        if (editingProduct) setEditingProduct((p) => ({ ...p, category: e.target.value }));
+                        else setNewProduct((p) => ({ ...p, category: e.target.value }));
+                      }}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                    >
+                      {SHOP_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  {/* 플랫폼 선택 */}
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">플랫폼</p>
+                    <select
+                      value={(editingProduct || newProduct).platform}
+                      onChange={(e) => {
+                        if (editingProduct) setEditingProduct((p) => ({ ...p, platform: e.target.value }));
+                        else setNewProduct((p) => ({ ...p, platform: e.target.value }));
+                      }}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                    >
+                      <option value="coupang">쿠팡</option>
+                      <option value="naver">네이버</option>
+                      <option value="direct">직접구매</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setEditingProduct(null); setProductMode(false); }}
+                      className="flex-1 border border-gray-200 text-gray-400 py-2 rounded-xl text-sm"
+                    >취소</button>
+                    <button
+                      onClick={handleSaveProduct}
+                      className="flex-1 bg-green-500 text-white py-2 rounded-xl text-sm font-bold"
+                    >💾 저장</button>
+                  </div>
+                </div>
+              )}
+
+              {/* 상품 목록 */}
+              {products.length === 0 ? (
+                <div className="text-center py-10 text-gray-400">
+                  <p className="text-3xl mb-2">🛒</p>
+                  <p className="text-sm">등록된 상품이 없어요</p>
+                  <p className="text-xs mt-1">위 버튼으로 쿠팡 파트너스 상품을 등록해보세요</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {products.map((p) => (
+                    <div key={p.id} className={`bg-white rounded-2xl shadow-sm overflow-hidden ${!p.active ? "opacity-50" : ""}`}>
+                      <div className="flex items-center gap-3 px-3 py-3">
+                        {/* 이미지 썸네일 */}
+                        <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                          {p.image
+                            ? <img src={p.image} alt="" className="w-full h-full object-cover" />
+                            : <div className="w-full h-full flex items-center justify-center text-2xl">🛒</div>
+                          }
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-gray-800 truncate">{p.title}</p>
+                          <p className="text-xs text-gray-400">{p.category} · {p.price?.toLocaleString()}원 · +{p.bonusPoints}P</p>
+                          <p className="text-[10px] text-blue-400 truncate mt-0.5">{p.link}</p>
+                        </div>
+                        <div className="flex flex-col gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => { setEditingProduct(p); setProductMode(false); }}
+                            className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold"
+                          >수정</button>
+                          <button
+                            onClick={() => handleToggleProduct(p.id, p.active)}
+                            className={`px-2 py-1 rounded-lg text-xs font-bold ${p.active ? "bg-gray-100 text-gray-500" : "bg-green-50 text-green-600"}`}
+                          >{p.active ? "숨김" : "표시"}</button>
+                          <button
+                            onClick={() => handleDeleteProduct(p.id)}
+                            className="px-2 py-1 bg-red-50 text-red-500 rounded-lg text-xs font-bold"
+                          >삭제</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
 
           {/* ══════════════════════════════════════
               🖼️ 배너 탭
