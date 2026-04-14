@@ -325,7 +325,6 @@ export default function CarbonPage() {
             { emoji: "⚡", label: "에너지",   sub: "최대\n21만원/년",  color: "bg-orange-50 border-orange-200" },
             { emoji: "🚗", label: "자동차",   sub: "최대\n10만원/년",  color: "bg-blue-50 border-blue-200" },
             { emoji: "🌿", label: "녹색생활", sub: "17가지\n실천항목", color: "bg-green-50 border-green-200" },
-            { emoji: "💳", label: "그린카드", sub: "친환경\n소비카드", color: "bg-emerald-50 border-emerald-200" },
           ].map((c) => (
             <div key={c.label} className={`${c.color} border rounded-2xl p-3 text-center`}>
               <div className="text-2xl">{c.emoji}</div>

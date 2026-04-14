@@ -1,7 +1,17 @@
 {
-  "version": "v1.52",
-  "build": 52,
+  "version": "v1.53",
+  "build": 53,
   "changelog": [
+    {
+      "version": "v1.53",
+      "build": 53,
+      "date": "2026-04-14",
+      "emoji": "⚡",
+      "title": "탄소중립포인트 요약카드에서 그린카드 제거",
+      "items": [
+        "탄소중립포인트 요약카드에서 그린카드 제거"
+      ]
+    },
     {
       "version": "v1.52",
       "build": 52,
