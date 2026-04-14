@@ -159,21 +159,23 @@ function SectionCard({ sec, greenItems }) {
           </div>
 
           {/* 인센티브 */}
-          <div>
-            <p className="text-xs font-bold text-gray-500 mb-2">💰 인센티브 혜택</p>
-            <div className="space-y-1.5">
-              {sec.incentives.map((item) => (
-                <div key={item.label} className="flex justify-between items-center bg-gray-50 rounded-xl px-3 py-2">
-                  <span className="text-xs text-gray-600 flex items-center gap-1.5">
-                    <span>{item.icon}</span>{item.label}
-                  </span>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${sec.badgeBg}`}>
-                    {item.point}
-                  </span>
-                </div>
-              ))}
+          {sec.incentives && sec.incentives.length > 0 && (
+            <div>
+              <p className="text-xs font-bold text-gray-500 mb-2">💰 인센티브 혜택</p>
+              <div className="space-y-1.5">
+                {sec.incentives.map((item) => (
+                  <div key={item.label} className="flex justify-between items-center bg-gray-50 rounded-xl px-3 py-2">
+                    <span className="text-xs text-gray-600 flex items-center gap-1.5">
+                      <span>{item.icon}</span>{item.label}
+                    </span>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${sec.badgeBg}`}>
+                      {item.point}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 녹색생활 실천 17개 항목 */}
           {sec.id === "green" && (

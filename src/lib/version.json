@@ -1,7 +1,17 @@
 {
-  "version": "v1.30",
-  "build": 30,
+  "version": "v1.31",
+  "build": 31,
   "changelog": [
+    {
+      "version": "v1.31",
+      "build": 31,
+      "date": "2026-04-14",
+      "emoji": "✨",
+      "title": "탄소중립포인트 녹색생활 카드 오류 수정",
+      "items": [
+        "탄소중립포인트 녹색생활 카드 오류 수정"
+      ]
+    },
     {
       "version": "v1.30",
       "build": 30,
