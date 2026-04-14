@@ -1,7 +1,17 @@
 {
-  "version": "v1.44",
-  "build": 44,
+  "version": "v1.45",
+  "build": 45,
   "changelog": [
+    {
+      "version": "v1.45",
+      "build": 45,
+      "date": "2026-04-14",
+      "emoji": "🌿",
+      "title": "11번가 파트너스 쇼핑 플랫폼 추가",
+      "items": [
+        "11번가 파트너스 쇼핑 플랫폼 추가"
+      ]
+    },
     {
       "version": "v1.44",
       "build": 44,

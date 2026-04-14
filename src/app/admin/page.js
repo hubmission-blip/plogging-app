@@ -1932,11 +1932,19 @@ export default function AdminPage() {
           {activeTab === "shop" && (
             <>
               {/* 상단 안내 */}
-              <div className="bg-orange-50 rounded-2xl p-3 mb-3 text-xs text-orange-700">
-                <p className="font-bold mb-1">🛒 쿠팡 파트너스 연동 안내 (AF9554119)</p>
-                <p>① partners.coupang.com 로그인 → 상품 검색 → 추천 URL 생성</p>
-                <p>② 생성된 <code className="bg-white px-1 rounded">link.coupang.com/a/xxxxx</code> 링크를 아래 등록</p>
-                <p className="mt-1 text-orange-500">※ 클릭 후 24시간 내 구매 시 수수료 자동 정산</p>
+              <div className="bg-orange-50 rounded-2xl p-3 mb-3 text-xs text-orange-700 space-y-2">
+                <div>
+                  <p className="font-bold mb-0.5">🛍️ 쿠팡 파트너스 (AF9554119)</p>
+                  <p>partners.coupang.com → 상품 검색 → 추천 URL 생성</p>
+                  <p>링크 형식: <code className="bg-white px-1 rounded">link.coupang.com/a/xxxxx</code></p>
+                  <p className="text-orange-400">※ 클릭 후 24시간 내 구매 시 수수료 정산</p>
+                </div>
+                <div className="border-t border-orange-200 pt-2">
+                  <p className="font-bold mb-0.5">1️⃣ 11번가 파트너스</p>
+                  <p>affiliate.11st.co.kr → 상품 검색 → 제휴 URL 생성</p>
+                  <p>링크 형식: <code className="bg-white px-1 rounded">click.linkprice.com/click/...</code></p>
+                  <p className="text-orange-400">※ 클릭 후 30일 내 구매 시 수수료 정산 (쿠팡보다 쿠키 기간 김)</p>
+                </div>
               </div>
 
               {/* 상품 추가 버튼 */}
@@ -2080,6 +2088,7 @@ export default function AdminPage() {
                       className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"
                     >
                       <option value="coupang">쿠팡</option>
+                      <option value="elevenst">11번가</option>
                       <option value="naver">네이버</option>
                       <option value="direct">직접구매</option>
                     </select>

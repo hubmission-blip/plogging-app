@@ -120,9 +120,10 @@ const DEFAULT_PRODUCTS = [
 const CATEGORIES = ["전체", "물·음료", "텀블러·컵", "플로깅용품", "에코백·가방"];
 
 const PLATFORM_LABEL = {
-  coupang: { label: "쿠팡", color: "bg-red-500", icon: "🛍️" },
-  naver:   { label: "네이버", color: "bg-green-500", icon: "🛒" },
-  direct:  { label: "직접구매", color: "bg-blue-500", icon: "🌐" },
+  coupang:  { label: "쿠팡",    color: "bg-red-500",    icon: "🛍️" },
+  elevenst: { label: "11번가",  color: "bg-orange-500", icon: "1️⃣" },
+  naver:    { label: "네이버",  color: "bg-green-500",  icon: "🛒" },
+  direct:   { label: "직접구매", color: "bg-blue-500",  icon: "🌐" },
 };
 
 // ─── 할인율 계산 ─────────────────────────────────────────────
@@ -469,7 +470,7 @@ export default function ShopPage() {
             "상품 링크를 통해 구매 시 일부 수수료가 앱 운영에 사용됩니다",
             "구매 완료 후 '구매했어요' 버튼을 누르면 포인트가 지급돼요",
             "포인트는 관리자 검토 후 최종 확정될 수 있습니다",
-            "이 포스팅은 쿠팡 파트너스 활동의 일환으로 수수료를 제공받습니다",
+            "이 포스팅은 쿠팡 파트너스 및 11번가 파트너스 활동의 일환으로 수수료를 제공받습니다",
           ].map((txt, i) => (
             <p key={i} className="text-[11px] text-gray-400 leading-relaxed">• {txt}</p>
           ))}
