@@ -960,6 +960,8 @@ function MapPageInner() {
           routes.push({
             id: data.id, coords: data.coords,
             color: routeColor,
+            weeksAgo,   // 최신순 렌더링 정렬용
+            createdMs,  // 최신순 렌더링 정렬용
             weekNumber: data.weekNumber, distance: data.distance,
           });
         }

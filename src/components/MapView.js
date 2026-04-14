@@ -78,16 +78,28 @@ export default function MapView({
       ))}
 
       {/* ── 내 과거 경로 (주차별 색상) ─────────────────────── */}
-      {mapLoaded && pastRoutes.map((route) => (
-        <Polyline
-          key={`past-${route.id}`}
-          path={route.coords}
-          strokeWeight={4}
-          strokeColor={route.color || "#4CAF50"}
-          strokeOpacity={0.6}
-          strokeStyle="solid"
-        />
-      ))}
+      {/* 오래된 순(weeksAgo 큰 것)으로 먼저 그려 맨 아래 레이어,
+          최신(weeksAgo=0)이 마지막에 그려져 맨 위에 표시됨        */}
+      {mapLoaded && [...pastRoutes]
+        .sort((a, b) => (b.weeksAgo ?? 3) - (a.weeksAgo ?? 0))
+        .map((route) => {
+          const w = route.weeksAgo ?? 0;
+          // 최신(0주)=선명, 오래될수록 투명하고 가늘게
+          const opacity = [1.0, 0.65, 0.45, 0.25][w];
+          const weight  = [5,   4,    3,    2   ][w];
+          const zIdx    = [10,  7,    4,    1   ][w];
+          return (
+            <Polyline
+              key={`past-${route.id}`}
+              path={route.coords}
+              strokeWeight={weight}
+              strokeColor={route.color || "#4CAF50"}
+              strokeOpacity={opacity}
+              strokeStyle="solid"
+              zIndex={zIdx}
+            />
+          );
+        })}
 
       {/* ── 현재 플로깅 경로 (굵은 초록) ─────────────────── */}
       {mapLoaded && currentPath.length > 1 && (
