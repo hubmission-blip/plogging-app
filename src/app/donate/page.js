@@ -45,12 +45,16 @@ export default function DonatePage() {
     : selectedAmount?.value || 0;
 
   const handleCopy = async (account) => {
+    // 금액이 선택된 경우 계좌 + 금액 + 예금주 통합 복사
+    const copyText = finalAmount > 0
+      ? `${account.bank} ${account.number}\n예금주: ${account.holder}\n후원금액: ${finalAmount.toLocaleString()}원`
+      : `${account.bank} ${account.number}\n예금주: ${account.holder}`;
     try {
-      await navigator.clipboard.writeText(account.number);
+      await navigator.clipboard.writeText(copyText);
       setCopiedBank(account.bank);
-      setTimeout(() => setCopiedBank(null), 2000);
+      setTimeout(() => setCopiedBank(null), 2500);
     } catch {
-      alert(`${account.bank} ${account.number}`);
+      alert(copyText);
     }
   };
 
@@ -211,17 +215,32 @@ export default function DonatePage() {
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all
                     ${copiedBank === acc.bank
                       ? "bg-green-500 text-white"
-                      : "bg-purple-100 text-purple-600"}`}
+                      : finalAmount > 0
+                        ? "bg-purple-500 text-white"
+                        : "bg-purple-100 text-purple-600"}`}
                 >
-                  {copiedBank === acc.bank ? "✓ 복사됨" : "복사"}
+                  {copiedBank === acc.bank
+                    ? "✓ 복사됨"
+                    : finalAmount > 0
+                      ? `${finalAmount.toLocaleString()}원 복사`
+                      : "계좌 복사"}
                 </button>
               </div>
             ))}
           </div>
 
-          {/* 입금자명 안내 */}
-          <div className="mt-3 bg-yellow-50 rounded-xl px-3 py-2.5 flex items-start gap-2">
+          {/* 복사 안내 */}
+          <div className="mt-3 bg-purple-50 rounded-xl px-3 py-2.5 flex items-start gap-2">
             <span className="text-base mt-0.5">💡</span>
+            <p className="text-[11px] text-purple-700 leading-relaxed">
+              <strong>금액을 먼저 선택</strong>하고 복사 버튼을 누르면
+              <strong> 계좌번호 + 예금주 + 후원금액</strong>이 한 번에 복사돼요.
+              인터넷뱅킹 메모란에 그대로 붙여넣기 하시면 편리합니다.
+            </p>
+          </div>
+          {/* 입금자명 안내 */}
+          <div className="mt-2 bg-yellow-50 rounded-xl px-3 py-2.5 flex items-start gap-2">
+            <span className="text-base mt-0.5">📝</span>
             <p className="text-[11px] text-yellow-700 leading-relaxed">
               입금 시 <strong>입금자명에 닉네임 또는 연락처</strong>를 남겨주시면 후원자 혜택 적용이 빨라져요.
               혜택 문의: <strong>hubmission@gmail.com</strong>

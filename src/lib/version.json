@@ -1,7 +1,17 @@
 {
-  "version": "v1.50",
-  "build": 50,
+  "version": "v1.51",
+  "build": 51,
   "changelog": [
+    {
+      "version": "v1.51",
+      "build": 51,
+      "date": "2026-04-14",
+      "emoji": "✨",
+      "title": "후원 페이지 계좌+금액 통합 복사 기능 추가",
+      "items": [
+        "후원 페이지 계좌+금액 통합 복사 기능 추가"
+      ]
+    },
     {
       "version": "v1.50",
       "build": 50,
