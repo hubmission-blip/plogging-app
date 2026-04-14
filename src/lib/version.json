@@ -1,7 +1,17 @@
 {
-  "version": "v1.45",
-  "build": 45,
+  "version": "v1.46",
+  "build": 46,
   "changelog": [
+    {
+      "version": "v1.46",
+      "build": 46,
+      "date": "2026-04-14",
+      "emoji": "💡",
+      "title": "쿠팡 이미지 스크래핑 개선 - 모바일 UA 및 봇감지 우회",
+      "items": [
+        "쿠팡 이미지 스크래핑 개선 - 모바일 UA 및 봇감지 우회"
+      ]
+    },
     {
       "version": "v1.45",
       "build": 45,
