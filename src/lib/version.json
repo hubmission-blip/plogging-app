@@ -1,7 +1,18 @@
 {
-  "version": "v1.28",
-  "build": 28,
+  "version": "v1.29",
+  "build": 29,
   "changelog": [
+    {
+      "version": "v1.29",
+      "build": 29,
+      "date": "2026-04-14",
+      "emoji": "🏆",
+      "title": "GPS 정확도 필터 3종 적용",
+      "items": [
+        "GPS 정확도 필터 3종 적용",
+        "실내 시작 튐 현상 개선"
+      ]
+    },
     {
       "version": "v1.28",
       "build": 28,

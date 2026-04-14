@@ -768,6 +768,7 @@ function MapPageInner() {
     path, distance, isTracking, currentSpeed,
     isSpeedWarning, duration, stopCount,
     wakeLockActive, isBackground,
+    gpsAccuracy, gpsReady,
     startTracking, stopTracking,
   } = useLocation({ onSpeedViolation: speedLimitEnabled ? handleSpeedViolation : undefined });
 
@@ -1176,7 +1177,16 @@ function MapPageInner() {
               <span className={`text-sm font-bold ${isSpeedWarning ? "text-red-500" : "text-blue-500"}`}>
                 🚀 {currentSpeed} km/h
               </span>
-              <span className="text-xs text-red-500 animate-pulse basis-full text-center">● 기록 중</span>
+              {/* GPS 상태 표시 */}
+              {!gpsReady ? (
+                <span className="text-xs text-orange-500 animate-pulse basis-full text-center">
+                  📡 GPS 신호 확인 중… {gpsAccuracy ? `(오차 ${gpsAccuracy}m)` : ""}
+                </span>
+              ) : (
+                <span className="text-xs text-red-500 animate-pulse basis-full text-center">
+                  ● 기록 중 {gpsAccuracy ? `· GPS ${gpsAccuracy}m` : ""}
+                </span>
+              )}
             </>
           )}
         </div>
