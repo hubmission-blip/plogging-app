@@ -1894,17 +1894,93 @@ export default function AdminPage() {
               {(productMode || editingProduct) && (
                 <div className="bg-white rounded-2xl p-4 mb-3 shadow-sm space-y-3">
                   <p className="font-bold text-gray-700 text-sm">{editingProduct ? "✏️ 상품 수정" : "➕ 새 상품 등록"}</p>
+
+                  {/* ① 쿠팡 파트너스 링크 + 자동 가져오기 */}
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">쿠팡 파트너스 링크 *</p>
+                    <input
+                      type="text"
+                      value={(editingProduct || newProduct).link || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (editingProduct) setEditingProduct((p) => ({ ...p, link: val }));
+                        else setNewProduct((p) => ({ ...p, link: val }));
+                      }}
+                      placeholder="https://link.coupang.com/a/xxxxx"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-2"
+                    />
+                    <button
+                      onClick={async () => {
+                        const link = (editingProduct || newProduct).link;
+                        if (!link) { alert("링크를 먼저 입력해주세요"); return; }
+                        setActionMsg("🔍 이미지 가져오는 중…");
+                        try {
+                          const res  = await fetch(`/api/fetch-product-image?url=${encodeURIComponent(link)}`);
+                          const data = await res.json();
+                          if (data.imageUrl) {
+                            if (editingProduct) {
+                              setEditingProduct((p) => ({
+                                ...p,
+                                image: data.imageUrl,
+                                title: p.title || data.productTitle || p.title,
+                              }));
+                            } else {
+                              setNewProduct((p) => ({
+                                ...p,
+                                image: data.imageUrl,
+                                title: p.title || data.productTitle || p.title,
+                              }));
+                            }
+                            setActionMsg("✅ 이미지 자동 입력 완료!");
+                          } else {
+                            setActionMsg("❌ " + (data.error || "이미지를 찾을 수 없어요"));
+                          }
+                        } catch {
+                          setActionMsg("❌ 네트워크 오류");
+                        }
+                        setTimeout(() => setActionMsg(""), 3000);
+                      }}
+                      className="w-full bg-blue-500 text-white py-2 rounded-xl text-sm font-bold active:bg-blue-600"
+                    >
+                      🖼️ 대표 이미지 자동 가져오기
+                    </button>
+                  </div>
+
+                  {/* ② 이미지 미리보기 + URL */}
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">이미지 URL</p>
+                    <div className="flex gap-2 items-start">
+                      {(editingProduct || newProduct).image && (
+                        <img
+                          src={(editingProduct || newProduct).image}
+                          alt="미리보기"
+                          className="w-16 h-16 rounded-xl object-cover border border-gray-100 flex-shrink-0"
+                        />
+                      )}
+                      <input
+                        type="text"
+                        value={(editingProduct || newProduct).image || ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (editingProduct) setEditingProduct((p) => ({ ...p, image: val }));
+                          else setNewProduct((p) => ({ ...p, image: val }));
+                        }}
+                        placeholder="자동 입력 또는 직접 붙여넣기"
+                        className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {/* ③ 나머지 필드 */}
                   {[
-                    { key: "title",         label: "상품명 *",          placeholder: "무라벨 생수 2L × 20병" },
-                    { key: "brand",         label: "브랜드",             placeholder: "아이시스 ECO" },
-                    { key: "desc",          label: "설명",               placeholder: "친환경 무라벨 생수" },
-                    { key: "price",         label: "판매가 (원) *",       placeholder: "13900", type: "number" },
-                    { key: "originalPrice", label: "정가 (원, 할인 전)",  placeholder: "17900", type: "number" },
-                    { key: "bonusPoints",   label: "구매 보너스 포인트",  placeholder: "50",    type: "number" },
-                    { key: "image",         label: "이미지 URL",          placeholder: "https://..." },
-                    { key: "link",          label: "쿠팡 파트너스 링크 *", placeholder: "https://link.coupang.com/a/xxxxx" },
-                    { key: "tag",           label: "태그",               placeholder: "베스트 / NEW / 필수템 / 친환경" },
-                    { key: "order",         label: "노출 순서",           placeholder: "1 (낮을수록 앞)", type: "number" },
+                    { key: "title",         label: "상품명 *",         placeholder: "무라벨 생수 2L × 20병" },
+                    { key: "brand",         label: "브랜드",            placeholder: "아이시스 ECO" },
+                    { key: "desc",          label: "설명",              placeholder: "친환경 무라벨 생수" },
+                    { key: "price",         label: "판매가 (원) *",      placeholder: "13900", type: "number" },
+                    { key: "originalPrice", label: "정가 (원, 할인 전)", placeholder: "17900", type: "number" },
+                    { key: "bonusPoints",   label: "구매 보너스 포인트", placeholder: "50",    type: "number" },
+                    { key: "tag",           label: "태그",              placeholder: "베스트 / NEW / 필수템 / 친환경" },
+                    { key: "order",         label: "노출 순서",          placeholder: "1 (낮을수록 앞)", type: "number" },
                   ].map(({ key, label, placeholder, type }) => (
                     <div key={key}>
                       <p className="text-xs text-gray-500 mb-1">{label}</p>
