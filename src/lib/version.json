@@ -1,7 +1,17 @@
 {
-  "version": "v1.48",
-  "build": 48,
+  "version": "v1.49",
+  "build": 49,
   "changelog": [
+    {
+      "version": "v1.49",
+      "build": 49,
+      "date": "2026-04-14",
+      "emoji": "🏆",
+      "title": "후원 계좌 등록 - 우리은행 국제청년환경연합회",
+      "items": [
+        "후원 계좌 등록 - 우리은행 국제청년환경연합회"
+      ]
+    },
     {
       "version": "v1.48",
       "build": 48,

@@ -5,8 +5,7 @@ import Link from "next/link";
 
 // ── 후원 계좌 정보 ─────────────────────────────────────────────
 const ACCOUNTS = [
-  { bank: "카카오뱅크", number: "3333-00-0000000", holder: "국제청년환경연합회", color: "bg-yellow-400", icon: "🟡" },
-  { bank: "신한은행",   number: "110-000-000000",  holder: "국제청년환경연합회", color: "bg-blue-500",   icon: "🔵" },
+  { bank: "우리은행", number: "1005-504-709367", holder: "(사)국제청년환경연합회", color: "bg-blue-600", icon: "🔵" },
 ];
 
 // ── 후원 금액 프리셋 ──────────────────────────────────────────
