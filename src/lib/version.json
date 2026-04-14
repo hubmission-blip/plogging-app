@@ -1,7 +1,18 @@
 {
-  "version": "v1.27",
-  "build": 27,
+  "version": "v1.28",
+  "build": 28,
   "changelog": [
+    {
+      "version": "v1.28",
+      "build": 28,
+      "date": "2026-04-14",
+      "emoji": "🎯",
+      "title": "탄소중립포인트 안내 페이지 추가",
+      "items": [
+        "탄소중립포인트 안내 페이지 추가",
+        "메인 홈 배너 버튼 연결"
+      ]
+    },
     {
       "version": "v1.27",
       "build": 27,
