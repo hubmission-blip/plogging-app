@@ -559,20 +559,35 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ── 탄소중립포인트 배너 버튼 ── */}
-          <Link
-            href="/carbon"
-            className="flex items-center justify-between bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl px-4 py-3.5 shadow-sm active:scale-95 transition-transform"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🌍</span>
-              <div>
-                <p className="font-black text-sm text-white leading-tight">탄소중립포인트 안내</p>
-                <p className="text-xs text-green-100 mt-0.5">에너지 · 자동차 · 녹색생활 실천</p>
+          {/* ── 탄소중립포인트 / 에코마일리지 배너 버튼 ── */}
+          <div className="grid grid-cols-2 gap-2">
+            <Link
+              href="/carbon"
+              className="flex items-center justify-between bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl px-3 py-3.5 shadow-sm active:scale-95 transition-transform"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🌍</span>
+                <div>
+                  <p className="font-black text-xs text-white leading-tight">탄소중립포인트</p>
+                  <p className="text-[10px] text-green-100 mt-0.5">에너지·자동차·녹색생활</p>
+                </div>
               </div>
-            </div>
-            <span className="text-white/70 text-lg">→</span>
-          </Link>
+              <span className="text-white/70">→</span>
+            </Link>
+            <Link
+              href="/ecomileage"
+              className="flex items-center justify-between bg-gradient-to-r from-sky-500 to-cyan-500 rounded-2xl px-3 py-3.5 shadow-sm active:scale-95 transition-transform"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🏙️</span>
+                <div>
+                  <p className="font-black text-xs text-white leading-tight">지자체 에코마일리지</p>
+                  <p className="text-[10px] text-sky-100 mt-0.5">전국 17개 시/도 안내</p>
+                </div>
+              </div>
+              <span className="text-white/70">→</span>
+            </Link>
+          </div>
 
           {/* ── 최신 업데이트 ── */}
           {(() => {

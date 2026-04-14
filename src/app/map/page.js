@@ -748,6 +748,9 @@ function MapPageInner() {
   const [speedLimitEnabled,     setSpeedLimitEnabled]     = useState(true);
   const [aiVerificationEnabled, setAiVerificationEnabled] = useState(true);
 
+  // ── 에코마일리지 연동 상태 ────────────────────────────────
+  const [ecomileageLinked, setEcomileageLinked] = useState(false);
+
   useEffect(() => {
     getDoc(doc(db, "settings", "app"))
       .then((snap) => {
@@ -759,6 +762,18 @@ function MapPageInner() {
       })
       .catch(() => {}); // 로드 실패 시 기본값(ON) 유지
   }, []);
+
+  // 에코마일리지 연동 여부 로드
+  useEffect(() => {
+    if (!user) return;
+    getDoc(doc(db, "users", user.uid))
+      .then((snap) => {
+        if (snap.exists()) {
+          setEcomileageLinked(snap.data().ecomileageLinked === true);
+        }
+      })
+      .catch(() => {});
+  }, [user]);
 
   const handleSpeedViolation = useCallback(() => {
     setSpeedViolationStop(true);
@@ -1068,7 +1083,7 @@ function MapPageInner() {
       return;
     }
 
-    const { total, breakdown } = calculatePoints({ distanceKm: distance, groupSize });
+    const { total, breakdown } = calculatePoints({ distanceKm: distance, groupSize, ecomileageLinked });
     const earnedPoints = noPointsOverride.current ? 0 : total;
     const earnedBreakdown = noPointsOverride.current
       ? [{ label: "하루 횟수 초과 (포인트 미지급)", points: 0 }]
@@ -1404,14 +1419,20 @@ function MapPageInner() {
               </p>
             </div>
             <div className="space-y-2 mb-4">
-              {result.breakdown.map((item, i) => (
-                <div key={i} className="flex justify-between text-sm">
-                  <span className="text-gray-600">{item.label}</span>
-                  <span className={`font-medium ${item.points > 0 ? "text-green-600" : "text-gray-400"}`}>
-                    {item.points > 0 ? `+${item.points}P` : "0P"}
-                  </span>
-                </div>
-              ))}
+              {result.breakdown.map((item, i) => {
+                const isEcoBonus = item.label.includes("에코마일리지");
+                return (
+                  <div key={i} className={`flex justify-between text-sm rounded-lg px-2 py-1
+                    ${isEcoBonus ? "bg-green-50" : ""}`}>
+                    <span className={isEcoBonus ? "text-green-700 font-bold" : "text-gray-600"}>
+                      {item.label}
+                    </span>
+                    <span className={`font-medium ${item.points > 0 ? "text-green-600" : "text-gray-400"}`}>
+                      {item.points > 0 ? `+${item.points}P` : "0P"}
+                    </span>
+                  </div>
+                );
+              })}
               <div className="border-t pt-2 flex justify-between font-bold">
                 <span>총 거리</span>
                 <span>{result.distance.toFixed(2)} km</span>

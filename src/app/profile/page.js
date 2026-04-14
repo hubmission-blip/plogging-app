@@ -13,6 +13,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getWeekLabel } from "@/lib/routeUtils";
 import Link from "next/link";
+import EcomileageConnect from "@/components/EcomileageConnect";
 
 // ─── 관리자 이메일 목록 ────────────────────────────────────
 const ADMIN_EMAILS = ["hubmission@gmail.com"];
@@ -44,6 +45,7 @@ export default function ProfilePage() {
   const [stats, setStats] = useState({
     totalPoints: 0, totalDistance: 0, ploggingCount: 0,
     displayName: "", photoURL: "",
+    ecomileageLinked: false, ecomileageProgram: "",
   });
   const [recentRoutes, setRecentRoutes] = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -111,11 +113,13 @@ export default function ProfilePage() {
       if (userSnap.exists()) {
         const d = userSnap.data();
         setStats({
-          totalPoints:   d.totalPoints   || 0,
-          totalDistance: d.totalDistance || 0,
-          ploggingCount: d.ploggingCount || 0,
-          displayName:   d.displayName   || user.displayName || user.email?.split("@")[0] || "익명",
-          photoURL:      d.photoURL      || user.photoURL    || "",
+          totalPoints:      d.totalPoints      || 0,
+          totalDistance:    d.totalDistance    || 0,
+          ploggingCount:    d.ploggingCount    || 0,
+          displayName:      d.displayName      || user.displayName || user.email?.split("@")[0] || "익명",
+          photoURL:         d.photoURL         || user.photoURL    || "",
+          ecomileageLinked: d.ecomileageLinked || false,
+          ecomileageProgram: d.ecomileageProgram || "",
         });
         // 내 추천 코드 (없으면 Firestore에 자동 저장)
         const rc = d.refCode || user.uid.slice(0, 8).toUpperCase();
@@ -311,6 +315,14 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
+
+        {/* ── 에코마일리지 연동 ── */}
+        <EcomileageConnect
+          userId={user?.uid}
+          linked={stats.ecomileageLinked}
+          program={stats.ecomileageProgram}
+          onUpdate={(updated) => setStats((prev) => ({ ...prev, ...updated }))}
+        />
 
         {/* ── 최근 플로깅 기록 ── */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
