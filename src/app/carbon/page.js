@@ -120,38 +120,6 @@ const SECTIONS = [
     tip: "💡 항목별 포인트는 예산 및 실적에 따라 변동될 수 있으니 공식 누리집에서 최신 단가를 확인하세요",
   },
   {
-    id: "ecomileage",
-    emoji: "🏙️",
-    title: "에코마일리지",
-    subtitle: "서울시 운영 · 에너지 절감 마일리지",
-    color: "from-sky-400 to-cyan-500",
-    bgLight: "bg-sky-50",
-    borderColor: "border-sky-200",
-    textColor: "text-sky-700",
-    badgeBg: "bg-sky-100 text-sky-700",
-    url: "https://ecomileage.seoul.go.kr",
-    urlLabel: "ecomileage.seoul.go.kr",
-    overview: "서울시가 독자적으로 운영하는 에너지 절감 인센티브 제도입니다. 서울 거주자라면 탄소중립포인트 에너지 대신 에코마일리지에 가입하게 됩니다. 2026년부터 녹색실천 마일리지가 신설되고 참여신청제가 도입되어 혜택이 더욱 확대되었어요.",
-    targets: [
-      { label: "참여 대상", value: "서울시 거주자·사업장 (주민등록 기준)" },
-      { label: "측정 항목", value: "전기·수도·도시가스 사용량" },
-      { label: "지급 주기", value: "반기별 1회 평가 후 지급" },
-      { label: "지급 방법", value: "상품권·ETAX포인트·관리비 차감·기부 (유효기간 5년)" },
-    ],
-    incentives: [
-      { icon: "🏠", label: "건물 에너지 절감 (반기별)",   point: "10,000~50,000 마일리지" },
-      { icon: "🚗", label: "승용차 주행거리 감축",          point: "최대 10,000 마일리지" },
-      { icon: "🌱", label: "녹색실천 마일리지 (2026 신설)", point: "최대 5,000 마일리지" },
-    ],
-    howto: [
-      "ecomileage.seoul.go.kr 접속 또는 구청·동주민센터 방문",
-      "회원가입 후 참여 신청",
-      "에너지 사용량 자동 수집 및 집계",
-      "반기별 절감량 확인 후 마일리지 수령 및 사용",
-    ],
-    tip: "⚠️ 서울 거주자는 탄소중립포인트 에너지 대신 에코마일리지에만 가입 가능 (중복 불가)",
-  },
-  {
     id: "greencard",
     emoji: "💳",
     title: "그린카드 (에코머니)",
@@ -330,7 +298,7 @@ export default function CarbonPage() {
           <p className="text-green-100 text-sm mt-1">환경부 운영 · 친환경 실천 국가 인센티브</p>
         </div>
         <div className="flex justify-center gap-2 mt-4 flex-wrap">
-          {["에너지", "자동차", "녹색생활 실천"].map((t) => (
+          {["에너지", "자동차", "녹색생활 실천", "그린카드"].map((t) => (
             <span key={t} className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full">
               {t}
             </span>
@@ -354,11 +322,10 @@ export default function CarbonPage() {
         {/* ── 빠른 요약 카드 ── */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { emoji: "⚡", label: "에너지",    sub: "최대\n21만원/년",  color: "bg-orange-50 border-orange-200" },
-            { emoji: "🚗", label: "자동차",    sub: "최대\n10만원/년",  color: "bg-blue-50 border-blue-200" },
-            { emoji: "🌿", label: "녹색생활",  sub: "17가지\n실천항목", color: "bg-green-50 border-green-200" },
-            { emoji: "🏙️", label: "에코마일리지", sub: "서울시\n전용",  color: "bg-sky-50 border-sky-200" },
-            { emoji: "💳", label: "그린카드",  sub: "친환경\n소비카드", color: "bg-emerald-50 border-emerald-200" },
+            { emoji: "⚡", label: "에너지",   sub: "최대\n21만원/년",  color: "bg-orange-50 border-orange-200" },
+            { emoji: "🚗", label: "자동차",   sub: "최대\n10만원/년",  color: "bg-blue-50 border-blue-200" },
+            { emoji: "🌿", label: "녹색생활", sub: "17가지\n실천항목", color: "bg-green-50 border-green-200" },
+            { emoji: "💳", label: "그린카드", sub: "친환경\n소비카드", color: "bg-emerald-50 border-emerald-200" },
           ].map((c) => (
             <div key={c.label} className={`${c.color} border rounded-2xl p-3 text-center`}>
               <div className="text-2xl">{c.emoji}</div>
@@ -378,12 +345,12 @@ export default function CarbonPage() {
         <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-4 text-white">
           <p className="font-black text-sm mb-2">✅ 중복 참여로 혜택 극대화!</p>
           <p className="text-xs text-green-100 leading-relaxed">
-            에너지(또는 에코마일리지) + 자동차 + 녹색생활 + 그린카드를 모두 활용하면
+            에너지 + 자동차 + 녹색생활 + 그린카드를 모두 활용하면
             연간 최대 <strong className="text-white">30만원 이상</strong>의 인센티브를 받을 수 있어요.
           </p>
           <div className="mt-2 bg-white/20 rounded-xl px-3 py-2">
             <p className="text-[11px] text-white/90 leading-relaxed">
-              ⚠️ <strong>서울 거주자</strong>는 탄소중립포인트 에너지 대신 <strong>에코마일리지</strong>에 가입해야 합니다.
+              💡 거주 지역별 에코마일리지 프로그램은 아래 <strong>지자체 에코마일리지 바로가기</strong>를 확인하세요.
             </p>
           </div>
         </div>
@@ -406,7 +373,6 @@ export default function CarbonPage() {
               { label: "⚡ 탄소중립포인트 에너지",       url: "https://cpoint.or.kr",                      sub: "cpoint.or.kr" },
               { label: "🚗 탄소중립포인트 자동차",        url: "https://car.cpoint.or.kr",                  sub: "car.cpoint.or.kr" },
               { label: "🌿 탄소중립포인트 녹색생활 실천", url: "https://www.cpoint.or.kr/netzero/main.do",  sub: "cpoint.or.kr/netzero" },
-              { label: "🏙️ 에코마일리지 (서울시)",       url: "https://ecomileage.seoul.go.kr",            sub: "ecomileage.seoul.go.kr" },
               { label: "💳 그린카드 (에코머니)",          url: "https://www.green-card.co.kr",              sub: "green-card.co.kr" },
             ].map((link) => (
               <a
@@ -423,6 +389,77 @@ export default function CarbonPage() {
                 <span className="text-gray-400 text-sm">→</span>
               </a>
             ))}
+          </div>
+        </div>
+
+        {/* ── 지자체별 에코마일리지 바로가기 ── */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-sm font-bold text-gray-700">🏙️ 지자체별 에코마일리지 바로가기</p>
+            <Link
+              href="/ecomileage"
+              className="text-xs text-sky-600 font-bold border border-sky-200 px-2.5 py-1 rounded-full bg-sky-50"
+            >
+              전체 안내 →
+            </Link>
+          </div>
+          <p className="text-xs text-gray-400 mb-3">거주 지역을 선택해 해당 프로그램으로 이동하세요</p>
+
+          {/* 서울 (독자 운영) */}
+          <div className="mb-3">
+            <p className="text-[10px] font-bold text-blue-500 mb-1.5 px-1">🔵 독자 운영</p>
+            <a
+              href="https://ecomileage.seoul.go.kr"
+              target="_blank" rel="noopener noreferrer"
+              className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 active:opacity-80"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🗼</span>
+                <div>
+                  <p className="text-xs font-bold text-blue-700">서울특별시</p>
+                  <p className="text-[10px] text-blue-400">서울시 에코마일리지</p>
+                </div>
+              </div>
+              <span className="text-blue-400 text-sm">→</span>
+            </a>
+          </div>
+
+          {/* 나머지 16개 시/도 (탄소중립포인트 연계) */}
+          <div>
+            <p className="text-[10px] font-bold text-green-500 mb-1.5 px-1">🟢 탄소중립포인트 연계</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {[
+                { name: "부산광역시",     emoji: "🌊" },
+                { name: "대구광역시",     emoji: "🍎" },
+                { name: "인천광역시",     emoji: "✈️" },
+                { name: "광주광역시",     emoji: "🎨" },
+                { name: "대전광역시",     emoji: "🔬" },
+                { name: "울산광역시",     emoji: "🏭" },
+                { name: "세종특별자치시", emoji: "🏛️" },
+                { name: "경기도",         emoji: "🌾" },
+                { name: "강원도",         emoji: "🏔️" },
+                { name: "충청북도",       emoji: "🌲" },
+                { name: "충청남도",       emoji: "🌻" },
+                { name: "전북특별자치도", emoji: "🌾" },
+                { name: "전라남도",       emoji: "🌊" },
+                { name: "경상북도",       emoji: "🍑" },
+                { name: "경상남도",       emoji: "🐟" },
+                { name: "제주특별자치도", emoji: "🍊" },
+              ].map((r) => (
+                <a
+                  key={r.name}
+                  href="https://cpoint.or.kr"
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-2.5 py-2 active:opacity-80"
+                >
+                  <span className="text-base">{r.emoji}</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-gray-700 truncate">{r.name}</p>
+                    <p className="text-[10px] text-gray-400">cpoint.or.kr</p>
+                  </div>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
 
