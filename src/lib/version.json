@@ -1,7 +1,17 @@
 {
-  "version": "v1.43",
-  "build": 43,
+  "version": "v1.44",
+  "build": 44,
   "changelog": [
+    {
+      "version": "v1.44",
+      "build": 44,
+      "date": "2026-04-14",
+      "emoji": "📱",
+      "title": "하단 네비 쇼핑 탭 제거 → 캘린더 복원",
+      "items": [
+        "하단 네비 쇼핑 탭 제거 → 캘린더 복원"
+      ]
+    },
     {
       "version": "v1.43",
       "build": 43,

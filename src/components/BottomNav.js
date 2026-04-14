@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
-  { href: "/",         icon: "🏠", label: "홈" },
-  { href: "/map",      icon: "🗺️", label: "지도" },
-  { href: "/shop",     icon: "🛒", label: "쇼핑" },
-  { href: "/ranking",  icon: "🏆", label: "랭킹" },
-  { href: "/profile",  icon: "👤", label: "내정보" },
+  { href: "/",          icon: "🏠", label: "홈" },
+  { href: "/map",       icon: "🗺️", label: "지도" },
+  { href: "/calendar",  icon: "📅", label: "캘린더" },
+  { href: "/ranking",   icon: "🏆", label: "랭킹" },
+  { href: "/profile",   icon: "👤", label: "내정보" },
 ];
 
 export default function BottomNav() {
