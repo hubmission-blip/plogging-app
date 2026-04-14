@@ -131,18 +131,11 @@ function discountPct(price, original) {
   return Math.round(((original - price) / original) * 100);
 }
 
-// ─── 상품 카드 ───────────────────────────────────────────────
-function ProductCard({ product, onBuy, onConfirm, userId }) {
-  const [bought,    setBought]   = useState(false); // 구매했어요 상태
-  const [confirmed, setConfirmed] = useState(false); // 포인트 받음 상태
-  const [loading,   setLoading]  = useState(false);
-  const pct = discountPct(product.price, product.originalPrice);
+// ─── 구매 확인 바텀시트 ──────────────────────────────────────
+function PurchaseSheet({ product, onConfirm, onClose }) {
+  const [loading,   setLoading]   = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const plt = PLATFORM_LABEL[product.platform] || PLATFORM_LABEL.coupang;
-
-  const handleBuy = () => {
-    onBuy(product);
-    setBought(true);
-  };
 
   const handleConfirm = async () => {
     if (loading || confirmed) return;
@@ -150,98 +143,161 @@ function ProductCard({ product, onBuy, onConfirm, userId }) {
     await onConfirm(product);
     setConfirmed(true);
     setLoading(false);
+    setTimeout(onClose, 1800); // 1.8초 후 자동 닫힘
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-      {/* 상품 이미지 */}
-      <div className="relative bg-gray-50 h-40 flex items-center justify-center overflow-hidden">
-        <img
-          src={product.image}
-          alt={product.title}
-          className="h-full w-full object-cover"
-          onError={(e) => {
-            e.target.style.display = "none";
-            e.target.nextSibling.style.display = "flex";
-          }}
-        />
-        <div className="hidden absolute inset-0 items-center justify-center text-5xl bg-gray-100">
-          🛒
-        </div>
-        {/* 태그 */}
-        {product.tag && (
-          <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white
-            ${product.tag === "베스트" ? "bg-orange-500"
-            : product.tag === "NEW"    ? "bg-blue-500"
-            : product.tag === "필수템" ? "bg-purple-500"
-            : "bg-green-500"}`}>
-            {product.tag}
-          </span>
-        )}
-        {/* 플랫폼 뱃지 */}
-        <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white ${plt.color}`}>
-          {plt.icon} {plt.label}
-        </span>
-        {/* 할인율 */}
-        {pct > 0 && (
-          <span className="absolute bottom-2 right-2 bg-red-500 text-white text-xs font-black px-1.5 py-0.5 rounded-lg">
-            {pct}% OFF
-          </span>
-        )}
-      </div>
+    <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
+      <div
+        className="w-full bg-white rounded-t-3xl shadow-2xl p-5 pb-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 핸들 */}
+        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
 
-      {/* 상품 정보 */}
-      <div className="p-3">
-        <p className="text-[10px] text-gray-400 font-medium mb-0.5">{product.brand}</p>
-        <p className="text-sm font-bold text-gray-800 leading-tight mb-1 line-clamp-2">{product.title}</p>
-        <p className="text-xs text-gray-500 leading-relaxed mb-2 line-clamp-2">{product.desc}</p>
+        {!confirmed ? (
+          <>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl">🛒</span>
+              <div>
+                <p className="font-bold text-gray-800 text-sm leading-tight">{product.title}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{plt.icon} {plt.label} 링크가 열렸어요</p>
+              </div>
+            </div>
 
-        {/* 가격 */}
-        <div className="flex items-baseline gap-1.5 mb-3">
-          <span className="text-base font-black text-gray-900">{product.price.toLocaleString()}원</span>
-          {product.originalPrice > product.price && (
-            <span className="text-xs text-gray-400 line-through">{product.originalPrice.toLocaleString()}원</span>
-          )}
-        </div>
+            <div className="bg-orange-50 rounded-2xl p-3 mb-4 flex items-center justify-between">
+              <p className="text-sm text-orange-700">구매 완료 시 보너스 포인트</p>
+              <p className="text-base font-black text-orange-600">+{product.bonusPoints}P</p>
+            </div>
 
-        {/* 보너스 포인트 안내 */}
-        <div className="bg-green-50 rounded-xl px-3 py-2 mb-3 flex items-center justify-between">
-          <span className="text-xs text-green-700">🎁 구매 시 보너스</span>
-          <span className="text-xs font-black text-green-600">+{product.bonusPoints}P</span>
-        </div>
-
-        {/* 구매 버튼 */}
-        {!bought ? (
-          <button
-            onClick={handleBuy}
-            className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-2.5 rounded-xl text-sm font-bold active:scale-95 transition-transform"
-          >
-            {plt.icon} {plt.label}에서 구매하기 →
-          </button>
-        ) : !confirmed ? (
-          <div className="space-y-2">
-            <p className="text-[10px] text-gray-400 text-center">구매를 완료하셨나요?</p>
             <button
               onClick={handleConfirm}
               disabled={loading}
-              className="w-full bg-gradient-to-r from-orange-400 to-orange-500 text-white py-2.5 rounded-xl text-sm font-bold active:scale-95 transition-transform"
+              className="w-full bg-gradient-to-r from-orange-400 to-orange-500 text-white py-3.5 rounded-2xl text-sm font-bold mb-2 active:scale-95 transition-transform"
             >
-              {loading ? "처리 중…" : `✅ 구매했어요! (+${product.bonusPoints}P)`}
+              {loading ? "처리 중…" : `✅ 구매 완료! (+${product.bonusPoints}P 받기)`}
             </button>
             <button
-              onClick={() => setBought(false)}
-              className="w-full text-gray-400 text-xs py-1"
+              onClick={onClose}
+              className="w-full py-3 text-gray-400 text-sm font-medium"
             >
-              취소
+              아직 구매 안 했어요
             </button>
-          </div>
+          </>
         ) : (
-          <div className="bg-green-50 rounded-xl py-2.5 text-center">
-            <p className="text-sm font-bold text-green-600">🎉 +{product.bonusPoints}P 지급 완료!</p>
+          <div className="text-center py-4">
+            <p className="text-4xl mb-2">🎉</p>
+            <p className="font-bold text-green-600 text-base">+{product.bonusPoints}P 적립 완료!</p>
+            <p className="text-xs text-gray-400 mt-1">포인트가 내 계정에 쌓였어요</p>
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+// ─── 상품 카드 ───────────────────────────────────────────────
+function ProductCard({ product, onBuy, onConfirm }) {
+  const [showSheet, setShowSheet] = useState(false); // 구매 확인 시트
+  const [confirmed, setConfirmed] = useState(false); // 포인트 이미 받음
+  const pct = discountPct(product.price, product.originalPrice);
+  const plt = PLATFORM_LABEL[product.platform] || PLATFORM_LABEL.coupang;
+
+  // 링크 클릭 → 외부 이동 + 시트 표시 (카드 버튼은 그대로 유지)
+  const handleBuy = () => {
+    onBuy(product);       // 외부 링크 열기 + 클릭 로그
+    setShowSheet(true);   // 구매 확인 시트 올라오기
+  };
+
+  const handleConfirm = async (p) => {
+    await onConfirm(p);
+    setConfirmed(true);
+  };
+
+  return (
+    <>
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        {/* 상품 이미지 */}
+        <div className="relative bg-gray-50 h-40 flex items-center justify-center overflow-hidden">
+          <img
+            src={product.image}
+            alt={product.title}
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              e.target.style.display = "none";
+              e.target.nextSibling.style.display = "flex";
+            }}
+          />
+          <div className="hidden absolute inset-0 items-center justify-center text-5xl bg-gray-100">
+            🛒
+          </div>
+          {/* 태그 */}
+          {product.tag && (
+            <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white
+              ${product.tag === "베스트" ? "bg-orange-500"
+              : product.tag === "NEW"    ? "bg-blue-500"
+              : product.tag === "필수템" ? "bg-purple-500"
+              : "bg-green-500"}`}>
+              {product.tag}
+            </span>
+          )}
+          {/* 플랫폼 뱃지 */}
+          <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white ${plt.color}`}>
+            {plt.icon} {plt.label}
+          </span>
+          {/* 할인율 */}
+          {pct > 0 && (
+            <span className="absolute bottom-2 right-2 bg-red-500 text-white text-xs font-black px-1.5 py-0.5 rounded-lg">
+              {pct}% OFF
+            </span>
+          )}
+        </div>
+
+        {/* 상품 정보 */}
+        <div className="p-3">
+          <p className="text-[10px] text-gray-400 font-medium mb-0.5">{product.brand}</p>
+          <p className="text-sm font-bold text-gray-800 leading-tight mb-1 line-clamp-2">{product.title}</p>
+          <p className="text-xs text-gray-500 leading-relaxed mb-2 line-clamp-2">{product.desc}</p>
+
+          {/* 가격 */}
+          <div className="flex items-baseline gap-1.5 mb-3">
+            <span className="text-base font-black text-gray-900">{product.price.toLocaleString()}원</span>
+            {product.originalPrice > product.price && (
+              <span className="text-xs text-gray-400 line-through">{product.originalPrice.toLocaleString()}원</span>
+            )}
+          </div>
+
+          {/* 보너스 포인트 안내 */}
+          <div className="bg-green-50 rounded-xl px-3 py-2 mb-3 flex items-center justify-between">
+            <span className="text-xs text-green-700">🎁 구매 시 보너스</span>
+            <span className="text-xs font-black text-green-600">+{product.bonusPoints}P</span>
+          </div>
+
+          {/* 구매 버튼 — 항상 유지 */}
+          {confirmed ? (
+            <div className="bg-green-50 rounded-xl py-2.5 text-center">
+              <p className="text-sm font-bold text-green-600">🎉 +{product.bonusPoints}P 받음!</p>
+            </div>
+          ) : (
+            <button
+              onClick={handleBuy}
+              className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-2.5 rounded-xl text-sm font-bold active:scale-95 transition-transform"
+            >
+              {plt.icon} {plt.label}에서 구매하기 →
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 구매 확인 바텀시트 */}
+      {showSheet && (
+        <PurchaseSheet
+          product={product}
+          onConfirm={handleConfirm}
+          onClose={() => setShowSheet(false)}
+        />
+      )}
+    </>
   );
 }
 
