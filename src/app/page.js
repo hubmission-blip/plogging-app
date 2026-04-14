@@ -559,7 +559,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ── 탄소중립포인트 / 에코마일리지 배너 버튼 ── */}
+          {/* ── 탄소중립포인트 / 에코마일리지 / 쇼핑 배너 버튼 ── */}
           <div className="flex flex-col gap-2">
             <Link
               href="/carbon"
@@ -583,6 +583,19 @@ export default function HomePage() {
                 <div>
                   <p className="font-black text-sm text-white leading-tight">지자체 에코마일리지</p>
                   <p className="text-[11px] text-sky-100 mt-0.5">전국 17개 시/도 프로그램 안내</p>
+                </div>
+              </div>
+              <span className="text-white/70 text-lg">→</span>
+            </Link>
+            <Link
+              href="/shop"
+              className="flex items-center justify-between bg-gradient-to-r from-orange-400 to-pink-500 rounded-2xl px-4 py-3.5 shadow-sm active:scale-95 transition-transform"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🛒</span>
+                <div>
+                  <p className="font-black text-sm text-white leading-tight">친환경 쇼핑</p>
+                  <p className="text-[11px] text-orange-100 mt-0.5">구매 시 포인트 보너스 · 수수료 → 환경기부</p>
                 </div>
               </div>
               <span className="text-white/70 text-lg">→</span>

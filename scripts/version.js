@@ -55,12 +55,17 @@ data.changelog.unshift(newEntry); // 맨 앞에 추가
 fs.writeFileSync(versionPath, JSON.stringify(data, null, 2) + "\n", "utf8");
 console.log(`✅ version.json 업데이트 완료: ${newVersion}`);
 
-// ── git add / commit / push ────────────────────────────────
+// ── git 락 파일 자동 정리 ──────────────────────────────────
+["HEAD.lock", "index.lock"].forEach((f) => {
+  const lockPath = path.join(__dirname, `../.git/${f}`);
+  try { fs.unlinkSync(lockPath); } catch {}
+});
+
+// ── git add / commit (push는 감독님 터미널에서 git push) ───
 try {
   execSync("git add .", { stdio: "inherit" });
   execSync(`git commit -m "${newVersion} - ${title}"`, { stdio: "inherit" });
-  execSync("git push", { stdio: "inherit" });
-  console.log(`🚀 배포 완료! Vercel 빌드가 시작됩니다.`);
+  console.log(`✅ 커밋 완료! 이제 터미널에서 git push 를 실행해 배포하세요.`);
 } catch (e) {
   console.error("❌ git 오류:", e.message);
   process.exit(1);
