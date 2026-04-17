@@ -749,6 +749,7 @@ function MapPageInner() {
   const [speedLimitEnabled,      setSpeedLimitEnabled]      = useState(true);
   const [aiVerificationEnabled,  setAiVerificationEnabled]  = useState(true);
   const [backgroundModeEnabled,  setBackgroundModeEnabled]  = useState(false);
+  const [timeLimitEnabled,       setTimeLimitEnabled]       = useState(true);
 
   // ── 에코마일리지 연동 상태 ────────────────────────────────
   const [ecomileageLinked, setEcomileageLinked] = useState(false);
@@ -761,6 +762,7 @@ function MapPageInner() {
           setSpeedLimitEnabled(data.speedLimitEnabled !== false);
           setAiVerificationEnabled(data.aiVerificationEnabled !== false);
           setBackgroundModeEnabled(data.backgroundModeEnabled === true);
+          setTimeLimitEnabled(data.timeLimitEnabled !== false);
         }
       })
       .catch(() => {}); // 로드 실패 시 기본값 유지
@@ -785,10 +787,13 @@ function MapPageInner() {
   const {
     path, distance, isTracking, currentSpeed,
     isSpeedWarning, duration, stopCount,
-    wakeLockActive, isBackground,
+    wakeLockActive, isBackground, bgNativeActive,
     gpsAccuracy, gpsReady,
     startTracking, stopTracking,
-  } = useLocation({ onSpeedViolation: speedLimitEnabled ? handleSpeedViolation : undefined });
+  } = useLocation({
+    onSpeedViolation: speedLimitEnabled ? handleSpeedViolation : undefined,
+    backgroundModeEnabled,
+  });
 
   // ─── A. 하루 플로깅 횟수 체크 ────────────────────────
   const checkPloggingLimit = useCallback(async () => {
@@ -1046,8 +1051,8 @@ function MapPageInner() {
 
   // ─── 시작 버튼 (시간 체크 → 중복 체크 포함) ──────────
   const handleStart = async () => {
-    // 1. 시간 제한 체크 (오전 6시 ~ 오후 8시)
-    if (!isWithinPloggingHours()) {
+    // 1. 시간 제한 체크 (오전 6시 ~ 오후 8시) — 관리자 OFF 시 무시
+    if (timeLimitEnabled && !isWithinPloggingHours()) {
       setShowTimeRestriction(true);
       return;
     }
@@ -1236,14 +1241,29 @@ function MapPageInner() {
         <div className="absolute inset-0 bg-black/70 z-[60] flex flex-col items-center justify-center p-6 text-center">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-xs w-full">
             <SmartphoneIcon className="w-12 h-12 text-gray-700 mx-auto mb-3" strokeWidth={1.5} />
-            <h3 className="font-black text-gray-800 text-lg mb-2">앱이 백그라운드로 전환됐어요</h3>
-            <p className="text-sm text-gray-500 mb-4 leading-relaxed">
-              다른 앱으로 전환되면 GPS 추적이 중단될 수 있어요.<br />
-              플로깅 중에는 이 앱을 화면에 띄워두세요.
-            </p>
-            <p className="text-xs text-orange-500 font-medium bg-orange-50 rounded-xl px-3 py-2 flex items-center justify-center gap-1">
-              <AlertTriangleIcon className="w-3.5 h-3.5 inline flex-shrink-0" strokeWidth={2} /> 화면을 끄고 주머니에 넣는 건 괜찮아요<br />(화면 꺼짐 방지 기능이 작동 중)
-            </p>
+            {bgNativeActive ? (
+              <>
+                <h3 className="font-black text-gray-800 text-lg mb-2">백그라운드에서도 기록 중!</h3>
+                <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+                  화면을 꺼도 GPS 추적이 계속됩니다.<br />
+                  플로깅이 끝나면 앱으로 돌아와 종료해주세요.
+                </p>
+                <p className="text-xs text-blue-500 font-medium bg-blue-50 rounded-xl px-3 py-2 flex items-center justify-center gap-1">
+                  <Sun className="w-3.5 h-3.5 inline flex-shrink-0" strokeWidth={2} /> 백그라운드 GPS가 정상 작동 중이에요
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="font-black text-gray-800 text-lg mb-2">앱이 백그라운드로 전환됐어요</h3>
+                <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+                  다른 앱으로 전환되면 GPS 추적이 중단될 수 있어요.<br />
+                  플로깅 중에는 이 앱을 화면에 띄워두세요.
+                </p>
+                <p className="text-xs text-orange-500 font-medium bg-orange-50 rounded-xl px-3 py-2 flex items-center justify-center gap-1">
+                  <AlertTriangleIcon className="w-3.5 h-3.5 inline flex-shrink-0" strokeWidth={2} /> 화면을 끄고 주머니에 넣는 건 괜찮아요<br />(화면 꺼짐 방지 기능이 작동 중)
+                </p>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -1338,10 +1358,12 @@ function MapPageInner() {
           <>
             {backgroundModeEnabled && (
               <div className={`text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow
-                ${wakeLockActive ? "bg-green-500 text-white" : "bg-gray-200 text-gray-500"}`}>
-                {wakeLockActive
-                  ? <><Sun className="w-3.5 h-3.5 inline" strokeWidth={2} /> 화면 켜짐 유지</>
-                  : <><AlertTriangleIcon className="w-3.5 h-3.5 inline" strokeWidth={2} /> 화면 꺼짐 주의</>
+                ${bgNativeActive ? "bg-blue-500 text-white" : wakeLockActive ? "bg-green-500 text-white" : "bg-gray-200 text-gray-500"}`}>
+                {bgNativeActive
+                  ? <><Sun className="w-3.5 h-3.5 inline" strokeWidth={2} /> 백그라운드 GPS 활성</>
+                  : wakeLockActive
+                    ? <><Sun className="w-3.5 h-3.5 inline" strokeWidth={2} /> 화면 켜짐 유지</>
+                    : <><AlertTriangleIcon className="w-3.5 h-3.5 inline" strokeWidth={2} /> 화면 꺼짐 주의</>
                 }
               </div>
             )}

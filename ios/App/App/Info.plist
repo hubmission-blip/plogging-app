@@ -146,11 +146,16 @@
 			</dict>
 		</dict>
 	</dict>
+	<!-- 백그라운드 모드 -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<!-- 위치정보 권한 설명 -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>플로깅 경로 기록과 주변 참여자 지도 표시를 위해 위치 정보가 필요합니다.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>플로깅 중 백그라운드 경로 기록을 위해 위치 정보가 필요합니다.</string>
+	<string>플로깅 중 화면을 꺼도 경로가 계속 기록됩니다. 정확한 플로깅 거리 측정을 위해 필요합니다.</string>
 	<!-- 카메라/사진 권한 설명 -->
 	<key>NSCameraUsageDescription</key>
 	<string>플로깅 인증 사진 촬영을 위해 카메라 접근이 필요합니다.</string>

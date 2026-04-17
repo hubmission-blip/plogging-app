@@ -30,8 +30,37 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+// ─── Capacitor 네이티브 환경 감지 ────────────────────────
+// window.Capacitor가 있고 네이티브 플랫폼(iOS/Android)이면 true
+function isNativePlatform() {
+  try {
+    return typeof window !== "undefined"
+      && window.Capacitor
+      && window.Capacitor.isNativePlatform
+      && window.Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+}
+
+// ─── 백그라운드 위치 플러그인 동적 로드 ──────────────────
+// 웹에서는 import 실패해도 에러 없이 null 반환
+let _bgGeoPlugin = null;
+async function getBgGeoPlugin() {
+  if (_bgGeoPlugin) return _bgGeoPlugin;
+  try {
+    const mod = await import("@capgo/background-geolocation");
+    _bgGeoPlugin = mod.BackgroundGeolocation || mod.default;
+    return _bgGeoPlugin;
+  } catch {
+    // 플러그인 미설치 또는 웹 환경 → null
+    return null;
+  }
+}
+
 // ─── Hook ────────────────────────────────────────────────
-export function useLocation({ onSpeedViolation } = {}) {
+// backgroundModeEnabled: 관리자가 Firestore에서 ON/OFF 한 설정값
+export function useLocation({ onSpeedViolation, backgroundModeEnabled = false } = {}) {
   const [path, setPath]                 = useState([]);
   const [distance, setDistance]         = useState(0);
   const [isTracking, setIsTracking]     = useState(false);
@@ -47,11 +76,15 @@ export function useLocation({ onSpeedViolation } = {}) {
   const [gpsAccuracy, setGpsAccuracy] = useState(null);  // 현재 정확도 (m)
   const [gpsReady,    setGpsReady]    = useState(false);  // 워밍업 완료 여부
 
+  // ── 백그라운드 모드 실제 사용 여부 ─────────────────────
+  const [bgNativeActive, setBgNativeActive] = useState(false);
+
   const watchIdRef          = useRef(null);
   const lastPositionRef     = useRef(null);
   const violationStartRef   = useRef(null);
   const autoStopCalledRef   = useRef(false);
   const goodReadingsRef     = useRef(0);   // 연속 정상 수신 횟수 (워밍업용)
+  const bgWatcherIdRef      = useRef(null); // 네이티브 백그라운드 워처 ID
 
   // ── Wake Lock (화면 꺼짐 방지) ─────────────────────────
   const [wakeLockActive, setWakeLockActive] = useState(false);
@@ -66,6 +99,9 @@ export function useLocation({ onSpeedViolation } = {}) {
   const trackingStartRef    = useRef(null);
   const durationIntervalRef = useRef(null);
   const durationRef         = useRef(0);
+
+  // 네이티브 백그라운드 사용 조건: 관리자 ON + Capacitor 네이티브
+  const useNativeBg = backgroundModeEnabled && isNativePlatform();
 
   // ─── Wake Lock 요청 ──────────────────────────────────
   const requestWakeLock = useCallback(async () => {
@@ -107,12 +143,109 @@ export function useLocation({ onSpeedViolation } = {}) {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [requestWakeLock]);
 
+  // ─── 공통 위치 처리 함수 (웹/네이티브 공용) ──────────
+  const processPosition = useCallback((lat, lng, accuracy, now) => {
+    // ── [필터 1] 정확도 체크 ─────────────────────────────
+    setGpsAccuracy(Math.round(accuracy));
+    if (accuracy > GPS_ACCURACY_THRESHOLD) {
+      goodReadingsRef.current = 0;
+      setGpsReady(false);
+      return;
+    }
+
+    // ── [필터 3] GPS 워밍업 ──────────────────────────────
+    if (goodReadingsRef.current < GPS_WARMUP_COUNT) {
+      goodReadingsRef.current += 1;
+      lastPositionRef.current = { lat, lng, timestamp: now };
+      if (goodReadingsRef.current < GPS_WARMUP_COUNT) return;
+      setGpsReady(true);
+    }
+
+    if (lastPositionRef.current) {
+      const { lat: pLat, lng: pLng, timestamp: pTime } = lastPositionRef.current;
+
+      const distKm     = haversineDistance(pLat, pLng, lat, lng);
+      const distM      = distKm * 1000;
+      const elapsedSec = Math.max((now - pTime) / 1000, 0.001);
+      const elapsedH   = elapsedSec / 3600;
+      const speedKmh   = distKm / elapsedH;
+      const speedMs    = distM / elapsedSec;
+
+      // ── [필터 2] 이상치(순간이동) 감지 ──────────────────
+      if (speedMs > GPS_OUTLIER_MAX_MS) return;
+
+      const roundedSpeed = Math.round(speedKmh);
+      setCurrentSpeed(roundedSpeed);
+
+      // ── 이동수단 감지 (30km/h 초과) ──────────────────────
+      if (onSpeedViolation) {
+        if (speedKmh > SPEED_LIMIT_KMH) {
+          setIsSpeedWarning(true);
+          if (!violationStartRef.current) violationStartRef.current = now;
+          if (!autoStopCalledRef.current && now - violationStartRef.current >= AUTO_STOP_MS) {
+            autoStopCalledRef.current = true;
+            // stopTracking은 아래에서 정의 → ref로 호출
+            return;
+          }
+        } else {
+          setIsSpeedWarning(false);
+          violationStartRef.current = null;
+        }
+      } else {
+        setIsSpeedWarning(false);
+        violationStartRef.current = null;
+      }
+
+      // ── 정지 패턴 감지 (쓰레기 줍기) ─────────────────────
+      if (speedMs >= MOVE_SPEED_MS) {
+        wasMovingRef.current = true;
+      } else if (speedMs < STOP_SPEED_MS && wasMovingRef.current) {
+        wasMovingRef.current = false;
+        if (!autoStopCalledRef.current) {
+          setStopCount((prev) => prev + 1);
+        }
+      }
+
+      // ── 경로 거리 누적 ────────────────────────────────────
+      if (!autoStopCalledRef.current) {
+        setDistance((prev) => prev + distKm);
+      }
+    }
+
+    // 경로 포인트 추가
+    if (!autoStopCalledRef.current) {
+      setPath((prev) => [...prev, { lat, lng }]);
+    }
+
+    lastPositionRef.current = { lat, lng, timestamp: now };
+  }, [onSpeedViolation]);
+
+  // ─── 네이티브 백그라운드 워처 중지 ────────────────────
+  const stopNativeBgWatcher = useCallback(async () => {
+    if (bgWatcherIdRef.current != null) {
+      try {
+        const plugin = await getBgGeoPlugin();
+        if (plugin) {
+          await plugin.removeWatcher({ id: bgWatcherIdRef.current });
+        }
+      } catch (e) {
+        console.warn("[BgGeo] 워처 제거 실패:", e);
+      }
+      bgWatcherIdRef.current = null;
+      setBgNativeActive(false);
+    }
+  }, []);
+
   // ─── stopTracking ─────────────────────────────────────
   const stopTracking = useCallback(() => {
+    // 웹 워처 중지
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
     }
+    // 네이티브 백그라운드 워처 중지
+    stopNativeBgWatcher();
+
     if (durationIntervalRef.current) {
       clearInterval(durationIntervalRef.current);
       durationIntervalRef.current = null;
@@ -129,10 +262,51 @@ export function useLocation({ onSpeedViolation } = {}) {
     isTrackingRef.current      = false;
     goodReadingsRef.current    = 0;
     releaseWakeLock();
-  }, [releaseWakeLock]);
+  }, [releaseWakeLock, stopNativeBgWatcher]);
+
+  // ─── 네이티브 백그라운드 워처 시작 ────────────────────
+  const startNativeBgWatcher = useCallback(async () => {
+    const plugin = await getBgGeoPlugin();
+    if (!plugin) {
+      console.warn("[BgGeo] 플러그인 없음 — 웹 모드로 동작");
+      return false;
+    }
+    try {
+      const watcherId = await plugin.addWatcher(
+        {
+          backgroundMessage: "플로깅 경로를 기록하고 있어요",
+          backgroundTitle: "오백원의 행복 — 플로깅 진행 중",
+          requestPermissions: true,
+          stale: false,
+          distanceFilter: 5, // 5m 이동마다 업데이트
+        },
+        // 위치 콜백 — 백그라운드에서도 호출됨
+        (location, error) => {
+          if (error) {
+            console.warn("[BgGeo] 위치 오류:", error);
+            return;
+          }
+          if (location) {
+            processPosition(
+              location.latitude,
+              location.longitude,
+              location.accuracy || 10,
+              Date.now()
+            );
+          }
+        }
+      );
+      bgWatcherIdRef.current = watcherId;
+      setBgNativeActive(true);
+      return true;
+    } catch (e) {
+      console.warn("[BgGeo] 워처 시작 실패:", e);
+      return false;
+    }
+  }, [processPosition]);
 
   // ─── startTracking ────────────────────────────────────
-  const startTracking = useCallback((reset = true) => {
+  const startTracking = useCallback(async (reset = true) => {
     if (reset) {
       setPath([]);
       setDistance(0);
@@ -170,93 +344,33 @@ export function useLocation({ onSpeedViolation } = {}) {
 
     setIsTracking(true);
 
+    // ── 네이티브 백그라운드 모드 시도 ──────────────────────
+    if (useNativeBg) {
+      const started = await startNativeBgWatcher();
+      if (started) {
+        // 네이티브 플러그인이 GPS를 담당 → 웹 watchPosition 불필요
+        console.log("[BgGeo] 네이티브 백그라운드 GPS 활성화");
+        return;
+      }
+      // 플러그인 실패 시 웹 방식으로 폴백
+      console.warn("[BgGeo] 네이티브 실패 → 웹 GPS 폴백");
+    }
+
+    // ── 웹 기본 GPS 추적 ────────────────────────────────
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
-        const { latitude: lat, longitude: lng, accuracy } = pos.coords;
-        const now = Date.now();
+        processPosition(
+          pos.coords.latitude,
+          pos.coords.longitude,
+          pos.coords.accuracy,
+          Date.now()
+        );
 
-        // ── [필터 1] 정확도 체크 ─────────────────────────────
-        // accuracy가 50m 초과면 신호 불안정 → 무시
-        setGpsAccuracy(Math.round(accuracy));
-        if (accuracy > GPS_ACCURACY_THRESHOLD) {
-          goodReadingsRef.current = 0;   // 워밍업 카운트 리셋
-          setGpsReady(false);
-          return;
+        // 속도 위반으로 자동 종료된 경우 처리
+        if (autoStopCalledRef.current && onSpeedViolation) {
+          stopTracking();
+          onSpeedViolation();
         }
-
-        // ── [필터 3] GPS 워밍업 ──────────────────────────────
-        // 정확도 OK 신호가 연속 3회 들어와야 기록 시작
-        if (goodReadingsRef.current < GPS_WARMUP_COUNT) {
-          goodReadingsRef.current += 1;
-          // 워밍업 중이지만 마지막 위치는 저장해 다음 거리 계산 기준으로 사용
-          lastPositionRef.current = { lat, lng, timestamp: now };
-          if (goodReadingsRef.current < GPS_WARMUP_COUNT) return;
-          // 3회 달성 → 기록 시작
-          setGpsReady(true);
-        }
-
-        if (lastPositionRef.current) {
-          const { lat: pLat, lng: pLng, timestamp: pTime } = lastPositionRef.current;
-
-          const distKm     = haversineDistance(pLat, pLng, lat, lng);
-          const distM      = distKm * 1000;
-          const elapsedSec = Math.max((now - pTime) / 1000, 0.001);
-          const elapsedH   = elapsedSec / 3600;
-          const speedKmh   = distKm / elapsedH;
-          const speedMs    = distM / elapsedSec;
-
-          // ── [필터 2] 이상치(순간이동) 감지 ──────────────────
-          // 물리적으로 불가능한 속도(30m/s = 108km/h)면 GPS 튐으로 판단 → 무시
-          if (speedMs > GPS_OUTLIER_MAX_MS) {
-            // 이상치는 버리되 lastPosition은 유지 (기준점 변경 없음)
-            return;
-          }
-
-          const roundedSpeed = Math.round(speedKmh);
-          setCurrentSpeed(roundedSpeed);
-
-          // ── 이동수단 감지 (30km/h 초과) ──────────────────────
-          if (onSpeedViolation) {
-            if (speedKmh > SPEED_LIMIT_KMH) {
-              setIsSpeedWarning(true);
-              if (!violationStartRef.current) violationStartRef.current = now;
-              if (!autoStopCalledRef.current && now - violationStartRef.current >= AUTO_STOP_MS) {
-                autoStopCalledRef.current = true;
-                stopTracking();
-                onSpeedViolation();
-                return;
-              }
-            } else {
-              setIsSpeedWarning(false);
-              violationStartRef.current = null;
-            }
-          } else {
-            setIsSpeedWarning(false);
-            violationStartRef.current = null;
-          }
-
-          // ── 정지 패턴 감지 (쓰레기 줍기) ─────────────────────
-          if (speedMs >= MOVE_SPEED_MS) {
-            wasMovingRef.current = true;
-          } else if (speedMs < STOP_SPEED_MS && wasMovingRef.current) {
-            wasMovingRef.current = false;
-            if (!autoStopCalledRef.current) {
-              setStopCount((prev) => prev + 1);
-            }
-          }
-
-          // ── 경로 거리 누적 ────────────────────────────────────
-          if (!autoStopCalledRef.current) {
-            setDistance((prev) => prev + distKm);
-          }
-        }
-
-        // 경로 포인트 추가
-        if (!autoStopCalledRef.current) {
-          setPath((prev) => [...prev, { lat, lng }]);
-        }
-
-        lastPositionRef.current = { lat, lng, timestamp: now };
       },
       (err) => console.error("GPS 오류:", err),
       {
@@ -265,7 +379,7 @@ export function useLocation({ onSpeedViolation } = {}) {
         timeout: 15000,
       }
     );
-  }, [onSpeedViolation, stopTracking]);
+  }, [onSpeedViolation, stopTracking, requestWakeLock, useNativeBg, startNativeBgWatcher, processPosition]);
 
   return {
     path,
@@ -277,8 +391,9 @@ export function useLocation({ onSpeedViolation } = {}) {
     stopCount,
     wakeLockActive,
     isBackground,
-    gpsAccuracy,   // 현재 GPS 오차 반경 (m) — UI 표시용
-    gpsReady,      // 워밍업 완료 여부 — UI 표시용
+    bgNativeActive,   // 네이티브 백그라운드 GPS 활성 여부 — UI 표시용
+    gpsAccuracy,      // 현재 GPS 오차 반경 (m) — UI 표시용
+    gpsReady,         // 워밍업 완료 여부 — UI 표시용
     startTracking,
     stopTracking,
   };

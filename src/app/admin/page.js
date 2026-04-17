@@ -1478,6 +1478,38 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {/* ── 시간 제한 토글 ── */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <SectionTitle>🕐 플로깅 시간 제한</SectionTitle>
+                <p className="text-xs text-gray-400 mb-4">
+                  오전 6시 ~ 오후 8시 사이에만 플로깅을 시작할 수 있는 제한입니다.<br/>
+                  <span className="text-orange-400 font-medium">※ OFF 시 24시간 언제든 플로깅 가능 (테스트·이벤트 시 활용)</span>
+                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-gray-700">시간 제한</p>
+                    <p className={`text-xs mt-0.5 font-medium ${appSettings.timeLimitEnabled !== false ? "text-green-500" : "text-red-400"}`}>
+                      {appSettings.timeLimitEnabled !== false
+                        ? "✅ 현재 ON — 오전 6시 ~ 오후 8시만 허용"
+                        : "⛔ 현재 OFF — 24시간 플로깅 가능"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setAppSettings((prev) => ({ ...prev, timeLimitEnabled: prev.timeLimitEnabled === false ? true : false }));
+                      setSettingsDirty(true);
+                    }}
+                    className={`relative w-14 h-7 rounded-full transition-colors duration-200 focus:outline-none ${
+                      appSettings.timeLimitEnabled !== false ? "bg-green-500" : "bg-gray-300"
+                    }`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200 ${
+                      appSettings.timeLimitEnabled !== false ? "translate-x-7" : "translate-x-0"
+                    }`} />
+                  </button>
+                </div>
+              </div>
+
               {/* 앱 인증 조건 설정 */}
               <div className="bg-white rounded-2xl p-4 shadow-sm">
                 <SectionTitle>⚙️ 플로깅 인증 조건 설정</SectionTitle>

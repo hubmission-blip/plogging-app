@@ -25,6 +25,7 @@
     "@capacitor/cli": "^8.3.0",
     "@capacitor/core": "^8.3.0",
     "@capacitor/ios": "^8.3.0",
+    "@capgo/background-geolocation": "^8.0.29",
     "date-fns": "^4.1.0",
     "firebase": "^12.11.0",
     "geofire-common": "^6.0.0",
