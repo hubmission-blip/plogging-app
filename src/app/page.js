@@ -521,17 +521,17 @@ export default function HomePage() {
             </Link>
             <Link
               href="/reward"
-              className="bg-orange-50 border border-orange-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
+              className="bg-purple-50 border border-purple-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <Gift className="w-6 h-6 text-orange-600" strokeWidth={1.8} />
-              <span className="text-xs text-orange-700 font-bold">리워드</span>
+              <Gift className="w-6 h-6 text-purple-600" strokeWidth={1.8} />
+              <span className="text-xs text-purple-700 font-bold">리워드</span>
             </Link>
             <button
               onClick={() => setShowManual(true)}
-              className="bg-purple-50 border border-purple-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
+              className="bg-orange-50 border border-orange-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <CirclePlay className="w-6 h-6 text-purple-600" strokeWidth={1.8} />
-              <span className="text-xs text-purple-700 font-bold">매뉴얼</span>
+              <CirclePlay className="w-6 h-6 text-orange-600" strokeWidth={1.8} />
+              <span className="text-xs text-orange-700 font-bold">매뉴얼</span>
             </button>
           </div>
 

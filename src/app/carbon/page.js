@@ -172,8 +172,8 @@ function SectionCard({ sec, greenItems }) {
         <div className="flex items-center gap-3">
           <sec.Icon className="w-8 h-8" strokeWidth={1.8} style={sec.iconColor ? { color: sec.iconColor } : { color: "rgba(255,255,255,0.9)" }} />
           <div className="text-left">
-            <p className="font-black text-base leading-tight">{sec.title}</p>
-            <p className="text-white/80 text-xs mt-0.5">{sec.subtitle}</p>
+            <p className="font-black text-base leading-tight" style={sec.iconColor ? { color: sec.iconColor } : undefined}>{sec.title}</p>
+            <p className={`text-xs mt-0.5 ${sec.iconColor ? "" : "text-white/80"}`} style={sec.iconColor ? { color: sec.iconColor, opacity: 0.7 } : undefined}>{sec.subtitle}</p>
           </div>
         </div>
         {open
@@ -256,7 +256,8 @@ function SectionCard({ sec, greenItems }) {
               {sec.howto.map((step, i) => (
                 <div key={i} className="flex items-start gap-2">
                   <span className={`text-xs font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5
-                    bg-gradient-to-br ${sec.color} text-white`}>
+                    ${sec.customGradient ? "text-white" : `bg-gradient-to-br ${sec.color} text-white`}`}
+                    style={sec.customGradient ? { backgroundImage: sec.customGradient } : undefined}>
                     {i + 1}
                   </span>
                   <p className="text-xs text-gray-600 leading-relaxed">{step}</p>
@@ -276,7 +277,8 @@ function SectionCard({ sec, greenItems }) {
             target="_blank"
             rel="noopener noreferrer"
             className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm text-white
-              bg-gradient-to-r ${sec.color} active:opacity-80 transition-opacity`}
+              ${sec.customGradient ? "" : `bg-gradient-to-r ${sec.color}`} active:opacity-80 transition-opacity`}
+            style={sec.customGradient ? { backgroundImage: sec.customGradient } : undefined}
           >
             <ExternalLink className="w-4 h-4 inline" strokeWidth={2} /> {sec.urlLabel} 바로가기
           </a>
@@ -315,7 +317,7 @@ export default function CarbonPage() {
       <div className="px-4 mt-4 space-y-4">
 
         {/* ── 제도 소개 ── */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-green-400">
+        <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4" style={{ borderLeftColor: "#8dc63f" }}>
           <p className="text-xs font-bold text-green-600 mb-1">📌 탄소중립포인트제란?</p>
           <p className="text-sm text-gray-700 leading-relaxed">
             환경부(기후에너지환경부)가 운영하는 국가 인센티브 제도로,
@@ -328,8 +330,8 @@ export default function CarbonPage() {
         {/* ── 빠른 요약 카드 ── */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { Icon: Zap,  label: "에너지",   sub: "최대\n21만원/년",  color: "bg-orange-50 border-orange-200", iconColor: "text-orange-500" },
-            { Icon: Car,  label: "자동차",   sub: "최대\n10만원/년",  color: "bg-blue-50 border-blue-200",     iconColor: "text-blue-500" },
+            { Icon: Zap,  label: "에너지",   sub: "최대\n21만원/년",  color: "bg-pink-50 border-pink-200",     iconColor: "text-pink-500" },
+            { Icon: Car,  label: "자동차",   sub: "최대\n10만원/년",  color: "bg-orange-50 border-orange-200", iconColor: "text-orange-500" },
             { Icon: Leaf, label: "녹색생활", sub: "17가지\n실천항목", color: "bg-green-50 border-green-200",   iconColor: "text-green-500" },
           ].map((c) => (
             <div key={c.label} className={`${c.color} border rounded-2xl p-3 text-center`}>
