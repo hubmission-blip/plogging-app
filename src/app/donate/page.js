@@ -268,7 +268,7 @@ export default function DonatePage() {
         {/* ── 후원 완료 버튼 ── */}
         <button
           onClick={() => setShowThanks(true)}
-          className="w-full bg-gradient-to-r from-orange-400 to-orange-500 text-white py-4 rounded-2xl font-black text-base shadow-sm active:scale-95 transition-transform"
+          className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-4 rounded-2xl font-black text-base shadow-sm active:scale-95 transition-transform"
         >
           🧡 입금했어요! (후원 완료 알림)
         </button>
