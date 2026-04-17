@@ -1,7 +1,17 @@
 {
-  "version": "v1.65",
-  "build": 65,
+  "version": "v1.66",
+  "build": 66,
   "changelog": [
+    {
+      "version": "v1.66",
+      "build": 66,
+      "date": "2026-04-17",
+      "emoji": "🌿",
+      "title": "앱평가/홈화면추가/친구초대 아이콘 SVG 교체",
+      "items": [
+        "Star, Smartphone, UserPlus 적용"
+      ]
+    },
     {
       "version": "v1.65",
       "build": 65,

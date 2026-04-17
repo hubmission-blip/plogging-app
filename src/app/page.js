@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, BookOpen } from "lucide-react";
+import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, BookOpen, Star, Smartphone, UserPlus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
 import CharacterGuide from "@/components/CharacterGuide";
@@ -538,7 +538,7 @@ export default function HomePage() {
                 }}
                 className="bg-gradient-to-br from-green-500 to-teal-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
               >
-                <span className="text-3xl flex-shrink-0">⭐</span>
+                <Star className="w-8 h-8 text-white/90 flex-shrink-0" strokeWidth={1.8} />
                 <div className="text-right flex-1">
                   <p className="font-black text-sm leading-tight">앱 평가하기</p>
                   <p className="text-[11px] text-yellow-100 mt-0.5 leading-relaxed">리뷰를 남겨주세요!</p>
@@ -549,7 +549,7 @@ export default function HomePage() {
                 onClick={handleInstallClick}
                 className="bg-gradient-to-br from-green-500 to-teal-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
               >
-                <span className="text-3xl flex-shrink-0">📲</span>
+                <Smartphone className="w-8 h-8 text-white/90 flex-shrink-0" strokeWidth={1.8} />
                 <div className="text-right flex-1">
                   <p className="font-black text-sm leading-tight">홈 화면에 추가</p>
                   <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">앱처럼 빠르게 접근</p>
@@ -560,7 +560,7 @@ export default function HomePage() {
               onClick={handleShare}
               className="bg-gradient-to-br from-sky-500 to-cyan-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
             >
-              <span className="text-3xl flex-shrink-0">📤</span>
+              <UserPlus className="w-8 h-8 text-white/90 flex-shrink-0" strokeWidth={1.8} />
               <div className="text-right flex-1">
                 <p className="font-black text-sm leading-tight">친구 초대</p>
                 <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">보너스 포인트 지급!</p>
