@@ -259,7 +259,8 @@ function ProductCard({ product, onBuy, onConfirm }) {
               ${product.tag === "베스트" ? "bg-orange-500"
               : product.tag === "NEW"    ? "bg-blue-500"
               : product.tag === "필수템" ? "bg-purple-500"
-              : "bg-pink-500"}`}>
+              : ""}`}
+              style={!(product.tag === "베스트" || product.tag === "NEW" || product.tag === "필수템") ? { backgroundColor: "#CD5C5C" } : undefined}>
               {product.tag}
             </span>
           )}
@@ -290,15 +291,15 @@ function ProductCard({ product, onBuy, onConfirm }) {
           </div>
 
           {/* 보너스 포인트 안내 */}
-          <div className="bg-pink-50 rounded-xl px-3 py-2 mb-3 flex items-center justify-between">
-            <span className="text-xs text-pink-700">🎁 구매 시 보너스</span>
-            <span className="text-xs font-black text-pink-600">+{product.bonusPoints}P</span>
+          <div className="rounded-xl px-3 py-2 mb-3 flex items-center justify-between" style={{ backgroundColor: "#CD5C5C15" }}>
+            <span className="text-xs" style={{ color: "#CD5C5C" }}>🎁 구매 시 보너스</span>
+            <span className="text-xs font-black" style={{ color: "#CD5C5C" }}>+{product.bonusPoints}P</span>
           </div>
 
           {/* 구매 버튼 — 항상 유지 */}
           {confirmed ? (
-            <div className="bg-pink-50 rounded-xl py-2.5 text-center">
-              <p className="text-sm font-bold text-pink-600">🎉 +{product.bonusPoints}P 받음!</p>
+            <div className="rounded-xl py-2.5 text-center" style={{ backgroundColor: "#CD5C5C15" }}>
+              <p className="text-sm font-bold" style={{ color: "#CD5C5C" }}>🎉 +{product.bonusPoints}P 받음!</p>
             </div>
           ) : (
             <button
@@ -421,15 +422,15 @@ export default function ShopPage() {
             <h1 className="text-lg font-black text-gray-800">🛒 친환경 쇼핑</h1>
             <p className="text-xs text-gray-400 mt-0.5">구매 시 포인트 보너스 · 외부 쇼핑몰 연동</p>
           </div>
-          <div className="bg-pink-50 px-3 py-1.5 rounded-xl">
-            <p className="text-[10px] text-pink-600 font-bold">제휴 링크</p>
-            <p className="text-[10px] text-pink-500">수수료 수익 → 환경 기부</p>
+          <div className="px-3 py-1.5 rounded-xl" style={{ backgroundColor: "#CD5C5C15" }}>
+            <p className="text-[10px] font-bold" style={{ color: "#CD5C5C" }}>제휴 링크</p>
+            <p className="text-[10px]" style={{ color: "#CD5C5Ccc" }}>수수료 수익 → 환경 기부</p>
           </div>
         </div>
 
         {/* 안내 배너 */}
         <div className="mt-2 rounded-xl px-3 py-2.5 flex items-center gap-2" style={{ backgroundImage: "linear-gradient(to right, #ef558b, #ef3654)" }}>
-          <span className="text-xl">💚</span>
+          <span className="text-xl">💗</span>
           <div>
             <p className="text-xs font-bold text-white">쇼핑하면 지구도 살려요</p>
             <p className="text-[10px] text-pink-100">제휴 수수료 일부 → 환경 단체 기부 · 구매 시 앱 포인트 지급</p>
@@ -446,8 +447,9 @@ export default function ShopPage() {
               onClick={() => setCategory(cat)}
               className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all
                 ${category === cat
-                  ? "bg-pink-500 text-white shadow-sm"
+                  ? "text-white shadow-sm"
                   : "bg-white text-gray-500 border border-gray-100"}`}
+              style={category === cat ? { backgroundColor: "#CD5C5C" } : undefined}
             >
               {cat}
             </button>
