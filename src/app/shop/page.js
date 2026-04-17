@@ -238,9 +238,9 @@ function ProductCard({ product, onBuy, onConfirm }) {
 
   return (
     <>
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
         {/* 상품 이미지 */}
-        <div className="relative bg-gray-50 h-40 flex items-center justify-center overflow-hidden">
+        <div className="relative bg-gray-50 h-40 flex items-center justify-center overflow-hidden flex-shrink-0">
           <img
             src={product.image}
             alt={product.title}
@@ -267,7 +267,7 @@ function ProductCard({ product, onBuy, onConfirm }) {
         </div>
 
         {/* 상품 정보 */}
-        <div className="p-3">
+        <div className="p-3 flex flex-col flex-1">
           <p className="text-[10px] text-gray-400 font-medium mb-0.5">{product.brand}</p>
           <p className="text-sm font-bold text-gray-800 leading-tight mb-1 line-clamp-2">{product.title}</p>
           <p className="text-xs text-gray-500 leading-relaxed mb-2 line-clamp-2">{product.desc}</p>
@@ -293,20 +293,22 @@ function ProductCard({ product, onBuy, onConfirm }) {
             <span className="text-xs font-black" style={{ color: "#CD5C5C" }}>+{product.bonusPoints}P</span>
           </div>
 
-          {/* 구매 버튼 — 항상 유지 */}
-          {confirmed ? (
-            <div className="rounded-xl py-2.5 text-center" style={{ backgroundColor: "#CD5C5C15" }}>
-              <p className="text-sm font-bold" style={{ color: "#CD5C5C" }}>🎉 +{product.bonusPoints}P 받음!</p>
-            </div>
-          ) : (
-            <button
-              onClick={handleBuy}
-              className="w-full text-white py-2.5 rounded-xl text-sm font-bold active:scale-95 transition-transform"
-              style={{ backgroundImage: "linear-gradient(to right, #ef558b, #ef3654)" }}
-            >
-              {plt.icon} {plt.label}에서 구매하기 →
-            </button>
-          )}
+          {/* 구매 버튼 — 항상 카드 맨 하단 고정 */}
+          <div className="mt-auto">
+            {confirmed ? (
+              <div className="rounded-xl py-2.5 text-center" style={{ backgroundColor: "#CD5C5C15" }}>
+                <p className="text-sm font-bold" style={{ color: "#CD5C5C" }}>🎉 +{product.bonusPoints}P 받음!</p>
+              </div>
+            ) : (
+              <button
+                onClick={handleBuy}
+                className="w-full text-white py-2.5 rounded-xl text-sm font-bold active:scale-95 transition-transform"
+                style={{ backgroundImage: "linear-gradient(to right, #ef558b, #ef3654)" }}
+              >
+                {plt.icon} {plt.label}에서 구매하기 →
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

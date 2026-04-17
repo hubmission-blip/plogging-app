@@ -321,8 +321,8 @@ export default function EcomileagePage() {
         <Link href="/" className="absolute top-4 left-4 text-white/80 text-sm flex items-center gap-1">
           ← 홈
         </Link>
-        <div className="relative mt-4">
-          <span className="absolute top-0 right-0 text-6xl opacity-80">🏙️</span>
+        <span className="absolute top-4 right-4 text-7xl opacity-80">🏙️</span>
+        <div className="relative mt-8">
           <h1 className="text-2xl font-black leading-tight">지자체별 에코마일리지</h1>
           <p className="text-sky-100 text-sm mt-1">전국 17개 시/도 에너지 절감 인센티브 안내</p>
         </div>

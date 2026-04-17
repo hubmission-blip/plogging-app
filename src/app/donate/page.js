@@ -74,8 +74,8 @@ export default function DonatePage() {
           ← 홈으로
         </Link>
 
-        <div className="relative">
-          <span className="absolute top-0 right-0 text-6xl opacity-80">🧡</span>
+        <span className="absolute top-4 right-4 text-7xl opacity-80">🧡</span>
+        <div className="relative mt-8">
           <h1 className="text-2xl font-black leading-tight mb-2">
             오백원의 행복을<br />응원해주세요
           </h1>
