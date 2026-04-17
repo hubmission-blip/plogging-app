@@ -1,7 +1,17 @@
 {
-  "version": "v1.58",
-  "build": 58,
+  "version": "v1.59",
+  "build": 59,
   "changelog": [
+    {
+      "version": "v1.59",
+      "build": 59,
+      "date": "2026-04-17",
+      "emoji": "⚡",
+      "title": "빠른메뉴 버튼 라이트 컬러 스타일 변경",
+      "items": [
+        "지도/그룹/리워드/매뉴얼 버튼 연한 파스텔톤으로 변경"
+      ]
+    },
     {
       "version": "v1.58",
       "build": 58,
