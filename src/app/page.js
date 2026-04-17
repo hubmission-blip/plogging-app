@@ -513,19 +513,25 @@ export default function HomePage() {
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={handleInstallClick}
-              className="bg-green-500 text-white rounded-2xl p-4 flex flex-col items-start gap-1 shadow-sm active:scale-95 transition-transform"
+              className="bg-gradient-to-br from-green-500 to-teal-500 text-white rounded-2xl p-4 flex flex-col items-start gap-2 shadow-sm active:scale-95 transition-transform"
             >
               <span className="text-2xl">📲</span>
-              <p className="font-bold text-sm leading-tight">홈 화면에 추가</p>
-              <p className="text-xs text-green-100">앱으로 사용하기</p>
+              <div>
+                <p className="font-black text-sm leading-tight">홈 화면에 추가</p>
+                <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">앱처럼 빠르게 접근</p>
+              </div>
+              <span className="text-white/60 text-xs font-bold self-end">설치하기 →</span>
             </button>
             <button
               onClick={handleShare}
-              className="bg-green-50 border border-green-200 rounded-2xl p-4 flex flex-col items-start gap-1 active:scale-95 transition-transform"
+              className="bg-gradient-to-br from-orange-400 to-pink-500 text-white rounded-2xl p-4 flex flex-col items-start gap-2 shadow-sm active:scale-95 transition-transform"
             >
               <span className="text-2xl">📤</span>
-              <p className="font-bold text-sm text-gray-700 leading-tight">친구 초대</p>
-              <p className="text-xs text-gray-400">보너스 포인트!</p>
+              <div>
+                <p className="font-black text-sm leading-tight">친구 초대</p>
+                <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">보너스 포인트 지급!</p>
+              </div>
+              <span className="text-white/60 text-xs font-bold self-end">초대하기 →</span>
             </button>
           </div>
 
@@ -547,8 +553,10 @@ export default function HomePage() {
                     <span className="text-xs font-bold text-green-500">STEP {item.step}</span>
                     <span className="text-sm font-bold text-gray-900">{item.title}</span>
                   </div>
-                  <div className="text-2xl mt-2">{item.icon}</div>
-                  <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">{item.desc}</p>
+                  <div className="flex items-start gap-2 mt-2">
+                    <span className="text-2xl flex-shrink-0">{item.icon}</span>
+                    <p className="text-xs text-gray-500 leading-relaxed pt-1">{item.desc}</p>
+                  </div>
                 </div>
               ))}
             </div>
