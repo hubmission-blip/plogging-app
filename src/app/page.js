@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, BookOpen, Star, Smartphone, UserPlus, Navigation, Footprints, Flag, ScanEye, Trophy, HeartHandshake } from "lucide-react";
+import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, BookOpen, Star, Smartphone, UserPlus, Navigation, Footprints, Flag, Camera, Trophy, HeartHandshake, Globe, Coins, Target, Zap } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
 import CharacterGuide from "@/components/CharacterGuide";
@@ -119,7 +119,7 @@ const HOW_TO = [
   { step: 1, Icon: Navigation,      title: "위치 허용",      desc: "앱 첫 실행 시 위치 권한을 허용해주세요" },
   { step: 2, Icon: Footprints,      title: "플로깅 시작",    desc: "지도 페이지에서 시작 버튼을 누르세요" },
   { step: 3, Icon: Flag,            title: "플로깅 종료",    desc: "종료 후 거리·포인트가 자동 계산돼요" },
-  { step: 4, Icon: ScanEye,         title: "AI 사진 인증",   desc: "쓰레기 담은 봉투와 함께 인증샷을 찍어요" },
+  { step: 4, Icon: Camera,          title: "AI 사진 인증",   desc: "쓰레기 담은 봉투와 함께 인증샷을 찍어요" },
   { step: 5, Icon: Trophy,          title: "리워드 교환",    desc: "모은 포인트로 다양한 리워드를 받아보세요" },
   { step: 6, Icon: HeartHandshake,  title: "포인트 후원",    desc: "기아대책, 환경활동 등 좋은 일에 기부해요" },
 ];
@@ -474,7 +474,10 @@ export default function HomePage() {
 
           {/* ── 커뮤니티 현황 ── */}
           <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-4 text-white shadow">
-            <p className="text-xs text-green-100 mb-3 font-medium">🌍 오백원의 행복 커뮤니티 현황</p>
+            <p className="font-black text-sm text-white mb-3 flex items-center gap-1.5">
+              <Globe className="w-4 h-4 text-green-100" strokeWidth={2} />
+              오백원의 행복 커뮤니티 현황
+            </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white/20 rounded-xl px-4 py-3 text-center">
                 <p className="text-2xl font-black">
@@ -597,7 +600,14 @@ export default function HomePage() {
 
           {/* ── 포인트 안내 ── */}
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 shadow-sm">
-            <h2 className="font-bold text-gray-700 mb-3 text-right">💰 포인트 적립 기준</h2>
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-1.5">
+                <Coins className="w-4 h-4 text-green-600" strokeWidth={1.8} />
+                <Target className="w-4 h-4 text-green-600" strokeWidth={1.8} />
+                <Zap className="w-4 h-4 text-green-600" strokeWidth={1.8} />
+              </div>
+              <h2 className="font-bold text-gray-700">포인트 적립 기준</h2>
+            </div>
             <div className="space-y-2">
               {[
                 { label: "거리 1km 달성",      point: "+50P" },

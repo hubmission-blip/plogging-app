@@ -1,7 +1,17 @@
 {
-  "version": "v1.67",
-  "build": 67,
+  "version": "v1.68",
+  "build": 68,
   "changelog": [
+    {
+      "version": "v1.68",
+      "build": 68,
+      "date": "2026-04-17",
+      "emoji": "📱",
+      "title": "포인트 적립기준 아이콘 SVG 교체",
+      "items": [
+        "Coins, Target, Zap 아이콘 적용"
+      ]
+    },
     {
       "version": "v1.67",
       "build": 67,
