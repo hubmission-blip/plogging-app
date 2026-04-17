@@ -28,7 +28,7 @@ const BANNERS = [
   },
   {
     id: 4, priority: 4, region: "전국",
-    bg: "from-orange-400 to-orange-500", emoji: "👥",
+    bg: "from-purple-500 to-indigo-500", emoji: "👥",
     title: "그룹 플로깅", sub: "친구와 함께 보너스 포인트!",
     link: "/group", tag: "NEW",
   },

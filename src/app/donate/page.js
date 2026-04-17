@@ -65,21 +65,21 @@ export default function DonatePage() {
       style={{ paddingBottom: "calc(6rem + env(safe-area-inset-bottom, 20px))" }}
     >
       {/* ── 헤더 ── */}
-      <div className="bg-gradient-to-b from-purple-600 to-indigo-600 px-4 pt-12 pb-8 text-white relative overflow-hidden">
+      <div className="bg-gradient-to-b from-purple-500 to-indigo-500 px-4 pt-12 pb-8 text-white relative overflow-hidden">
         {/* 배경 장식 */}
         <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-10 translate-x-10" />
         <div className="absolute bottom-0 left-0 w-28 h-28 bg-white/5 rounded-full translate-y-8 -translate-x-8" />
 
-        <Link href="/" className="flex items-center gap-1.5 text-purple-200 text-sm mb-6 relative">
+        <Link href="/" className="flex items-center gap-1.5 text-indigo-200 text-sm mb-6 relative">
           ← 홈으로
         </Link>
 
         <div className="relative">
-          <p className="text-4xl mb-3">💜</p>
+          <p className="text-4xl mb-3">🧡</p>
           <h1 className="text-2xl font-black leading-tight mb-2">
             오백원의 행복을<br />응원해주세요
           </h1>
-          <p className="text-sm text-purple-200 leading-relaxed">
+          <p className="text-sm text-indigo-200 leading-relaxed">
             플로깅으로 지구를 지키는 이 프로젝트는<br />
             여러분의 후원으로 계속될 수 있습니다
           </p>
@@ -98,22 +98,22 @@ export default function DonatePage() {
           </p>
           <div className="grid grid-cols-2 gap-2 mt-4">
             {PROJECT_STATS.map((s) => (
-              <div key={s.label} className="bg-purple-50 rounded-xl px-3 py-2.5">
-                <s.Icon className="w-5 h-5 text-purple-500" strokeWidth={1.8} />
-                <p className="text-xs text-purple-400 mt-0.5">{s.label}</p>
-                <p className="text-sm font-bold text-purple-700">{s.value}</p>
+              <div key={s.label} className="bg-orange-50 rounded-xl px-3 py-2.5">
+                <s.Icon className="w-5 h-5 text-orange-500" strokeWidth={1.8} />
+                <p className="text-xs text-orange-400 mt-0.5">{s.label}</p>
+                <p className="text-sm font-bold text-orange-700">{s.value}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* ── 후원이 필요한 이유 ── */}
-        <div className="bg-purple-50 rounded-2xl p-4">
-          <p className="text-sm font-bold text-purple-700 mb-2 flex items-center gap-1.5"><Lightbulb className="w-4 h-4" strokeWidth={2} /> 후원금은 이렇게 쓰여요</p>
+        <div className="bg-orange-50 rounded-2xl p-4">
+          <p className="text-sm font-bold text-orange-700 mb-2 flex items-center gap-1.5"><Lightbulb className="w-4 h-4" strokeWidth={2} /> 후원금은 이렇게 쓰여요</p>
           <div className="space-y-2">
             {[
-              { pct: 50, label: "서버·인프라 비용",  color: "bg-purple-500" },
-              { pct: 25, label: "앱 기능 개발",      color: "bg-indigo-400" },
+              { pct: 50, label: "서버·인프라 비용",  color: "bg-orange-500" },
+              { pct: 25, label: "앱 기능 개발",      color: "bg-amber-400" },
               { pct: 15, label: "환경 단체 기부",    color: "bg-green-500"  },
               { pct: 10, label: "운영·홍보",         color: "bg-blue-400"   },
             ].map((item) => (
@@ -139,7 +139,7 @@ export default function DonatePage() {
           <div className="grid grid-cols-2 gap-2">
             {BENEFITS.map((b) => (
               <div key={b.title} className="bg-gray-50 rounded-xl p-3">
-                <b.Icon className="w-5 h-5 text-purple-500 mb-1" strokeWidth={1.8} />
+                <b.Icon className="w-5 h-5 text-orange-500 mb-1" strokeWidth={1.8} />
                 <p className="text-xs font-bold text-gray-700">{b.title}</p>
                 <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">{b.desc}</p>
               </div>
@@ -160,7 +160,7 @@ export default function DonatePage() {
                 onClick={() => { setSelectedAmount(a); if (a.value !== 0) setCustomAmount(""); }}
                 className={`rounded-xl py-2.5 px-1 text-center transition-all border
                   ${selectedAmount?.value === a.value && selectedAmount?.label === a.label
-                    ? "bg-purple-500 text-white border-purple-500 shadow-sm"
+                    ? "bg-orange-500 text-white border-orange-500 shadow-sm"
                     : "bg-gray-50 text-gray-700 border-gray-100"}`}
               >
                 <p className="text-xs font-bold">{a.label}</p>
@@ -171,25 +171,25 @@ export default function DonatePage() {
 
           {/* 직접 입력 */}
           {selectedAmount?.value === 0 && (
-            <div className="flex items-center gap-2 bg-purple-50 rounded-xl px-3 py-2.5 mb-3">
+            <div className="flex items-center gap-2 bg-orange-50 rounded-xl px-3 py-2.5 mb-3">
               <input
                 type="number"
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
                 placeholder="금액을 입력해주세요"
-                className="flex-1 bg-transparent text-sm font-bold text-purple-700 outline-none placeholder:text-purple-300"
+                className="flex-1 bg-transparent text-sm font-bold text-orange-700 outline-none placeholder:text-orange-300"
               />
-              <span className="text-sm text-purple-500 font-bold">원</span>
+              <span className="text-sm text-orange-500 font-bold">원</span>
             </div>
           )}
 
           {/* 선택된 금액 표시 */}
           {finalAmount > 0 && (
-            <div className="bg-purple-50 rounded-xl px-4 py-3 text-center mb-1">
-              <p className="text-xl font-black text-purple-600">
+            <div className="bg-orange-50 rounded-xl px-4 py-3 text-center mb-1">
+              <p className="text-xl font-black text-orange-600">
                 {finalAmount.toLocaleString()}원
               </p>
-              <p className="text-xs text-purple-400 mt-0.5">아래 계좌로 입금해주세요</p>
+              <p className="text-xs text-orange-400 mt-0.5">아래 계좌로 입금해주세요</p>
             </div>
           )}
         </div>
@@ -217,8 +217,8 @@ export default function DonatePage() {
                     ${copiedBank === acc.bank
                       ? "bg-green-500 text-white"
                       : finalAmount > 0
-                        ? "bg-purple-500 text-white"
-                        : "bg-purple-100 text-purple-600"}`}
+                        ? "bg-orange-500 text-white"
+                        : "bg-orange-100 text-orange-600"}`}
                 >
                   {copiedBank === acc.bank
                     ? "✓ 복사됨"
@@ -231,9 +231,9 @@ export default function DonatePage() {
           </div>
 
           {/* 복사 안내 */}
-          <div className="mt-3 bg-purple-50 rounded-xl px-3 py-2.5 flex items-start gap-2">
-            <Info className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" strokeWidth={2} />
-            <p className="text-[11px] text-purple-700 leading-relaxed">
+          <div className="mt-3 bg-orange-50 rounded-xl px-3 py-2.5 flex items-start gap-2">
+            <Info className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" strokeWidth={2} />
+            <p className="text-[11px] text-orange-700 leading-relaxed">
               <strong>금액을 먼저 선택</strong>하고 복사 버튼을 누르면
               <strong> 계좌번호 + 예금주 + 후원금액</strong>이 한 번에 복사돼요.
               인터넷뱅킹 메모란에 그대로 붙여넣기 하시면 편리합니다.
@@ -268,9 +268,9 @@ export default function DonatePage() {
         {/* ── 후원 완료 버튼 ── */}
         <button
           onClick={() => setShowThanks(true)}
-          className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-4 rounded-2xl font-black text-base shadow-sm active:scale-95 transition-transform"
+          className="w-full bg-gradient-to-r from-orange-400 to-orange-500 text-white py-4 rounded-2xl font-black text-base shadow-sm active:scale-95 transition-transform"
         >
-          💜 입금했어요! (후원 완료 알림)
+          🧡 입금했어요! (후원 완료 알림)
         </button>
 
         {/* ── 감사 메시지 모달 ── */}
@@ -283,7 +283,7 @@ export default function DonatePage() {
               className="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <p className="text-5xl mb-3">💜</p>
+              <p className="text-5xl mb-3">🧡</p>
               <h2 className="text-lg font-black text-gray-800 mb-2">감사합니다!</h2>
               <p className="text-sm text-gray-500 leading-relaxed mb-4">
                 후원해 주셔서 진심으로 감사드립니다.<br />
@@ -295,7 +295,7 @@ export default function DonatePage() {
               </p>
               <button
                 onClick={() => setShowThanks(false)}
-                className="w-full bg-purple-500 text-white py-3 rounded-2xl font-bold text-sm"
+                className="w-full bg-orange-500 text-white py-3 rounded-2xl font-bold text-sm"
               >
                 확인
               </button>

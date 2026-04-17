@@ -238,11 +238,11 @@ export default function RewardPage() {
 
       {/* ── 내 보유 포인트 카드 ── */}
       <div className="px-4 pt-3 pb-1">
-        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl px-4 py-3 flex items-center justify-between text-white shadow-sm">
+        <div className="bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl px-4 py-3 flex items-center justify-between text-white shadow-sm">
           <div className="flex items-center gap-2">
             <span className="text-xl">💰</span>
             <div className="text-left">
-              <p className="text-[10px] text-yellow-100 leading-none mb-0.5">내 보유 포인트</p>
+              <p className="text-[10px] text-purple-200 leading-none mb-0.5">내 보유 포인트</p>
               <p className="text-sm font-black text-white">
                 {loading ? "···" : `${myPoints.toLocaleString()} P`}
               </p>
@@ -252,7 +252,7 @@ export default function RewardPage() {
             </span>
           </div>
           <div className="text-right">
-            <p className="text-[10px] text-yellow-100 leading-none mb-0.5">교환 기준</p>
+            <p className="text-[10px] text-purple-200 leading-none mb-0.5">교환 기준</p>
             <p className="text-xs font-bold text-white">1,000P ~</p>
           </div>
         </div>
@@ -273,7 +273,7 @@ export default function RewardPage() {
             onClick={() => setCategory(cat)}
             className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium border transition-colors
               ${category === cat
-                ? "bg-orange-500 text-white border-orange-500"
+                ? "bg-purple-500 text-white border-purple-500"
                 : "bg-white text-gray-500 border-gray-200"
               }`}
           >
@@ -307,7 +307,7 @@ export default function RewardPage() {
               <p className="text-xs text-gray-400 mt-1 leading-snug">{item.desc}</p>
 
               <div className="mt-3 flex items-center justify-between">
-                <span className="text-orange-500 font-black text-base">
+                <span className="text-purple-500 font-black text-base">
                   {item.cost.toLocaleString()}P
                 </span>
                 {!canAfford && (
@@ -344,9 +344,9 @@ export default function RewardPage() {
               <p className="text-sm text-gray-500 mt-1">{selectedItem.desc}</p>
             </div>
 
-            <div className="bg-orange-50 rounded-xl p-4 mb-4 text-center">
+            <div className="bg-purple-50 rounded-xl p-4 mb-4 text-center">
               <p className="text-sm text-gray-500">교환 비용</p>
-              <p className="text-3xl font-black text-orange-500">{selectedItem.cost.toLocaleString()} P</p>
+              <p className="text-3xl font-black text-purple-500">{selectedItem.cost.toLocaleString()} P</p>
               <p className="text-xs text-gray-400 mt-1">
                 교환 후 잔여: {(myPoints - selectedItem.cost).toLocaleString()} P
               </p>
@@ -362,7 +362,7 @@ export default function RewardPage() {
               <button
                 onClick={handleExchange}
                 disabled={exchanging}
-                className="flex-1 bg-orange-500 text-white py-4 rounded-2xl font-bold"
+                className="flex-1 bg-purple-500 text-white py-4 rounded-2xl font-bold"
               >
                 {exchanging ? "처리 중..." : "교환 신청"}
               </button>
