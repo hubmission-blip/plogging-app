@@ -516,7 +516,7 @@ export default function HomePage() {
               className="bg-gradient-to-br from-green-500 to-teal-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
             >
               <span className="text-3xl flex-shrink-0">📲</span>
-              <div>
+              <div className="text-right flex-1">
                 <p className="font-black text-sm leading-tight">홈 화면에 추가</p>
                 <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">앱처럼 빠르게 접근</p>
               </div>
@@ -526,7 +526,7 @@ export default function HomePage() {
               className="bg-gradient-to-br from-sky-500 to-cyan-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
             >
               <span className="text-3xl flex-shrink-0">📤</span>
-              <div>
+              <div className="text-right flex-1">
                 <p className="font-black text-sm leading-tight">친구 초대</p>
                 <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">보너스 포인트 지급!</p>
               </div>
@@ -582,43 +582,47 @@ export default function HomePage() {
           <div className="grid grid-cols-2 gap-2">
             <Link
               href="/carbon"
-              className="bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+              className="bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col gap-2"
             >
-              <span className="text-3xl flex-shrink-0">🌍</span>
+              <span className="text-2xl">🌍</span>
               <div>
                 <p className="font-black text-sm text-white leading-tight">탄소중립포인트</p>
                 <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">에너지 · 녹색생활 · 그린카드</p>
               </div>
+              <span className="text-white/60 text-xs font-bold self-end">바로가기 →</span>
             </Link>
             <Link
               href="/ecomileage"
-              className="bg-gradient-to-br from-sky-500 to-cyan-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+              className="bg-gradient-to-br from-sky-500 to-cyan-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col gap-2"
             >
-              <span className="text-3xl flex-shrink-0">🏙️</span>
+              <span className="text-2xl">🏙️</span>
               <div>
                 <p className="font-black text-sm text-white leading-tight">지자체 에코마일리지</p>
                 <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">전국 17개 시/도 안내</p>
               </div>
+              <span className="text-white/60 text-xs font-bold self-end">바로가기 →</span>
             </Link>
             <Link
               href="/shop"
-              className="bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+              className="bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col gap-2"
             >
-              <span className="text-3xl flex-shrink-0">🛒</span>
+              <span className="text-2xl">🛒</span>
               <div>
                 <p className="font-black text-sm text-white leading-tight">친환경 쇼핑</p>
                 <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">구매 시 포인트 보너스</p>
               </div>
+              <span className="text-white/60 text-xs font-bold self-end">바로가기 →</span>
             </Link>
             <Link
               href="/donate"
-              className="bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+              className="bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col gap-2"
             >
-              <span className="text-3xl flex-shrink-0">💜</span>
+              <span className="text-2xl">💜</span>
               <div>
                 <p className="font-black text-sm text-white leading-tight">프로젝트 후원</p>
                 <p className="text-[11px] text-purple-100 mt-0.5 leading-relaxed">앱 운영을 응원해주세요</p>
               </div>
+              <span className="text-white/60 text-xs font-bold self-end">후원하기 →</span>
             </Link>
           </div>
 
