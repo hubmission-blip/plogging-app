@@ -101,7 +101,7 @@ export default function MapView({
           );
         })}
 
-      {/* ── 현재 플로깅 경로 (굵은 초록) ─────────────────── */}
+      {/* ── 현재 플로깅 경로 (굵은 초록, 최상위 레이어) ──── */}
       {mapLoaded && currentPath.length > 1 && (
         <Polyline
           path={currentPath}
@@ -109,6 +109,7 @@ export default function MapView({
           strokeColor="#16A34A"
           strokeOpacity={1}
           strokeStyle="solid"
+          zIndex={100}
         />
       )}
 
