@@ -474,7 +474,7 @@ export default function HomePage() {
           )}
 
           {/* ── 커뮤니티 현황 ── */}
-          <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-4 text-white shadow">
+          <div className="rounded-2xl p-4 text-white shadow" style={{ backgroundImage: "linear-gradient(to right, #8dc63f, #4cb748)" }}>
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-1.5">
                 <Globe className="w-4 h-4 text-white/80" strokeWidth={1.8} />
@@ -544,7 +544,8 @@ export default function HomePage() {
                   const appStoreId = "6744194047";
                   window.open(`https://apps.apple.com/app/id${appStoreId}?action=write-review`, "_blank");
                 }}
-                className="bg-gradient-to-br from-green-500 to-teal-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+                className="text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+                style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
               >
                 <Star className="w-8 h-8 text-white/90 flex-shrink-0" strokeWidth={1.8} />
                 <div className="text-right flex-1">
@@ -555,7 +556,8 @@ export default function HomePage() {
             ) : (
               <button
                 onClick={handleInstallClick}
-                className="bg-gradient-to-br from-green-500 to-teal-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+                className="text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+                style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
               >
                 <Smartphone className="w-8 h-8 text-white/90 flex-shrink-0" strokeWidth={1.8} />
                 <div className="text-right flex-1">
@@ -632,7 +634,8 @@ export default function HomePage() {
           <div className="grid grid-cols-2 gap-2">
             <Link
               href="/carbon"
-              className="bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between min-h-[120px]"
+              className="rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between min-h-[120px]"
+              style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
             >
               <div className="text-right">
                 <p className="font-black text-sm text-white leading-tight">탄소중립포인트</p>

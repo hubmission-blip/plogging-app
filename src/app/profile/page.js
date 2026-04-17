@@ -203,7 +203,7 @@ export default function ProfilePage() {
 
       {/* ── 프로필 & 레벨 카드 ── */}
       <div className="px-4 pt-3 pb-1">
-        <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl px-4 py-4 text-white shadow-sm">
+        <div className="rounded-2xl px-4 py-4 text-white shadow-sm" style={{ backgroundImage: "linear-gradient(to right, #8dc63f, #4cb748)" }}>
 
           {/* 프로필 정보 행 */}
           <div className="flex items-center gap-3 mb-3">

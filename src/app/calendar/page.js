@@ -616,7 +616,8 @@ export default function CalendarPage() {
       <div className="px-4 pt-3 pb-1">
         <button
           onClick={() => setShowRegionSheet(true)}
-          className="w-full bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl px-4 py-3 flex items-center justify-between text-white shadow-sm active:opacity-90 transition-opacity"
+          className="w-full rounded-2xl px-4 py-3 flex items-center justify-between text-white shadow-sm active:opacity-90 transition-opacity"
+          style={{ backgroundImage: "linear-gradient(to right, #8dc63f, #4cb748)" }}
         >
           <div className="flex items-center gap-2">
             <span className="text-xl">{REGION_COLOR_MAP[selectedRegion]?.icon || "📍"}</span>

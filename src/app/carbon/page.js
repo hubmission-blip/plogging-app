@@ -292,7 +292,7 @@ export default function CarbonPage() {
       style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 20px))" }}
     >
       {/* ── 헤더 ── */}
-      <div className="bg-gradient-to-br from-green-500 to-teal-600 px-4 pt-10 pb-8 text-white relative">
+      <div className="px-4 pt-10 pb-8 text-white relative" style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}>
         <Link href="/" className="absolute top-4 left-4 text-white/80 text-sm flex items-center gap-1">
           ← 홈
         </Link>
@@ -345,7 +345,7 @@ export default function CarbonPage() {
         ))}
 
         {/* ── 중복참여 안내 ── */}
-        <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-4 text-white">
+        <div className="rounded-2xl p-4 text-white" style={{ backgroundImage: "linear-gradient(to right, #8dc63f, #4cb748)" }}>
           <p className="font-black text-sm mb-2">✅ 중복 참여로 혜택 극대화!</p>
           <p className="text-xs text-green-100 leading-relaxed">
             에너지 + 자동차 + 녹색생활 + 그린카드를 모두 활용하면

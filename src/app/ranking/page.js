@@ -142,10 +142,8 @@ function RankingPageInner() {
         <button
           onClick={() => setView("map")}
           className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl shadow-sm transition-all active:opacity-90
-            ${view === "map"
-              ? "bg-gradient-to-r from-teal-500 to-green-500"
-              : "bg-gradient-to-r from-green-500 to-teal-500"
-            }`}
+            `}
+          style={{ backgroundImage: "linear-gradient(to right, #8dc63f, #4cb748)" }}
         >
           <div className="flex items-center gap-2">
             <span className="text-xl">🗺️</span>
