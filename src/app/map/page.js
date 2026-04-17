@@ -1342,7 +1342,7 @@ function MapPageInner() {
       )}
 
       {/* ── 하단 버튼 ────────────────────────────────────── */}
-      <div className="absolute bottom-24 left-0 right-0 flex flex-col items-center gap-2 z-10">
+      <div className="absolute bottom-32 left-0 right-0 flex flex-col items-center gap-2 z-10">
         {!isTracking ? (
           <>
             <p className="text-xs text-white bg-black/40 rounded-full px-3 py-1 flex items-center gap-1">
