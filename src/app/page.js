@@ -110,9 +110,9 @@ const HOW_TO = [
   { step: 1, icon: "📍", title: "위치 허용",      desc: "앱 첫 실행 시 위치 권한을 허용해주세요" },
   { step: 2, icon: "🚶", title: "플로깅 시작",    desc: "지도 페이지에서 시작 버튼을 누르세요" },
   { step: 3, icon: "🏁", title: "플로깅 종료",    desc: "종료 후 거리·포인트가 자동 계산돼요" },
-  { step: 4, icon: "🤖", title: "AI 사진 인증",   desc: "주운 쓰레기를 찍으면 AI가 활동을 확인해요" },
+  { step: 4, icon: "🤖", title: "AI 사진 인증",   desc: "쓰레기 담은 봉투와 함께 인증샷을 찍어요" },
   { step: 5, icon: "🎁", title: "리워드 교환",    desc: "모은 포인트로 다양한 리워드를 받아보세요" },
-  { step: 6, icon: "💚", title: "포인트 후원",    desc: "기아대책·환경정화 등 좋은 일에 기부할 수 있어요" },
+  { step: 6, icon: "💚", title: "포인트 후원",    desc: "기아대책, 환경활동 등 좋은 일에 기부해요" },
 ];
 
 // localStorage 키 (첫 방문 가이드)
@@ -513,25 +513,23 @@ export default function HomePage() {
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={handleInstallClick}
-              className="bg-gradient-to-br from-green-500 to-teal-500 text-white rounded-2xl p-4 flex flex-col items-start gap-2 shadow-sm active:scale-95 transition-transform"
+              className="bg-gradient-to-br from-green-500 to-teal-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
             >
-              <span className="text-2xl">📲</span>
+              <span className="text-3xl flex-shrink-0">📲</span>
               <div>
                 <p className="font-black text-sm leading-tight">홈 화면에 추가</p>
                 <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">앱처럼 빠르게 접근</p>
               </div>
-              <span className="text-white/60 text-xs font-bold self-end">설치하기 →</span>
             </button>
             <button
               onClick={handleShare}
-              className="bg-gradient-to-br from-orange-400 to-pink-500 text-white rounded-2xl p-4 flex flex-col items-start gap-2 shadow-sm active:scale-95 transition-transform"
+              className="bg-gradient-to-br from-sky-500 to-cyan-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
             >
-              <span className="text-2xl">📤</span>
+              <span className="text-3xl flex-shrink-0">📤</span>
               <div>
                 <p className="font-black text-sm leading-tight">친구 초대</p>
-                <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">보너스 포인트 지급!</p>
+                <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">보너스 포인트 지급!</p>
               </div>
-              <span className="text-white/60 text-xs font-bold self-end">초대하기 →</span>
             </button>
           </div>
 
@@ -584,47 +582,43 @@ export default function HomePage() {
           <div className="grid grid-cols-2 gap-2">
             <Link
               href="/carbon"
-              className="bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col gap-2"
+              className="bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
             >
-              <span className="text-2xl">🌍</span>
+              <span className="text-3xl flex-shrink-0">🌍</span>
               <div>
                 <p className="font-black text-sm text-white leading-tight">탄소중립포인트</p>
                 <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">에너지 · 녹색생활 · 그린카드</p>
               </div>
-              <span className="text-white/60 text-xs font-bold self-end">바로가기 →</span>
             </Link>
             <Link
               href="/ecomileage"
-              className="bg-gradient-to-br from-sky-500 to-cyan-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col gap-2"
+              className="bg-gradient-to-br from-sky-500 to-cyan-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
             >
-              <span className="text-2xl">🏙️</span>
+              <span className="text-3xl flex-shrink-0">🏙️</span>
               <div>
                 <p className="font-black text-sm text-white leading-tight">지자체 에코마일리지</p>
                 <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">전국 17개 시/도 안내</p>
               </div>
-              <span className="text-white/60 text-xs font-bold self-end">바로가기 →</span>
             </Link>
             <Link
               href="/shop"
-              className="bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col gap-2"
+              className="bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
             >
-              <span className="text-2xl">🛒</span>
+              <span className="text-3xl flex-shrink-0">🛒</span>
               <div>
                 <p className="font-black text-sm text-white leading-tight">친환경 쇼핑</p>
                 <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">구매 시 포인트 보너스</p>
               </div>
-              <span className="text-white/60 text-xs font-bold self-end">바로가기 →</span>
             </Link>
             <Link
               href="/donate"
-              className="bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col gap-2"
+              className="bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
             >
-              <span className="text-2xl">💜</span>
+              <span className="text-3xl flex-shrink-0">💜</span>
               <div>
                 <p className="font-black text-sm text-white leading-tight">프로젝트 후원</p>
                 <p className="text-[11px] text-purple-100 mt-0.5 leading-relaxed">앱 운영을 응원해주세요</p>
               </div>
-              <span className="text-white/60 text-xs font-bold self-end">후원하기 →</span>
             </Link>
           </div>
 
