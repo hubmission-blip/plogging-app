@@ -1,7 +1,18 @@
 {
-  "version": "v1.60",
-  "build": 60,
+  "version": "v1.61",
+  "build": 61,
   "changelog": [
+    {
+      "version": "v1.61",
+      "build": 61,
+      "date": "2026-04-17",
+      "emoji": "🚀",
+      "title": "서비스 카드 레이아웃 개선",
+      "items": [
+        "이모지 아이콘 좌하단 배치 및 크기 확대",
+        "타이틀/설명 우상단 정렬"
+      ]
+    },
     {
       "version": "v1.60",
       "build": 60,
