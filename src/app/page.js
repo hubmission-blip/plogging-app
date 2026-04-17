@@ -676,11 +676,11 @@ export default function HomePage() {
             </Link>
             <Link
               href="/donate"
-              className="bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between min-h-[120px]"
+              className="bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between min-h-[120px]"
             >
               <div className="text-right">
                 <p className="font-black text-sm text-white leading-tight">프로젝트 후원</p>
-                <p className="text-[11px] text-purple-100 mt-0.5 leading-relaxed">앱 운영을 응원해주세요</p>
+                <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">앱 운영을 응원해주세요</p>
               </div>
               <div className="flex justify-between items-end">
                 <Heart className="w-12 h-12 text-white/80" strokeWidth={1.5} />

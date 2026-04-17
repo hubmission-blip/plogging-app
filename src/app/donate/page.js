@@ -65,12 +65,12 @@ export default function DonatePage() {
       style={{ paddingBottom: "calc(6rem + env(safe-area-inset-bottom, 20px))" }}
     >
       {/* ── 헤더 ── */}
-      <div className="bg-gradient-to-b from-purple-500 to-indigo-500 px-4 pt-12 pb-8 text-white relative overflow-hidden">
+      <div className="bg-gradient-to-b from-orange-400 to-orange-500 px-4 pt-12 pb-8 text-white relative overflow-hidden">
         {/* 배경 장식 */}
         <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-10 translate-x-10" />
         <div className="absolute bottom-0 left-0 w-28 h-28 bg-white/5 rounded-full translate-y-8 -translate-x-8" />
 
-        <Link href="/" className="flex items-center gap-1.5 text-indigo-200 text-sm mb-6 relative">
+        <Link href="/" className="flex items-center gap-1.5 text-orange-100 text-sm mb-6 relative">
           ← 홈으로
         </Link>
 
@@ -79,7 +79,7 @@ export default function DonatePage() {
           <h1 className="text-2xl font-black leading-tight mb-2">
             오백원의 행복을<br />응원해주세요
           </h1>
-          <p className="text-sm text-indigo-200 leading-relaxed">
+          <p className="text-sm text-orange-100 leading-relaxed">
             플로깅으로 지구를 지키는 이 프로젝트는<br />
             여러분의 후원으로 계속될 수 있습니다
           </p>
@@ -268,7 +268,7 @@ export default function DonatePage() {
         {/* ── 후원 완료 버튼 ── */}
         <button
           onClick={() => setShowThanks(true)}
-          className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-4 rounded-2xl font-black text-base shadow-sm active:scale-95 transition-transform"
+          className="w-full bg-gradient-to-r from-orange-400 to-orange-500 text-white py-4 rounded-2xl font-black text-base shadow-sm active:scale-95 transition-transform"
         >
           🧡 입금했어요! (후원 완료 알림)
         </button>
