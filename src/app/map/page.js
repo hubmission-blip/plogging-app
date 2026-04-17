@@ -746,8 +746,9 @@ function MapPageInner() {
   const pendingDataRef = useRef(null);
 
   // ── 앱 설정 (Firestore settings/app) ────────────────────
-  const [speedLimitEnabled,     setSpeedLimitEnabled]     = useState(true);
-  const [aiVerificationEnabled, setAiVerificationEnabled] = useState(true);
+  const [speedLimitEnabled,      setSpeedLimitEnabled]      = useState(true);
+  const [aiVerificationEnabled,  setAiVerificationEnabled]  = useState(true);
+  const [backgroundModeEnabled,  setBackgroundModeEnabled]  = useState(false);
 
   // ── 에코마일리지 연동 상태 ────────────────────────────────
   const [ecomileageLinked, setEcomileageLinked] = useState(false);
@@ -759,9 +760,10 @@ function MapPageInner() {
           const data = snap.data();
           setSpeedLimitEnabled(data.speedLimitEnabled !== false);
           setAiVerificationEnabled(data.aiVerificationEnabled !== false);
+          setBackgroundModeEnabled(data.backgroundModeEnabled === true);
         }
       })
-      .catch(() => {}); // 로드 실패 시 기본값(ON) 유지
+      .catch(() => {}); // 로드 실패 시 기본값 유지
   }, []);
 
   // 에코마일리지 연동 여부 로드
@@ -1229,8 +1231,8 @@ function MapPageInner() {
         </div>
       )}
 
-      {/* ── 백그라운드 전환 경고 배너 ────────────────────── */}
-      {isBackground && isTracking && (
+      {/* ── 백그라운드 전환 경고 배너 (관리자 설정 ON 시만 표시) ── */}
+      {backgroundModeEnabled && isBackground && isTracking && (
         <div className="absolute inset-0 bg-black/70 z-[60] flex flex-col items-center justify-center p-6 text-center">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-xs w-full">
             <SmartphoneIcon className="w-12 h-12 text-gray-700 mx-auto mb-3" strokeWidth={1.5} />
@@ -1334,13 +1336,15 @@ function MapPageInner() {
           </>
         ) : (
           <>
-            <div className={`text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow
-              ${wakeLockActive ? "bg-green-500 text-white" : "bg-gray-200 text-gray-500"}`}>
-              {wakeLockActive
-                ? <><Sun className="w-3.5 h-3.5 inline" strokeWidth={2} /> 화면 켜짐 유지</>
-                : <><AlertTriangleIcon className="w-3.5 h-3.5 inline" strokeWidth={2} /> 화면 꺼짐 주의</>
-              }
-            </div>
+            {backgroundModeEnabled && (
+              <div className={`text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow
+                ${wakeLockActive ? "bg-green-500 text-white" : "bg-gray-200 text-gray-500"}`}>
+                {wakeLockActive
+                  ? <><Sun className="w-3.5 h-3.5 inline" strokeWidth={2} /> 화면 켜짐 유지</>
+                  : <><AlertTriangleIcon className="w-3.5 h-3.5 inline" strokeWidth={2} /> 화면 꺼짐 주의</>
+                }
+              </div>
+            )}
             <button onClick={handleStop}
               className="bg-red-500 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform flex items-center gap-2">
               <FlagIcon className="w-5 h-5" strokeWidth={2} /> 플로깅 종료

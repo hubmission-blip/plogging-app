@@ -277,7 +277,7 @@ export default function AdminPage() {
         setAppSettings(snap.data());
       } else {
         // 기본값 초기화
-        const defaults = { minDistanceKm: 0.5, minDurationSec: 600, minStops: 3, dailyMax: 3, speedLimitEnabled: true, aiVerificationEnabled: true };
+        const defaults = { minDistanceKm: 0.5, minDurationSec: 600, minStops: 3, dailyMax: 3, speedLimitEnabled: true, aiVerificationEnabled: true, backgroundModeEnabled: false };
         setAppSettings(defaults);
       }
     } catch (e) { console.error("설정 로드 실패:", e); }
@@ -1439,6 +1439,40 @@ export default function AdminPage() {
                   >
                     <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200 ${
                       appSettings.aiVerificationEnabled ? "translate-x-7" : "translate-x-0"
+                    }`} />
+                  </button>
+                </div>
+              </div>
+
+              {/* ── 백그라운드 실행 토글 ── */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <SectionTitle>📱 백그라운드 실행 모드</SectionTitle>
+                <p className="text-xs text-gray-400 mb-4">
+                  플로깅 중 화면을 꺼도 GPS 추적이 계속되는 기능입니다.<br/>
+                  현재 웹앱(PWA)에서는 Wake Lock(화면 꺼짐 방지)만 지원되며,<br/>
+                  <span className="text-blue-500 font-medium">네이티브 앱 전환 시 완전한 백그라운드 실행이 가능합니다.</span><br/>
+                  <span className="text-orange-400 font-medium">※ OFF 시 플로깅 화면에 백그라운드 관련 UI가 숨겨집니다</span>
+                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-gray-700">백그라운드 실행</p>
+                    <p className={`text-xs mt-0.5 font-medium ${appSettings.backgroundModeEnabled ? "text-green-500" : "text-red-400"}`}>
+                      {appSettings.backgroundModeEnabled
+                        ? "✅ 현재 ON — 화면 꺼짐 방지 + 백그라운드 안내 표시"
+                        : "⛔ 현재 OFF — 네이티브 앱 전환 시 활성화 예정"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setAppSettings((prev) => ({ ...prev, backgroundModeEnabled: !prev.backgroundModeEnabled }));
+                      setSettingsDirty(true);
+                    }}
+                    className={`relative w-14 h-7 rounded-full transition-colors duration-200 focus:outline-none ${
+                      appSettings.backgroundModeEnabled ? "bg-green-500" : "bg-gray-300"
+                    }`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200 ${
+                      appSettings.backgroundModeEnabled ? "translate-x-7" : "translate-x-0"
                     }`} />
                   </button>
                 </div>
