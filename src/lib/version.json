@@ -1,7 +1,17 @@
 {
-  "version": "v1.63",
-  "build": 63,
+  "version": "v1.64",
+  "build": 64,
   "changelog": [
+    {
+      "version": "v1.64",
+      "build": 64,
+      "date": "2026-04-17",
+      "emoji": "🔧",
+      "title": "서비스 카드 아이콘 단색 SVG로 교체",
+      "items": [
+        "lucide-react 아이콘 적용"
+      ]
+    },
     {
       "version": "v1.63",
       "build": 63,

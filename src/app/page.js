@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { Recycle, Clover, Building2, Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
 import CharacterGuide from "@/components/CharacterGuide";
@@ -623,7 +624,7 @@ export default function HomePage() {
                 <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">에너지 · 녹색생활 · 그린카드</p>
               </div>
               <div className="flex justify-between items-end">
-                <span className="text-4xl">🌍</span>
+                <Recycle className="w-10 h-10 text-white/80" strokeWidth={1.5} />
                 <span className="text-white/60 text-xs font-bold">바로가기 →</span>
               </div>
             </Link>
@@ -636,7 +637,7 @@ export default function HomePage() {
                 <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">전국 17개 시/도 안내</p>
               </div>
               <div className="flex justify-between items-end">
-                <span className="text-4xl">🏙️</span>
+                <Clover className="w-10 h-10 text-white/80" strokeWidth={1.5} />
                 <span className="text-white/60 text-xs font-bold">바로가기 →</span>
               </div>
             </Link>
@@ -649,7 +650,7 @@ export default function HomePage() {
                 <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">구매 시 포인트 보너스</p>
               </div>
               <div className="flex justify-between items-end">
-                <span className="text-4xl">🛒</span>
+                <Building2 className="w-10 h-10 text-white/80" strokeWidth={1.5} />
                 <span className="text-white/60 text-xs font-bold">바로가기 →</span>
               </div>
             </Link>
@@ -662,7 +663,7 @@ export default function HomePage() {
                 <p className="text-[11px] text-purple-100 mt-0.5 leading-relaxed">앱 운영을 응원해주세요</p>
               </div>
               <div className="flex justify-between items-end">
-                <span className="text-4xl">💜</span>
+                <Heart className="w-10 h-10 text-white/80" strokeWidth={1.5} />
                 <span className="text-white/60 text-xs font-bold">후원하기 →</span>
               </div>
             </Link>
