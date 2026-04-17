@@ -16,8 +16,9 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'automatic',
     webContentsDebuggingEnabled: true,
-    // ✅ WKWebView UA에 Safari 포함 → Google OAuth가 임베디드 브라우저로 차단 안 함
-    overrideUserAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+    // ✅ 기본 WKWebView UA 유지 + Safari 키워드 추가
+    //    Google OAuth 임베디드 브라우저 차단 우회 & 카카오맵 타일 정상 로드
+    appendUserAgent: 'Safari/604.1',
   },
 
   plugins: {

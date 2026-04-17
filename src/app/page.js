@@ -9,6 +9,14 @@ import versionData from "@/lib/version.json";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, getDocs, getCountFromServer } from "firebase/firestore";
 
+// Capacitor 네이티브 환경 감지
+const isCapacitorNative = () => {
+  try {
+    return typeof window !== "undefined" &&
+      !!(window?.Capacitor?.isNativePlatform?.());
+  } catch { return false; }
+};
+
 // ─── PWA 홈화면 추가 안내 모달 ───────────────────────────────
 function InstallModal({ onClose }) {
   // iOS Safari 감지
@@ -516,18 +524,35 @@ export default function HomePage() {
             </button>
           </div>
 
-          {/* ── 홈 화면에 추가 + 친구 초대 (나란히) ── */}
+          {/* ── 홈 화면에 추가(웹) / 앱 평가하기(네이티브) + 친구 초대 ── */}
           <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={handleInstallClick}
-              className="bg-gradient-to-br from-green-500 to-teal-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
-            >
-              <span className="text-3xl flex-shrink-0">📲</span>
-              <div className="text-right flex-1">
-                <p className="font-black text-sm leading-tight">홈 화면에 추가</p>
-                <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">앱처럼 빠르게 접근</p>
-              </div>
-            </button>
+            {isCapacitorNative() ? (
+              <button
+                onClick={() => {
+                  // 앱스토어 리뷰 페이지 열기 (앱스토어 ID 확정 후 교체)
+                  const appStoreId = "6744194047";
+                  window.open(`https://apps.apple.com/app/id${appStoreId}?action=write-review`, "_blank");
+                }}
+                className="bg-gradient-to-br from-yellow-400 to-orange-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+              >
+                <span className="text-3xl flex-shrink-0">⭐</span>
+                <div className="text-right flex-1">
+                  <p className="font-black text-sm leading-tight">앱 평가하기</p>
+                  <p className="text-[11px] text-yellow-100 mt-0.5 leading-relaxed">리뷰를 남겨주세요!</p>
+                </div>
+              </button>
+            ) : (
+              <button
+                onClick={handleInstallClick}
+                className="bg-gradient-to-br from-green-500 to-teal-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+              >
+                <span className="text-3xl flex-shrink-0">📲</span>
+                <div className="text-right flex-1">
+                  <p className="font-black text-sm leading-tight">홈 화면에 추가</p>
+                  <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">앱처럼 빠르게 접근</p>
+                </div>
+              </button>
+            )}
             <button
               onClick={handleShare}
               className="bg-gradient-to-br from-sky-500 to-cyan-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"

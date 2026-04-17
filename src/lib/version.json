@@ -1,7 +1,17 @@
 {
-  "version": "v1.59",
-  "build": 59,
+  "version": "v1.60",
+  "build": 60,
   "changelog": [
+    {
+      "version": "v1.60",
+      "build": 60,
+      "date": "2026-04-17",
+      "emoji": "🛠️",
+      "title": "네이티브앱 앱평가하기 버튼 추가",
+      "items": [
+        "웹앱은 홈화면추가, 네이티브앱은 앱평가하기 버튼 분기 처리"
+      ]
+    },
     {
       "version": "v1.59",
       "build": 59,
