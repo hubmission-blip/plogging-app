@@ -1,7 +1,18 @@
 {
-  "version": "v1.75",
-  "build": 75,
+  "version": "v1.76",
+  "build": 76,
   "changelog": [
+    {
+      "version": "v1.76",
+      "build": 76,
+      "date": "2026-04-17",
+      "emoji": "🌿",
+      "title": "전체 페이지 이모지→SVG 아이콘 통일 및 브랜드 컬러 적용",
+      "items": [
+        "lucide-react 단색 아이콘",
+        "그라데이션 #8dc63f→#4cb748 통일"
+      ]
+    },
     {
       "version": "v1.75",
       "build": 75,
