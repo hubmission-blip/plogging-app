@@ -1,7 +1,20 @@
 {
-  "version": "v1.55",
-  "build": 55,
+  "version": "v1.56",
+  "build": 56,
   "changelog": [
+    {
+      "version": "v1.56",
+      "build": 56,
+      "date": "2026-04-17",
+      "emoji": "🔐",
+      "title": "구글 로그인 복구 및 비로그인 통계 표시 수정",
+      "items": [
+        "구글 로그인 OAuth redirect URI 불일치 수정 (www/non-www 대응)",
+        "Vercel 환경변수 연동으로 Google Client ID 정상 반영",
+        "비로그인 상태에서도 커뮤니티 통계(가입자/이동거리) 표시되도록 개선",
+        "Firestore 보안 규칙 최적화 (공개 읽기 허용)"
+      ]
+    },
     {
       "version": "v1.55",
       "build": 55,

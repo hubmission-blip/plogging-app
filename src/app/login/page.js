@@ -139,8 +139,8 @@ export default function LoginPage() {
 
     const isNative = isCapacitorNative();
     const redirectUri = isNative
-      ? "https://happy500.kr/auth/google"
-      : `${window.location.origin}/auth/google`;
+      ? "https://happy500.kr/auth/google/"
+      : `${window.location.origin}/auth/google/`;
 
     const params = new URLSearchParams({
       client_id: clientId,
