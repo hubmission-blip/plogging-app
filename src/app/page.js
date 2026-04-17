@@ -335,17 +335,19 @@ export default function HomePage() {
         {/* ── 상단 헤더 ── */}
         <div className="bg-gray-50 px-4 pt-4 pb-1">
           <div className="flex justify-between items-center">
-            {/* 로고 이미지 — 로드 실패 시 텍스트 폴백 */}
-            {logoError ? (
-              <p className="text-lg font-black text-green-600">🌿 오백원의 행복</p>
-            ) : (
-              <img
-                src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
-                alt="오백원의 행복"
-                className="h-9 w-auto object-contain"
-                onError={() => setLogoError(true)}
-              />
-            )}
+            {/* 로고 이미지 — 클릭 시 홈으로 이동, 로드 실패 시 텍스트 폴백 */}
+            <Link href="/">
+              {logoError ? (
+                <p className="text-lg font-black text-green-600">🌿 오백원의 행복</p>
+              ) : (
+                <img
+                  src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+                  alt="오백원의 행복"
+                  className="h-9 w-auto object-contain"
+                  onError={() => setLogoError(true)}
+                />
+              )}
+            </Link>
             {user ? (
               <Link href="/profile">
                 <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-lg overflow-hidden">

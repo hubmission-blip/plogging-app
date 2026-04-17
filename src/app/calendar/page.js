@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
@@ -598,12 +599,14 @@ export default function CalendarPage() {
     >
       {/* ── 헤더 ── */}
       <div className="bg-gray-50 px-4 pt-4 pb-1 flex justify-between items-center">
-        {/* 로고 */}
-        <img
-          src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
-          alt="오백원의 행복"
-          className="h-9 w-auto object-contain"
-        />
+        {/* 로고 — 클릭 시 홈 */}
+        <Link href="/">
+          <img
+            src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+            alt="오백원의 행복"
+            className="h-9 w-auto object-contain"
+          />
+        </Link>
         {/* 페이지 타이틀 */}
         <p className="text-sm font-black text-gray-700">📅 플로깅 캘린더</p>
       </div>

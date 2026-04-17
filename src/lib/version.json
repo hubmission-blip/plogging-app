@@ -1,7 +1,17 @@
 {
-  "version": "v1.62",
-  "build": 62,
+  "version": "v1.63",
+  "build": 63,
   "changelog": [
+    {
+      "version": "v1.63",
+      "build": 63,
+      "date": "2026-04-17",
+      "emoji": "🎯",
+      "title": "로고 클릭 시 홈 이동 기능",
+      "items": [
+        "전체 페이지 상단 로고에 홈 링크 적용"
+      ]
+    },
     {
       "version": "v1.62",
       "build": 62,

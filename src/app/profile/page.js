@@ -185,11 +185,13 @@ export default function ProfilePage() {
     >
       {/* ── 헤더 ── */}
       <div className="bg-gray-50 px-4 pt-4 pb-1 flex justify-between items-center">
-        <img
-          src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
-          alt="오백원의 행복"
-          className="h-9 w-auto object-contain"
-        />
+        <Link href="/">
+          <img
+            src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+            alt="오백원의 행복"
+            className="h-9 w-auto object-contain"
+          />
+        </Link>
         <div className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-lg overflow-hidden shadow-sm">
           {stats.photoURL
             ? <img src={stats.photoURL} alt="프로필" className="w-full h-full object-cover" />

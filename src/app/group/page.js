@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
@@ -519,8 +520,10 @@ export default function GroupPage() {
 
       {/* ── 헤더 ── */}
       <div className="bg-gray-50 px-4 pt-4 pb-1 flex justify-between items-center">
-        <img src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
-          alt="오백원의 행복" className="h-9 w-auto object-contain" />
+        <Link href="/">
+          <img src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+            alt="오백원의 행복" className="h-9 w-auto object-contain" />
+        </Link>
         <p className="text-sm font-black text-gray-700">👥 그룹 플로깅</p>
       </div>
 

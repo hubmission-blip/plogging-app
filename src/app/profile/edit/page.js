@@ -181,11 +181,13 @@ export default function ProfileEditPage() {
     >
       {/* ── 헤더 ── */}
       <div className="bg-gray-50 px-4 pt-4 pb-1 flex justify-between items-center">
-        <img
-          src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
-          alt="오백원의 행복"
-          className="h-9 w-auto object-contain"
-        />
+        <Link href="/">
+          <img
+            src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+            alt="오백원의 행복"
+            className="h-9 w-auto object-contain"
+          />
+        </Link>
         <p className="text-sm font-black text-gray-700">✏️ 내정보 수정</p>
       </div>
 
