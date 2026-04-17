@@ -418,7 +418,7 @@ export default function HomePage() {
                       </div>
                     </button>
                     {isExpanded && (
-                      <p className="text-xs text-gray-800 mt-2 leading-relaxed whitespace-pre-line">
+                      <p className="text-xs text-gray-800 mt-2 leading-relaxed whitespace-pre-line" style={{ paddingLeft: "calc(1.5rem + 20px + 8px)" }}>
                         {notice.content}
                       </p>
                     )}
