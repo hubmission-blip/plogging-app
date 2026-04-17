@@ -9,6 +9,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc, increment, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { Recycle } from "lucide-react";
 
 // 추천인 코드(8자리)로 추천인 UID 조회
 async function resolveReferrer(refCode) {
@@ -191,7 +192,7 @@ export default function RegisterPage() {
       <div className="bg-white rounded-3xl shadow-xl p-6 w-full max-w-sm">
         {/* 로고 */}
         <div className="text-center mb-6">
-          <div className="text-4xl mb-2">🌿</div>
+          <Recycle className="w-10 h-10 mx-auto mb-1" strokeWidth={1.8} style={{ color: "#6B7F3B" }} />
           <h1 className="text-xl font-black text-green-700">오백원의 행복</h1>
           <p className="text-gray-400 text-sm mt-1">회원가입</p>
         </div>
@@ -332,7 +333,7 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-base mt-2 disabled:opacity-60"
           >
-            {loading ? "가입 중..." : "🌿 회원가입 완료"}
+            {loading ? "가입 중..." : "회원가입 완료"}
           </button>
         </form>
 

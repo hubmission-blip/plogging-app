@@ -10,6 +10,7 @@ import {
   GoogleAuthProvider,
 } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
+import { Recycle } from "lucide-react";
 import { doc, setDoc, getDoc, updateDoc, increment, collection, query, where, getDocs, serverTimestamp } from "firebase/firestore";
 
 // Capacitor 네이티브 환경 감지
@@ -227,7 +228,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-500 to-green-400 flex flex-col items-center justify-center p-6">
       <div className="text-center mb-8">
-        <div className="text-5xl mb-2">🌿</div>
+        <Recycle className="w-12 h-12 mx-auto mb-1" strokeWidth={1.8} style={{ color: "#6B7F3B" }} />
         <h1 className="text-2xl font-bold text-white">오백원의 행복</h1>
         <p className="text-green-100 text-sm mt-1">즐거운 플로깅, 깨끗한 지구</p>
       </div>

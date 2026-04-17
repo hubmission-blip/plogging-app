@@ -1327,7 +1327,8 @@ function MapPageInner() {
               <Sun className="w-3.5 h-3.5 inline" strokeWidth={2} /> 시작 시 화면 꺼짐이 자동으로 방지돼요
             </p>
             <button onClick={() => setShowReadyCheck(true)}
-              className="bg-green-500 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform flex items-center gap-2">
+              className="text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform flex items-center gap-2"
+              style={{ backgroundColor: "#8dc63f" }}>
               <FootprintsIcon className="w-5 h-5" strokeWidth={2} /> 플로깅 시작
             </button>
           </>

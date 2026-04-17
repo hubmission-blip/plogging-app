@@ -593,11 +593,11 @@ export default function HomePage() {
               {HOW_TO.map((item) => (
                 <div key={item.step} className="bg-white rounded-2xl p-4 shadow-sm flex flex-col">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-green-500">STEP {item.step}</span>
+                    <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>STEP {item.step}</span>
                     <span className="text-sm font-bold text-gray-900">{item.title}</span>
                   </div>
                   <div className="flex items-start gap-2 mt-2">
-                    <item.Icon className="w-6 h-6 text-green-500 flex-shrink-0" strokeWidth={1.8} />
+                    <item.Icon className="w-6 h-6 flex-shrink-0" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
                     <p className="text-xs text-gray-500 leading-relaxed pt-1">{item.desc}</p>
                   </div>
                 </div>
@@ -609,9 +609,9 @@ export default function HomePage() {
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 shadow-sm">
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-1.5">
-                <Coins className="w-4 h-4 text-green-600" strokeWidth={1.8} />
-                <Target className="w-4 h-4 text-green-600" strokeWidth={1.8} />
-                <Zap className="w-4 h-4 text-green-600" strokeWidth={1.8} />
+                <Coins className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
+                <Target className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
+                <Zap className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
               </div>
               <h2 className="font-black text-sm text-gray-700">포인트 적립 기준</h2>
             </div>
@@ -624,7 +624,7 @@ export default function HomePage() {
               ].map((item) => (
                 <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/60 last:border-0">
                   <span className="text-xs text-gray-500">{item.label}</span>
-                  <span className="text-sm font-bold text-green-600">{item.point}</span>
+                  <span className="text-sm font-bold" style={{ color: "#8dc63f" }}>{item.point}</span>
                 </div>
               ))}
             </div>
@@ -691,7 +691,7 @@ export default function HomePage() {
           {(() => {
             const latest = versionData.changelog[0];
             return (
-              <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-green-400">
+              <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4" style={{ borderLeftColor: "#8dc63f" }}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
                     <RefreshCw className="w-4 h-4 text-green-500" strokeWidth={1.8} />

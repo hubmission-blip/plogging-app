@@ -32,18 +32,20 @@ export default function BottomNav() {
               key={item.href}
               href={item.href}
               className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors
-                ${isActive ? "text-green-600" : "text-gray-400"}`}
+                ${isActive ? "" : "text-gray-400"}`}
+              style={isActive ? { color: "#8dc63f" } : undefined}
             >
               <item.Icon className="w-5 h-5" strokeWidth={isActive ? 2.2 : 1.8} />
               <span
                 className={`text-xs font-medium ${
-                  isActive ? "text-green-600" : "text-gray-400"
+                  isActive ? "" : "text-gray-400"
                 }`}
+                style={isActive ? { color: "#8dc63f" } : undefined}
               >
                 {item.label}
               </span>
               {isActive && (
-                <span className="absolute bottom-0 w-1 h-1 rounded-full bg-green-500" />
+                <span className="absolute bottom-0 w-1 h-1 rounded-full" style={{ backgroundColor: "#8dc63f" }} />
               )}
             </Link>
           );
