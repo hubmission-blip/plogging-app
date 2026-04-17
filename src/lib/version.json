@@ -1,7 +1,17 @@
 {
-  "version": "v1.66",
-  "build": 66,
+  "version": "v1.67",
+  "build": 67,
   "changelog": [
+    {
+      "version": "v1.67",
+      "build": 67,
+      "date": "2026-04-17",
+      "emoji": "🏆",
+      "title": "이용방법 아이콘 단색 SVG로 교체",
+      "items": [
+        "Navigation, Footprints, Flag, ScanEye, Trophy, HeartHandshake 적용"
+      ]
+    },
     {
       "version": "v1.66",
       "build": 66,

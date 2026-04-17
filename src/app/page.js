@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, BookOpen, Star, Smartphone, UserPlus } from "lucide-react";
+import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, BookOpen, Star, Smartphone, UserPlus, Navigation, Footprints, Flag, ScanEye, Trophy, HeartHandshake } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
 import CharacterGuide from "@/components/CharacterGuide";
@@ -116,12 +116,12 @@ function InstallModal({ onClose }) {
 }
 
 const HOW_TO = [
-  { step: 1, icon: "📍", title: "위치 허용",      desc: "앱 첫 실행 시 위치 권한을 허용해주세요" },
-  { step: 2, icon: "🚶", title: "플로깅 시작",    desc: "지도 페이지에서 시작 버튼을 누르세요" },
-  { step: 3, icon: "🏁", title: "플로깅 종료",    desc: "종료 후 거리·포인트가 자동 계산돼요" },
-  { step: 4, icon: "🤖", title: "AI 사진 인증",   desc: "쓰레기 담은 봉투와 함께 인증샷을 찍어요" },
-  { step: 5, icon: "🎁", title: "리워드 교환",    desc: "모은 포인트로 다양한 리워드를 받아보세요" },
-  { step: 6, icon: "💚", title: "포인트 후원",    desc: "기아대책, 환경활동 등 좋은 일에 기부해요" },
+  { step: 1, Icon: Navigation,      title: "위치 허용",      desc: "앱 첫 실행 시 위치 권한을 허용해주세요" },
+  { step: 2, Icon: Footprints,      title: "플로깅 시작",    desc: "지도 페이지에서 시작 버튼을 누르세요" },
+  { step: 3, Icon: Flag,            title: "플로깅 종료",    desc: "종료 후 거리·포인트가 자동 계산돼요" },
+  { step: 4, Icon: ScanEye,         title: "AI 사진 인증",   desc: "쓰레기 담은 봉투와 함께 인증샷을 찍어요" },
+  { step: 5, Icon: Trophy,          title: "리워드 교환",    desc: "모은 포인트로 다양한 리워드를 받아보세요" },
+  { step: 6, Icon: HeartHandshake,  title: "포인트 후원",    desc: "기아대책, 환경활동 등 좋은 일에 기부해요" },
 ];
 
 // localStorage 키 (첫 방문 가이드)
@@ -587,7 +587,7 @@ export default function HomePage() {
                     <span className="text-sm font-bold text-gray-900">{item.title}</span>
                   </div>
                   <div className="flex items-start gap-2 mt-2">
-                    <span className="text-2xl flex-shrink-0">{item.icon}</span>
+                    <item.Icon className="w-6 h-6 text-green-500 flex-shrink-0" strokeWidth={1.8} />
                     <p className="text-xs text-gray-500 leading-relaxed pt-1">{item.desc}</p>
                   </div>
                 </div>
