@@ -49,7 +49,7 @@ function ClubForm({ form, onChange, loading, onSubmit, submitLabel, onCancel }) 
                 onClick={() => onChange("emoji", e)}
                 className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all
                   ${form.emoji === e
-                    ? "bg-indigo-100 border-2 border-indigo-400 scale-110"
+                    ? "bg-sky-100 border-2 border-sky-400 scale-110"
                     : "bg-gray-50 border border-gray-200"}`}
               >{e}</button>
             ))}
@@ -64,7 +64,7 @@ function ClubForm({ form, onChange, loading, onSubmit, submitLabel, onCancel }) 
           <input value={form.name}
             onChange={(e) => onChange("name", e.target.value)}
             placeholder="예: 초록발자국 러닝 클럽" maxLength={20}
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-sky-400"
           />
         </div>
 
@@ -74,7 +74,7 @@ function ClubForm({ form, onChange, loading, onSubmit, submitLabel, onCancel }) 
           <textarea value={form.description}
             onChange={(e) => onChange("description", e.target.value)}
             placeholder="동아리를 소개해주세요 (선택)" maxLength={100} rows={2}
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400 resize-none"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-sky-400 resize-none"
           />
         </div>
 
@@ -83,7 +83,7 @@ function ClubForm({ form, onChange, loading, onSubmit, submitLabel, onCancel }) 
           <label className="text-xs font-bold text-gray-500 mb-2 block">📍 활동 지역</label>
           <select value={form.region}
             onChange={(e) => onChange("region", e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400 bg-white mb-2"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-sky-400 bg-white mb-2"
           >
             <option value="">지역 선택 (선택사항)</option>
             {REGIONS.map((r) => (
@@ -94,7 +94,7 @@ function ClubForm({ form, onChange, loading, onSubmit, submitLabel, onCancel }) 
             <input value={form.district}
               onChange={(e) => onChange("district", e.target.value)}
               placeholder="시·군·구 입력 (예: 마포구)" maxLength={20}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-sky-400"
             />
           )}
         </div>
@@ -126,7 +126,7 @@ function ClubForm({ form, onChange, loading, onSubmit, submitLabel, onCancel }) 
             <button type="button"
               onClick={() => onChange("hasSchedule", !form.hasSchedule)}
               className={`relative h-7 rounded-full transition-colors flex-shrink-0 ml-4 focus:outline-none
-                ${form.hasSchedule ? "bg-indigo-500" : "bg-gray-300"}`}
+                ${form.hasSchedule ? "bg-cyan-500" : "bg-gray-300"}`}
               style={{ width: "3.25rem" }}
             >
               <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform
@@ -134,26 +134,26 @@ function ClubForm({ form, onChange, loading, onSubmit, submitLabel, onCancel }) 
             </button>
           </div>
           {form.hasSchedule && (
-            <div className="bg-indigo-50 rounded-xl p-4 space-y-3">
+            <div className="bg-sky-50 rounded-xl p-4 space-y-3">
               <div>
-                <label className="text-xs text-indigo-600 font-bold mb-2 block">요일</label>
+                <label className="text-xs text-sky-600 font-bold mb-2 block">요일</label>
                 <div className="flex flex-wrap gap-1.5">
                   {DAYS.map((day) => (
                     <button key={day} type="button"
                       onClick={() => onChange("scheduleDay", day)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all
                         ${form.scheduleDay === day
-                          ? "bg-indigo-500 text-white shadow-sm"
+                          ? "bg-cyan-500 text-white shadow-sm"
                           : "bg-white text-gray-500 border border-gray-200"}`}
                     >{day.replace("요일", "")}</button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="text-xs text-indigo-600 font-bold mb-1 block">시간</label>
+                <label className="text-xs text-sky-600 font-bold mb-1 block">시간</label>
                 <input type="time" value={form.scheduleTime}
                   onChange={(e) => onChange("scheduleTime", e.target.value)}
-                  className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400"
+                  className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-400"
                 />
               </div>
             </div>
@@ -170,7 +170,7 @@ function ClubForm({ form, onChange, loading, onSubmit, submitLabel, onCancel }) 
         )}
         <button type="button" onClick={onSubmit}
           disabled={loading || !form.name.trim()}
-          className="flex-1 bg-indigo-500 text-white py-4 rounded-2xl font-bold text-base shadow-md disabled:opacity-40 active:scale-95 transition-transform">
+          className="flex-1 bg-cyan-500 text-white py-4 rounded-2xl font-bold text-base shadow-md disabled:opacity-40 active:scale-95 transition-transform">
           {loading ? "저장 중..." : submitLabel}
         </button>
       </div>
@@ -533,12 +533,12 @@ export default function GroupPage() {
           <div className="flex bg-white rounded-2xl p-1 shadow-sm gap-1">
             <button onClick={() => { setTab("oneTime"); setError(""); }}
               className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all
-                ${tab === "oneTime" ? "bg-purple-500 text-white shadow" : "text-gray-400"}`}>
+                ${tab === "oneTime" ? "bg-sky-500 text-white shadow" : "text-gray-400"}`}>
               ⚡ 1회성 그룹
             </button>
             <button onClick={() => { setTab("club"); setError(""); }}
               className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all
-                ${tab === "club" ? "bg-indigo-500 text-white shadow" : "text-gray-400"}`}>
+                ${tab === "club" ? "bg-cyan-500 text-white shadow" : "text-gray-400"}`}>
               🏅 플로깅 동아리
             </button>
           </div>
@@ -550,17 +550,17 @@ export default function GroupPage() {
         {/* ═══════════ ⚡ 1회성 그룹 홈 ═══════════ */}
         {mode === "home" && tab === "oneTime" && (
           <>
-            <div className="bg-purple-50 rounded-2xl p-4 border border-purple-100">
-              <h2 className="font-bold text-purple-700 mb-2">🎁 그룹 보너스 포인트</h2>
+            <div className="bg-sky-50 rounded-2xl p-4 border border-sky-100">
+              <h2 className="font-bold text-sky-700 mb-2">🎁 그룹 보너스 포인트</h2>
               {[{ s:"2명", b:"+10P" },{ s:"3명", b:"+15P" },{ s:"5명", b:"+25P" },{ s:"10명", b:"+50P" }].map(({s,b}) => (
-                <div key={s} className="flex justify-between text-sm py-1 border-b border-purple-100 last:border-0">
+                <div key={s} className="flex justify-between text-sm py-1 border-b border-sky-100 last:border-0">
                   <span className="text-gray-600">그룹 {s}</span>
-                  <span className="font-bold text-purple-600">{b} (인원 × 5P)</span>
+                  <span className="font-bold text-sky-600">{b} (인원 × 5P)</span>
                 </div>
               ))}
             </div>
             <button onClick={handleCreate} disabled={loading}
-              className="w-full bg-purple-500 text-white py-5 rounded-2xl shadow-md font-bold text-lg active:scale-95 transition-transform">
+              className="w-full bg-sky-500 text-white py-5 rounded-2xl shadow-md font-bold text-lg active:scale-95 transition-transform">
               {loading ? "생성 중..." : "🚀 그룹 방 만들기"}
             </button>
             <div className="bg-white rounded-2xl p-4 shadow-sm">
@@ -568,9 +568,9 @@ export default function GroupPage() {
               <div className="flex gap-2">
                 <input value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                   placeholder="6자리 코드 입력" maxLength={6}
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-purple-400" />
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-sky-400" />
                 <button onClick={handleJoin} disabled={loading || joinCode.length < 6}
-                  className="bg-purple-500 text-white px-5 rounded-xl font-bold disabled:opacity-40">참여</button>
+                  className="bg-sky-500 text-white px-5 rounded-xl font-bold disabled:opacity-40">참여</button>
               </div>
               {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
             </div>
@@ -596,16 +596,16 @@ export default function GroupPage() {
                       setClubHistory([]);
                       fetchClubHistory(club.code);
                     }}
-                    className="w-full bg-white rounded-2xl p-4 shadow-sm text-left active:bg-indigo-50 transition-colors">
+                    className="w-full bg-white rounded-2xl p-4 shadow-sm text-left active:bg-sky-50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="text-3xl w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <div className="text-3xl w-12 h-12 bg-sky-50 rounded-xl flex items-center justify-center flex-shrink-0">
                         {club.emoji}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-bold text-gray-800 truncate">{club.name}</p>
                           {club.hostUid === user.uid && (
-                            <span className="text-xs bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded flex-shrink-0">동아리장</span>
+                            <span className="text-xs bg-sky-100 text-sky-600 px-1.5 py-0.5 rounded flex-shrink-0">동아리장</span>
                           )}
                         </div>
                         <p className="text-xs text-gray-400 mt-0.5">
@@ -623,14 +623,14 @@ export default function GroupPage() {
                 ))}
               </div>
             ) : (
-              <div className="bg-indigo-50 rounded-2xl p-5 text-center border border-indigo-100">
+              <div className="bg-sky-50 rounded-2xl p-5 text-center border border-sky-100">
                 <div className="text-4xl mb-2">🏅</div>
-                <p className="text-indigo-700 font-bold text-sm">아직 가입된 동아리가 없어요</p>
-                <p className="text-indigo-400 text-xs mt-1">동아리를 만들거나 초대 코드로 참여해보세요</p>
+                <p className="text-sky-700 font-bold text-sm">아직 가입된 동아리가 없어요</p>
+                <p className="text-sky-400 text-xs mt-1">동아리를 만들거나 초대 코드로 참여해보세요</p>
               </div>
             )}
             <button onClick={() => { setMode("createClub"); setError(""); }}
-              className="w-full bg-indigo-500 text-white py-4 rounded-2xl shadow-md font-bold text-base active:scale-95 transition-transform">
+              className="w-full bg-cyan-500 text-white py-4 rounded-2xl shadow-md font-bold text-base active:scale-95 transition-transform">
               🏅 새 동아리 만들기
             </button>
             <div className="bg-white rounded-2xl p-4 shadow-sm">
@@ -638,9 +638,9 @@ export default function GroupPage() {
               <div className="flex gap-2">
                 <input value={clubJoinCode} onChange={(e) => setClubJoinCode(e.target.value.toUpperCase())}
                   placeholder="6자리 코드 입력" maxLength={6}
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-indigo-400" />
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-sky-400" />
                 <button onClick={handleJoinClub} disabled={loading || clubJoinCode.length < 6}
-                  className="bg-indigo-500 text-white px-5 rounded-xl font-bold disabled:opacity-40">참여</button>
+                  className="bg-cyan-500 text-white px-5 rounded-xl font-bold disabled:opacity-40">참여</button>
               </div>
               {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
             </div>
@@ -678,7 +678,7 @@ export default function GroupPage() {
               </h2>
               {selectedClub.hostUid === user?.uid && (
                 <button onClick={openEdit}
-                  className="flex-shrink-0 text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded-full font-bold active:bg-indigo-100">
+                  className="flex-shrink-0 text-xs bg-sky-50 text-sky-600 border border-sky-200 px-3 py-1.5 rounded-full font-bold active:bg-sky-100">
                   ✏️ 수정
                 </button>
               )}
@@ -695,7 +695,7 @@ export default function GroupPage() {
                     }
                   }}
                   className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all
-                    ${clubDetailTab === t ? "bg-indigo-500 text-white shadow" : "text-gray-400"}`}>
+                    ${clubDetailTab === t ? "bg-cyan-500 text-white shadow" : "text-gray-400"}`}>
                   {label}
                 </button>
               ))}
@@ -707,7 +707,7 @@ export default function GroupPage() {
                 {/* 동아리 코드 카드 */}
                 <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
                   <p className="text-xs text-gray-400 mb-1">동아리 초대 코드</p>
-                  <p className="text-3xl font-mono font-black text-indigo-600 tracking-widest mb-2">
+                  <p className="text-3xl font-mono font-black text-sky-600 tracking-widest mb-2">
                     {selectedClub.code}
                   </p>
                   {selectedClub.description && (
@@ -722,8 +722,8 @@ export default function GroupPage() {
                       </span>
                     )}
                     {selectedClub.schedule && (
-                      <span className="inline-flex items-center gap-1 bg-indigo-50 rounded-full px-3 py-1">
-                        <span className="text-xs text-indigo-600 font-bold">
+                      <span className="inline-flex items-center gap-1 bg-sky-50 rounded-full px-3 py-1">
+                        <span className="text-xs text-sky-600 font-bold">
                           📅 {selectedClub.schedule.day} {selectedClub.schedule.time}
                         </span>
                       </span>
@@ -731,7 +731,7 @@ export default function GroupPage() {
                   </div>
                   <button onClick={() => handleCopyCode(selectedClub.code, "club")}
                     className={`w-full py-3 rounded-xl font-medium text-sm transition-colors
-                      ${copied ? "bg-green-100 text-green-600" : "bg-indigo-50 text-indigo-600 border border-indigo-200"}`}>
+                      ${copied ? "bg-green-100 text-green-600" : "bg-sky-50 text-sky-600 border border-sky-200"}`}>
                     {copied ? "✅ 복사됨!" : "📋 초대 코드 복사하기"}
                   </button>
                 </div>
@@ -747,7 +747,7 @@ export default function GroupPage() {
                   <div className="space-y-2">
                     {(selectedClub.members || []).map((member) => (
                       <div key={member.uid} className="flex items-center gap-3 py-1">
-                        <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-sky-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                           {member.photoURL
                             ? <img src={member.photoURL} alt="" className="w-full h-full object-cover" />
                             : <span className="text-lg">😊</span>}
@@ -756,7 +756,7 @@ export default function GroupPage() {
                           <p className="text-sm font-medium text-gray-700 flex items-center gap-1 flex-wrap">
                             <span className="truncate">{member.name}</span>
                             {member.uid === selectedClub.hostUid && (
-                              <span className="text-xs bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded flex-shrink-0">동아리장</span>
+                              <span className="text-xs bg-sky-100 text-sky-600 px-1.5 py-0.5 rounded flex-shrink-0">동아리장</span>
                             )}
                             {member.uid === user?.uid && (
                               <span className="text-xs text-gray-400 flex-shrink-0">(나)</span>
@@ -782,10 +782,10 @@ export default function GroupPage() {
                 </div>
 
                 {/* 그룹 보너스 */}
-                <div className="bg-indigo-50 rounded-2xl p-3 text-center">
-                  <p className="text-sm text-indigo-700">
+                <div className="bg-sky-50 rounded-2xl p-3 text-center">
+                  <p className="text-sm text-sky-700">
                     오늘 플로깅 시 <span className="font-bold">{selectedClub.members?.length || 0}명</span> 참여 —
-                    그룹 보너스 <span className="font-bold text-indigo-600">+{(selectedClub.members?.length || 0) * 5}P</span> 예정
+                    그룹 보너스 <span className="font-bold text-sky-600">+{(selectedClub.members?.length || 0) * 5}P</span> 예정
                   </p>
                 </div>
 
@@ -835,14 +835,14 @@ export default function GroupPage() {
                     <div className="space-y-4">
                       {Object.entries(grouped).map(([date, entries]) => (
                         <div key={date} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                          <div className="bg-indigo-50 px-4 py-2 border-b border-indigo-100">
-                            <p className="text-xs font-bold text-indigo-600">📅 {date}</p>
-                            <p className="text-xs text-indigo-400">{entries.length}명 참여</p>
+                          <div className="bg-sky-50 px-4 py-2 border-b border-sky-100">
+                            <p className="text-xs font-bold text-sky-600">📅 {date}</p>
+                            <p className="text-xs text-sky-400">{entries.length}명 참여</p>
                           </div>
                           <div className="divide-y divide-gray-50">
                             {entries.map((h) => (
                               <div key={h.id} className="flex items-center gap-3 px-4 py-3">
-                                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                                   {h.photoURL
                                     ? <img src={h.photoURL} alt="" className="w-full h-full object-cover" />
                                     : <span className="text-sm">😊</span>}
@@ -859,7 +859,7 @@ export default function GroupPage() {
                                   </p>
                                 </div>
                                 <div className="text-right flex-shrink-0">
-                                  <p className="text-sm font-black text-indigo-600">+{h.points}P</p>
+                                  <p className="text-sm font-black text-sky-600">+{h.points}P</p>
                                 </div>
                               </div>
                             ))}
@@ -899,9 +899,9 @@ export default function GroupPage() {
                         { icon:"📍", val: totalDist.toFixed(1), unit:"km", label:"총 거리" },
                         { icon:"⏱", val: totalMin, unit:"분", label:"총 시간" },
                       ].map(({ icon, val, unit, label }) => (
-                        <div key={label} className="bg-indigo-50 rounded-xl p-3 text-center">
+                        <div key={label} className="bg-sky-50 rounded-xl p-3 text-center">
                           <div className="text-xl mb-1">{icon}</div>
-                          <p className="text-lg font-black text-indigo-700">{val}<span className="text-xs font-normal text-indigo-400 ml-0.5">{unit}</span></p>
+                          <p className="text-lg font-black text-sky-700">{val}<span className="text-xs font-normal text-sky-400 ml-0.5">{unit}</span></p>
                           <p className="text-xs text-gray-400">{label}</p>
                         </div>
                       ))}
@@ -936,7 +936,7 @@ export default function GroupPage() {
                               ${i === 0 ? "bg-yellow-400 text-white" : i === 1 ? "bg-gray-300 text-white" : i === 2 ? "bg-amber-600 text-white" : "bg-gray-100 text-gray-400"}`}>
                               {i + 1}
                             </span>
-                            <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-sky-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                               {m.photoURL
                                 ? <img src={m.photoURL} alt="" className="w-full h-full object-cover" />
                                 : <span className="text-xs">😊</span>}
@@ -945,7 +945,7 @@ export default function GroupPage() {
                               <p className="text-sm font-bold text-gray-700 truncate">{m.name}</p>
                               <p className="text-xs text-gray-400">{m.dist.toFixed(1)}km</p>
                             </div>
-                            <span className="text-sm font-black text-indigo-600 flex-shrink-0">{m.count}회</span>
+                            <span className="text-sm font-black text-sky-600 flex-shrink-0">{m.count}회</span>
                           </div>
                         ))}
                       </div>
@@ -992,10 +992,10 @@ export default function GroupPage() {
           <>
             <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
               <p className="text-sm text-gray-400 mb-1">그룹 코드</p>
-              <span className="text-4xl font-mono font-black text-purple-600 tracking-widest block mb-3">{groupCode}</span>
+              <span className="text-4xl font-mono font-black text-sky-600 tracking-widest block mb-3">{groupCode}</span>
               <button onClick={() => handleCopyCode(groupCode)}
                 className={`w-full py-3 rounded-xl font-medium text-sm transition-colors
-                  ${copied ? "bg-green-100 text-green-600" : "bg-purple-50 text-purple-600 border border-purple-200"}`}>
+                  ${copied ? "bg-green-100 text-green-600" : "bg-sky-50 text-sky-600 border border-sky-200"}`}>
                 {copied ? "✅ 복사됨!" : "📋 코드 및 링크 복사하기"}
               </button>
             </div>
@@ -1008,7 +1008,7 @@ export default function GroupPage() {
               <div className="space-y-2">
                 {(groupData.members || []).map((member) => (
                   <div key={member.uid} className="flex items-center gap-3 py-1">
-                    <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-sky-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                       {member.photoURL
                         ? <img src={member.photoURL} alt="" className="w-full h-full object-cover" />
                         : <span className="text-lg">😊</span>}
@@ -1017,7 +1017,7 @@ export default function GroupPage() {
                       <p className="text-sm font-medium text-gray-700 flex items-center gap-1 flex-wrap">
                         <span>{member.name}</span>
                         {member.uid === groupData.hostUid && (
-                          <span className="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded">방장</span>
+                          <span className="text-xs bg-sky-100 text-sky-600 px-1.5 py-0.5 rounded">방장</span>
                         )}
                         {member.uid === user?.uid && (
                           <span className="text-xs text-gray-400">(나)</span>
@@ -1030,10 +1030,10 @@ export default function GroupPage() {
               </div>
             </div>
 
-            <div className="bg-purple-50 rounded-2xl p-3 text-center">
-              <p className="text-sm text-purple-700">
+            <div className="bg-sky-50 rounded-2xl p-3 text-center">
+              <p className="text-sm text-sky-700">
                 현재 <span className="font-bold">{groupData.members?.length || 0}명</span> 참여 중 —
-                그룹 보너스 <span className="font-bold text-purple-600">+{(groupData.members?.length || 0) * 5}P</span> 예정
+                그룹 보너스 <span className="font-bold text-sky-600">+{(groupData.members?.length || 0) * 5}P</span> 예정
               </p>
             </div>
 

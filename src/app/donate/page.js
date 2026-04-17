@@ -86,7 +86,7 @@ export default function DonatePage() {
         </div>
       </div>
 
-      <div className="px-4 -mt-4 space-y-4">
+      <div className="px-4 mt-2 space-y-4">
 
         {/* ── 프로젝트 소개 카드 ── */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">

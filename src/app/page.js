@@ -547,7 +547,7 @@ export default function HomePage() {
                 className="text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
                 style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
               >
-                <Star className="w-8 h-8 text-white/90 flex-shrink-0" strokeWidth={1.8} />
+                <Star className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
                 <div className="text-right flex-1">
                   <p className="font-black text-sm leading-tight">앱 평가하기</p>
                   <p className="text-[11px] text-yellow-100 mt-0.5 leading-relaxed">리뷰를 남겨주세요!</p>
@@ -559,7 +559,7 @@ export default function HomePage() {
                 className="text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
                 style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
               >
-                <Smartphone className="w-8 h-8 text-white/90 flex-shrink-0" strokeWidth={1.8} />
+                <Smartphone className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
                 <div className="text-right flex-1">
                   <p className="font-black text-sm leading-tight">홈 화면에 추가</p>
                   <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">앱처럼 빠르게 접근</p>
@@ -570,7 +570,7 @@ export default function HomePage() {
               onClick={handleShare}
               className="bg-gradient-to-br from-sky-500 to-cyan-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
             >
-              <UserPlus className="w-8 h-8 text-white/90 flex-shrink-0" strokeWidth={1.8} />
+              <UserPlus className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
               <div className="text-right flex-1">
                 <p className="font-black text-sm leading-tight">친구 초대</p>
                 <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">보너스 포인트 지급!</p>
@@ -595,7 +595,7 @@ export default function HomePage() {
                 <div key={item.step} className="bg-white rounded-2xl p-4 shadow-sm flex flex-col">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>STEP {item.step}</span>
-                    <span className="text-sm font-bold text-gray-600">{item.title}</span>
+                    <span className="text-sm font-bold text-gray-500">{item.title}</span>
                   </div>
                   <div className="flex items-start gap-2 mt-2">
                     <item.Icon className="w-6 h-6 flex-shrink-0" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
@@ -643,7 +643,7 @@ export default function HomePage() {
                 <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">에너지 · 녹색생활 · 그린카드</p>
               </div>
               <div className="flex justify-between items-end">
-                <Recycle className="w-10 h-10 text-white/80" strokeWidth={1.5} />
+                <Recycle className="w-12 h-12 text-white/80" strokeWidth={1.5} />
                 <span className="text-white/60 text-xs font-bold">바로가기 →</span>
               </div>
             </Link>
@@ -656,33 +656,34 @@ export default function HomePage() {
                 <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">전국 17개 시/도 안내</p>
               </div>
               <div className="flex justify-between items-end">
-                <Building2 className="w-10 h-10 text-white/80" strokeWidth={1.5} />
+                <Building2 className="w-12 h-12 text-white/80" strokeWidth={1.5} />
                 <span className="text-white/60 text-xs font-bold">바로가기 →</span>
               </div>
             </Link>
             <Link
               href="/shop"
-              className="bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between min-h-[120px]"
+              className="rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between min-h-[120px]"
+              style={{ backgroundImage: "linear-gradient(to bottom right, #ef558b, #ef3654)" }}
             >
               <div className="text-right">
                 <p className="font-black text-sm text-white leading-tight">친환경 쇼핑</p>
-                <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">구매 시 포인트 보너스</p>
+                <p className="text-[11px] text-pink-100 mt-0.5 leading-relaxed">구매 시 포인트 보너스</p>
               </div>
               <div className="flex justify-between items-end">
-                <Clover className="w-10 h-10 text-white/80" strokeWidth={1.5} />
+                <Clover className="w-12 h-12 text-white/80" strokeWidth={1.5} />
                 <span className="text-white/60 text-xs font-bold">바로가기 →</span>
               </div>
             </Link>
             <Link
               href="/donate"
-              className="bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between min-h-[120px]"
+              className="bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between min-h-[120px]"
             >
               <div className="text-right">
                 <p className="font-black text-sm text-white leading-tight">프로젝트 후원</p>
-                <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">앱 운영을 응원해주세요</p>
+                <p className="text-[11px] text-purple-100 mt-0.5 leading-relaxed">앱 운영을 응원해주세요</p>
               </div>
               <div className="flex justify-between items-end">
-                <Heart className="w-10 h-10 text-white/80" strokeWidth={1.5} />
+                <Heart className="w-12 h-12 text-white/80" strokeWidth={1.5} />
                 <span className="text-white/60 text-xs font-bold">후원하기 →</span>
               </div>
             </Link>
@@ -700,19 +701,19 @@ export default function HomePage() {
                     <Rocket className="w-5 h-5" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
                   </div>
                   <div className="flex items-center gap-2">
-                    <h2 className="font-bold text-gray-600 text-sm">최신 업데이트</h2>
+                    <h2 className="font-bold text-gray-500 text-sm">최신 업데이트</h2>
                     <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
                       {latest.version}
                     </span>
                   </div>
                 </div>
                 <p className="text-xs text-gray-400 mb-1 text-right">{latest.date}</p>
-                <p className="text-sm font-semibold text-gray-600">
+                <p className="text-sm font-semibold text-gray-500">
                   {latest.emoji} {latest.title}
                 </p>
                 <ul className="mt-1.5 space-y-0.5">
                   {latest.items.map((item, i) => (
-                    <li key={i} className="text-xs text-gray-600">· {item}</li>
+                    <li key={i} className="text-xs text-gray-500">· {item}</li>
                   ))}
                 </ul>
               </div>
