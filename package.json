@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "push": "git push",
+    "bump": "node scripts/bump-version.mjs",
+    "release": "node scripts/bump-version.mjs",
     "unlock": "rm -f .git/HEAD.lock .git/index.lock && echo '락 파일 해제 완료'",
     "deploy": "BUILD_TARGET=capacitor next build && firebase deploy --only hosting",
     "deploy:preview": "BUILD_TARGET=capacitor next build && firebase hosting:channel:deploy preview --expires 7d",
