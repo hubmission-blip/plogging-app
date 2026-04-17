@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Home, Map, CalendarDays, Medal, CircleUser } from "lucide-react";
 
 const NAV_ITEMS = [
-  { href: "/",          icon: "🏠", label: "홈" },
-  { href: "/map",       icon: "🗺️", label: "지도" },
-  { href: "/calendar",  icon: "📅", label: "캘린더" },
-  { href: "/ranking",   icon: "🏆", label: "랭킹" },
-  { href: "/profile",   icon: "👤", label: "내정보" },
+  { href: "/",          Icon: Home,         label: "홈" },
+  { href: "/map",       Icon: Map,          label: "지도" },
+  { href: "/calendar",  Icon: CalendarDays, label: "캘린더" },
+  { href: "/ranking",   Icon: Medal,        label: "랭킹" },
+  { href: "/profile",   Icon: CircleUser,   label: "내정보" },
 ];
 
 export default function BottomNav() {
@@ -33,7 +34,7 @@ export default function BottomNav() {
               className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors
                 ${isActive ? "text-green-600" : "text-gray-400"}`}
             >
-              <span className="text-xl leading-none">{item.icon}</span>
+              <item.Icon className="w-5 h-5" strokeWidth={isActive ? 2.2 : 1.8} />
               <span
                 className={`text-xs font-medium ${
                   isActive ? "text-green-600" : "text-gray-400"

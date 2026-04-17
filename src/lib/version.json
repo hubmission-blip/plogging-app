@@ -1,7 +1,17 @@
 {
-  "version": "v1.69",
-  "build": 69,
+  "version": "v1.70",
+  "build": 70,
   "changelog": [
+    {
+      "version": "v1.70",
+      "build": 70,
+      "date": "2026-04-17",
+      "emoji": "🛠️",
+      "title": "웰컴 카드 아이콘 SVG 교체",
+      "items": [
+        "PersonStanding 적용"
+      ]
+    },
     {
       "version": "v1.69",
       "build": 69,

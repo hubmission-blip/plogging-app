@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, BookOpen, Star, Smartphone, UserPlus, Navigation, Footprints, Flag, Camera, Trophy, HeartHandshake, Globe, Coins, Target, Zap, Activity, Sparkles, RefreshCw, Bell, Rocket } from "lucide-react";
+import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, CirclePlay, Star, Smartphone, UserPlus, Navigation, Footprints, Flag, Camera, Trophy, HeartHandshake, Globe, Coins, Target, Zap, Activity, Sparkles, RefreshCw, Bell, Rocket, Pin, AlertTriangle, PartyPopper, ChevronUp, ChevronDown, PersonStanding } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
 import CharacterGuide from "@/components/CharacterGuide";
@@ -137,9 +137,9 @@ const KOREAN_REGIONS = [
 
 // 공지사항 유형별 스타일
 const NOTICE_STYLE = {
-  info:    { bg: "bg-blue-50",   border: "border-blue-300",   text: "text-blue-700",   icon: "📌" },
-  warning: { bg: "bg-red-50",    border: "border-red-300",    text: "text-red-700",    icon: "⚠️" },
-  event:   { bg: "bg-purple-50", border: "border-purple-300", text: "text-purple-700", icon: "🎉" },
+  info:    { bg: "bg-blue-50",   border: "border-blue-300",   text: "text-blue-700",   Icon: Pin },
+  warning: { bg: "bg-red-50",    border: "border-red-300",    text: "text-red-700",    Icon: AlertTriangle },
+  event:   { bg: "bg-purple-50", border: "border-purple-300", text: "text-purple-700", Icon: PartyPopper },
 };
 
 export default function HomePage() {
@@ -383,10 +383,10 @@ export default function HomePage() {
               </div>
               <Link
                 href="/map"
-                className="bg-white text-green-600 w-10 h-10 rounded-full flex items-center justify-center shadow text-2xl flex-shrink-0"
+                className="bg-white w-10 h-10 rounded-full flex items-center justify-center shadow flex-shrink-0"
                 title="플로깅 시작"
               >
-                🚶
+                <PersonStanding className="w-5 h-5 text-green-600" strokeWidth={2} />
               </Link>
             </div>
           ) : (
@@ -420,12 +420,13 @@ export default function HomePage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className={`text-[10px] font-black ${style.text} opacity-70`}>공지</span>
-                          <span className="text-base">{style.icon}</span>
+                          <style.Icon className={`w-4 h-4 ${style.text}`} strokeWidth={1.8} />
                           <p className={`text-sm font-bold ${style.text}`}>{notice.title}</p>
                         </div>
-                        <span className={`text-xs ${style.text} opacity-70`}>
-                          {isExpanded ? "▲" : "▼"}
-                        </span>
+                        {isExpanded
+                          ? <ChevronUp className={`w-4 h-4 ${style.text} opacity-70`} strokeWidth={2} />
+                          : <ChevronDown className={`w-4 h-4 ${style.text} opacity-70`} strokeWidth={2} />
+                        }
                       </div>
                     </button>
                     {isExpanded && (
@@ -529,7 +530,7 @@ export default function HomePage() {
               onClick={() => setShowManual(true)}
               className="bg-purple-50 border border-purple-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <BookOpen className="w-6 h-6 text-purple-600" strokeWidth={1.8} />
+              <CirclePlay className="w-6 h-6 text-purple-600" strokeWidth={1.8} />
               <span className="text-xs text-purple-700 font-bold">매뉴얼</span>
             </button>
           </div>
@@ -610,7 +611,7 @@ export default function HomePage() {
                 <Target className="w-4 h-4 text-green-600" strokeWidth={1.8} />
                 <Zap className="w-4 h-4 text-green-600" strokeWidth={1.8} />
               </div>
-              <h2 className="font-bold text-gray-700">포인트 적립 기준</h2>
+              <h2 className="font-black text-sm text-gray-700">포인트 적립 기준</h2>
             </div>
             <div className="space-y-2">
               {[
@@ -729,7 +730,7 @@ export default function HomePage() {
               }}
               className="mt-2 text-xs text-gray-400 border border-gray-200 px-3 py-1 rounded-full"
             >
-              🔄 앱 새로고침
+              <RefreshCw className="w-3 h-3 inline-block mr-1 -mt-0.5" strokeWidth={2} />앱 새로고침
             </button>
           </div>
         </div>
