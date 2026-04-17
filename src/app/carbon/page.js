@@ -34,11 +34,11 @@ const SECTIONS = [
     Icon: Zap,
     title: "탄소중립포인트 에너지",
     subtitle: "전기·도시가스·수도 절약",
-    color: "from-yellow-400 to-orange-500",
-    bgLight: "bg-orange-50",
-    borderColor: "border-orange-200",
-    textColor: "text-orange-700",
-    badgeBg: "bg-orange-100 text-orange-700",
+    color: "from-orange-400 to-pink-500",
+    bgLight: "bg-pink-50",
+    borderColor: "border-pink-200",
+    textColor: "text-pink-700",
+    badgeBg: "bg-pink-100 text-pink-700",
     url: "https://cpoint.or.kr",
     urlLabel: "cpoint.or.kr",
     overview: "가정·상업용 건물에서 전기, 도시가스, 상수도 사용량을 전년 대비 절감하면 반기마다 인센티브를 지급하는 제도입니다. 지자체를 통해 현금·상품권·지역화폐 등으로 환급받을 수 있어요.",
@@ -66,11 +66,11 @@ const SECTIONS = [
     Icon: Car,
     title: "탄소중립포인트 자동차",
     subtitle: "연간 주행거리 감축",
-    color: "from-blue-400 to-blue-600",
-    bgLight: "bg-blue-50",
-    borderColor: "border-blue-200",
-    textColor: "text-blue-700",
-    badgeBg: "bg-blue-100 text-blue-700",
+    color: "from-yellow-400 to-orange-500",
+    bgLight: "bg-orange-50",
+    borderColor: "border-orange-200",
+    textColor: "text-orange-700",
+    badgeBg: "bg-orange-100 text-orange-700",
     url: "https://car.cpoint.or.kr",
     urlLabel: "car.cpoint.or.kr",
     overview: "차량의 연간 주행거리를 줄이면 최대 10만 원의 인센티브를 지급하는 제도입니다. 매년 신청 기간에 참여 신청을 해야 하며, 비사업용 12인승 이하 승용·승합 차량이 대상입니다.",
@@ -125,7 +125,8 @@ const SECTIONS = [
     Icon: CreditCard,
     title: "그린카드 (에코머니)",
     subtitle: "친환경 소비로 포인트 적립",
-    color: "from-emerald-400 to-green-500",
+    customGradient: "linear-gradient(to right, #8dc63f, #4cb748)",
+    iconColor: "#1a5c1a",
     bgLight: "bg-emerald-50",
     borderColor: "border-emerald-200",
     textColor: "text-emerald-700",
@@ -164,11 +165,12 @@ function SectionCard({ sec, greenItems }) {
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
       {/* 헤더 */}
       <button
-        className={`w-full bg-gradient-to-r ${sec.color} px-4 py-4 text-white flex items-center justify-between`}
+        className={`w-full px-4 py-4 text-white flex items-center justify-between ${sec.customGradient ? "" : `bg-gradient-to-r ${sec.color}`}`}
+        style={sec.customGradient ? { backgroundImage: sec.customGradient } : undefined}
         onClick={() => setOpen((v) => !v)}
       >
         <div className="flex items-center gap-3">
-          <sec.Icon className="w-8 h-8 text-white/90" strokeWidth={1.8} />
+          <sec.Icon className="w-8 h-8" strokeWidth={1.8} style={sec.iconColor ? { color: sec.iconColor } : { color: "rgba(255,255,255,0.9)" }} />
           <div className="text-left">
             <p className="font-black text-base leading-tight">{sec.title}</p>
             <p className="text-white/80 text-xs mt-0.5">{sec.subtitle}</p>

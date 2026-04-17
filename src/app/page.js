@@ -606,7 +606,7 @@ export default function HomePage() {
           </div>
 
           {/* ── 포인트 안내 ── */}
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-4 shadow-sm">
+          <div className="rounded-2xl p-4 shadow-sm" style={{ backgroundColor: "#8dc63f1a", border: "1px solid #8dc63f40" }}>
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-1.5">
                 <Coins className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
@@ -694,9 +694,9 @@ export default function HomePage() {
               <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4" style={{ borderLeftColor: "#8dc63f" }}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
-                    <RefreshCw className="w-4 h-4 text-green-500" strokeWidth={1.8} />
-                    <Bell className="w-4 h-4 text-green-500" strokeWidth={1.8} />
-                    <Rocket className="w-4 h-4 text-green-500" strokeWidth={1.8} />
+                    <RefreshCw className="w-5 h-5" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
+                    <Bell className="w-5 h-5" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
+                    <Rocket className="w-5 h-5" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
                   </div>
                   <div className="flex items-center gap-2">
                     <h2 className="font-bold text-gray-700 text-sm">최신 업데이트</h2>
