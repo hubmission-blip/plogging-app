@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CalendarDays, Leaf, Monitor, Cloud, Lightbulb, Medal, Star, Megaphone, Mail, Gift, Coins, Landmark, CreditCard, Smartphone, Info, PenLine } from "lucide-react";
+import { CalendarDays, Leaf, Monitor, Cloud, Lightbulb, Medal, Star, Megaphone, Mail, UserRound, Coins, Landmark, CreditCard, Smartphone, Info, PenLine } from "lucide-react";
 
 // ── 후원 계좌 정보 ─────────────────────────────────────────────
 const ACCOUNTS = [
@@ -21,10 +21,10 @@ const AMOUNTS = [
 
 // ── 후원자 혜택 ────────────────────────────────────────────────
 const BENEFITS = [
-  { Icon: Medal,     title: "후원자 배지",     desc: "프로필에 특별 배지가 표시돼요" },
-  { Icon: Star,      title: "포인트 보너스",   desc: "월 300P 추가 적립 (정기 후원자)" },
-  { Icon: Megaphone, title: "개발 참여",       desc: "신기능 우선 체험 및 의견 반영" },
-  { Icon: Mail,      title: "감사 메시지",     desc: "후원자 명단에 이름을 올려드려요" },
+  { Icon: Medal,     title: "후원자 배지",     desc: "프로필에 특별 배지가\n표시돼요" },
+  { Icon: Star,      title: "포인트 보너스",   desc: "월 300P 추가 적립\n(정기 후원자)" },
+  { Icon: Megaphone, title: "개발 참여",       desc: "신기능 우선 체험 및\n의견 반영" },
+  { Icon: Mail,      title: "감사 메시지",     desc: "후원자 명단에\n이름을 올려드려요" },
 ];
 
 // ── 프로젝트 현황 ──────────────────────────────────────────────
@@ -75,7 +75,7 @@ export default function DonatePage() {
         </Link>
 
         <div className="relative">
-          <p className="text-4xl mb-3">🧡</p>
+          <span className="absolute top-0 right-0 text-6xl opacity-80">🧡</span>
           <h1 className="text-2xl font-black leading-tight mb-2">
             오백원의 행복을<br />응원해주세요
           </h1>
@@ -135,13 +135,15 @@ export default function DonatePage() {
 
         {/* ── 후원자 혜택 ── */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5"><Gift className="w-4 h-4 text-gray-600" strokeWidth={2} /> 후원자 혜택</p>
+          <p className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5"><UserRound className="w-4 h-4 text-gray-600" strokeWidth={2} /> 후원자 혜택</p>
           <div className="grid grid-cols-2 gap-2">
             {BENEFITS.map((b) => (
-              <div key={b.title} className="bg-gray-50 rounded-xl p-3">
-                <b.Icon className="w-5 h-5 text-orange-500 mb-1" strokeWidth={1.8} />
-                <p className="text-xs font-bold text-gray-700">{b.title}</p>
-                <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">{b.desc}</p>
+              <div key={b.title} className="bg-gray-50 rounded-xl p-3 flex items-start gap-2.5">
+                <b.Icon className="w-8 h-8 text-orange-500 flex-shrink-0" strokeWidth={1.6} />
+                <div className="flex-1 text-right">
+                  <p className="text-xs font-bold text-gray-700">{b.title}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed whitespace-pre-line">{b.desc}</p>
+                </div>
               </div>
             ))}
           </div>

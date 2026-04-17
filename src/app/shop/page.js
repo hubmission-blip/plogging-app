@@ -288,15 +288,15 @@ function ProductCard({ product, onBuy, onConfirm }) {
           )}
 
           {/* 보너스 포인트 안내 */}
-          <div className="rounded-xl px-3 py-2 mb-3 flex items-center justify-between" style={{ backgroundColor: "#8dc63f18" }}>
-            <span className="text-xs" style={{ color: "#8dc63f" }}>🎁 구매 시 보너스</span>
-            <span className="text-xs font-black" style={{ color: "#8dc63f" }}>+{product.bonusPoints}P</span>
+          <div className="rounded-xl px-3 py-2 mb-3 flex items-center justify-between" style={{ backgroundColor: "#CD5C5C15" }}>
+            <span className="text-xs" style={{ color: "#CD5C5C" }}>🎁 구매 시 보너스</span>
+            <span className="text-xs font-black" style={{ color: "#CD5C5C" }}>+{product.bonusPoints}P</span>
           </div>
 
           {/* 구매 버튼 — 항상 유지 */}
           {confirmed ? (
-            <div className="rounded-xl py-2.5 text-center" style={{ backgroundColor: "#8dc63f18" }}>
-              <p className="text-sm font-bold" style={{ color: "#8dc63f" }}>🎉 +{product.bonusPoints}P 받음!</p>
+            <div className="rounded-xl py-2.5 text-center" style={{ backgroundColor: "#CD5C5C15" }}>
+              <p className="text-sm font-bold" style={{ color: "#CD5C5C" }}>🎉 +{product.bonusPoints}P 받음!</p>
             </div>
           ) : (
             <button
