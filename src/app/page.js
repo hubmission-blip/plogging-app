@@ -427,32 +427,6 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* ── 빠른 메뉴 ── */}
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { href: "/map",    icon: "🗺️", label: "지도" },
-              { href: "/group",  icon: "👥", label: "그룹" },
-              { href: "/reward", icon: "🎁", label: "리워드" },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="bg-white rounded-2xl py-3 flex flex-col items-center gap-1 shadow-sm active:scale-95 transition-transform"
-              >
-                <span className="text-2xl">{item.icon}</span>
-                <span className="text-xs text-gray-600 font-medium">{item.label}</span>
-              </Link>
-            ))}
-            {/* 매뉴얼 버튼 (유튜브 영상) */}
-            <button
-              onClick={() => setShowManual(true)}
-              className="bg-white rounded-2xl py-3 flex flex-col items-center gap-1 shadow-sm active:scale-95 transition-transform"
-            >
-              <span className="text-2xl">▶️</span>
-              <span className="text-xs text-gray-600 font-medium">매뉴얼</span>
-            </button>
-          </div>
-
           {/* ── 사용법 영상 모달 ── */}
           {showManual && (
             <div
@@ -507,6 +481,38 @@ export default function HomePage() {
                 <p className="text-xs text-green-100 mt-0.5">🚶 총 이동 거리</p>
               </div>
             </div>
+          </div>
+
+          {/* ── 빠른 메뉴 (컬러 카드) ── */}
+          <div className="grid grid-cols-4 gap-2">
+            <Link
+              href="/map"
+              className="bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl py-3 flex flex-col items-center gap-1 shadow-sm active:scale-95 transition-transform"
+            >
+              <span className="text-2xl">🗺️</span>
+              <span className="text-xs text-white font-bold">지도</span>
+            </Link>
+            <Link
+              href="/group"
+              className="bg-gradient-to-br from-sky-500 to-cyan-500 rounded-2xl py-3 flex flex-col items-center gap-1 shadow-sm active:scale-95 transition-transform"
+            >
+              <span className="text-2xl">👥</span>
+              <span className="text-xs text-white font-bold">그룹</span>
+            </Link>
+            <Link
+              href="/reward"
+              className="bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl py-3 flex flex-col items-center gap-1 shadow-sm active:scale-95 transition-transform"
+            >
+              <span className="text-2xl">🎁</span>
+              <span className="text-xs text-white font-bold">리워드</span>
+            </Link>
+            <button
+              onClick={() => setShowManual(true)}
+              className="bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl py-3 flex flex-col items-center gap-1 shadow-sm active:scale-95 transition-transform"
+            >
+              <span className="text-2xl">▶️</span>
+              <span className="text-xs text-white font-bold">매뉴얼</span>
+            </button>
           </div>
 
           {/* ── 홈 화면에 추가 + 친구 초대 (나란히) ── */}
