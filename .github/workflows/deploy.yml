@@ -1,0 +1,55 @@
+name: 🚀 Firebase Hosting 배포
+
+on:
+  push:
+    branches:
+      - main        # main 브랜치에 push 할 때 자동 배포
+  workflow_dispatch: # GitHub Actions 화면에서 수동 배포도 가능
+
+jobs:
+  build-and-deploy:
+    name: 빌드 & 배포
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 코드 체크아웃
+      - name: 📥 코드 가져오기
+        uses: actions/checkout@v4
+
+      # 2. Node.js 세팅
+      - name: ⚙️ Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3. 의존성 설치
+      - name: 📦 패키지 설치
+        run: npm ci
+
+      # 4. Next.js 빌드 (정적 export → out/ 폴더)
+      - name: 🔨 Next.js 빌드
+        run: npm run build
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          NEXT_PUBLIC_KAKAO_MAP_KEY: ${{ secrets.NEXT_PUBLIC_KAKAO_MAP_KEY }}
+          NEXT_PUBLIC_KAKAO_REST_API_KEY: ${{ secrets.NEXT_PUBLIC_KAKAO_REST_API_KEY }}
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ${{ secrets.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME }}
+          NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: ${{ secrets.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET }}
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+
+      # 5. Firebase Hosting 배포
+      - name: 🔥 Firebase Hosting 배포
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: plogging-app

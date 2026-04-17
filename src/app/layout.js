@@ -5,8 +5,18 @@ import { AuthProvider } from "@/context/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import Script from "next/script";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+  display: "swap",    // 폰트 로딩 전 시스템 폰트로 즉시 표시 (블로킹 방지)
+  preload: false,     // Capacitor 환경에서 네트워크 preload 블로킹 방지
+});
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+});
 
 export const metadata = {
   title: "오백원의행복",
@@ -61,30 +71,33 @@ export default function RootLayout({ children }) {
           }}
         />
 
-        {/* ✅ Script 태그: 순수 JS만 사용 (useEffect 금지) */}
+        {/* Service Worker: Capacitor(iOS 네이티브) 환경에서는 등록하지 않음
+            WKWebView에서 SW가 모든 GET 요청을 가로채면 화이트 스크린 유발
+            웹 브라우저(PWA)에서만 SW 활성화 */}
         <Script
           id="sw-register"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
-              if ("serviceWorker" in navigator) {
-                navigator.serviceWorker.register("/sw.js").then(function(registration) {
-                  console.log("✅ SW 등록:", registration.scope);
-
-                  registration.addEventListener("updatefound", function() {
-                    var newWorker = registration.installing;
-                    newWorker.addEventListener("statechange", function() {
-                      if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-                        console.log("🔄 새 버전 감지 - 자동 업데이트");
-                        newWorker.postMessage({ type: "SKIP_WAITING" });
-                        window.location.reload();
-                      }
+              try {
+                var isCapacitor = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+                if (!isCapacitor && "serviceWorker" in navigator) {
+                  navigator.serviceWorker.register("/sw.js").then(function(registration) {
+                    console.log("SW 등록:", registration.scope);
+                    registration.addEventListener("updatefound", function() {
+                      var newWorker = registration.installing;
+                      newWorker.addEventListener("statechange", function() {
+                        if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                          newWorker.postMessage({ type: "SKIP_WAITING" });
+                          window.location.reload();
+                        }
+                      });
                     });
+                  }).catch(function(err) {
+                    console.warn("SW 등록 실패:", err);
                   });
-                }).catch(function(err) {
-                  console.error("❌ SW 등록 실패:", err);
-                });
-              }
+                }
+              } catch(e) {}
             `,
           }}
         />

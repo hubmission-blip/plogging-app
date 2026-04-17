@@ -141,10 +141,15 @@ function PurchaseSheet({ product, onConfirm, onClose }) {
   const handleConfirm = async () => {
     if (loading || confirmed) return;
     setLoading(true);
-    await onConfirm(product);
-    setConfirmed(true);
-    setLoading(false);
-    setTimeout(onClose, 2500); // 2.5초 후 자동 닫힘
+    try {
+      const success = await onConfirm(product);
+      if (success) {
+        setConfirmed(true);
+        setTimeout(onClose, 2500); // 2.5초 후 자동 닫힘
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -227,8 +232,8 @@ function ProductCard({ product, onBuy, onConfirm }) {
   };
 
   const handleConfirm = async (p) => {
-    await onConfirm(p);
-    setConfirmed(true);
+    const success = await onConfirm(p);
+    if (success) setConfirmed(true);
   };
 
   return (
@@ -328,20 +333,20 @@ export default function ShopPage() {
   const [toast,    setToast]    = useState(null); // { msg, type }
 
   // ── Firestore 실시간 상품 로드 ────────────────────────────
+  // 복합 인덱스 필요 없이 전체 로드 후 클라이언트에서 필터/정렬
   useEffect(() => {
-    const q = query(
-      collection(db, "products"),
-      where("active", "==", true),
-      orderBy("order", "asc")
-    );
-    const unsub = onSnapshot(q, (snap) => {
+    const unsub = onSnapshot(collection(db, "products"), (snap) => {
       if (!snap.empty) {
-        const loaded = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const loaded = snap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter((p) => p.active !== false)  // active가 false가 아닌 것만
+          .sort((a, b) => (a.order || 99) - (b.order || 99));
         setProducts(loaded);
       }
       setLoading(false);
-    }, () => {
-      setLoading(false); // 오류 시 기본 상품 유지
+    }, (err) => {
+      console.error("[Shop] 상품 로드 실패:", err);
+      setLoading(false);
     });
     return () => unsub();
   }, []);
@@ -369,26 +374,37 @@ export default function ShopPage() {
 
   // ── 구매 확인 → 포인트 지급 신청 (관리자 검토 후 지급) ──
   const handleConfirm = useCallback(async (product) => {
-    if (!user) { router.push("/login"); return; }
+    if (!user) { router.push("/login"); return false; }
     try {
-      // 구매 신청 기록 (pending 상태 — 관리자가 검토 후 포인트 지급)
-      await addDoc(collection(db, "shopPurchases"), {
-        productId:    product.id,
-        productTitle: product.title,
-        productImage: product.image || "",
-        platform:     product.platform || "coupang",
-        bonusPoints:  product.bonusPoints,
-        userId:       user.uid,
-        userEmail:    user.email || "",
-        appliedAt:    serverTimestamp(),
-        status:       "pending",   // pending → approved / rejected
-        verified:     false,       // 관리자 승인 시 true
+      // 서버 API 경유 — 카카오/Firebase 로그인 모두 대응
+      const res = await fetch("/api/shop/purchase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId:    product.id,
+          productTitle: product.title,
+          productImage: product.image || "",
+          platform:     product.platform || "coupang",
+          bonusPoints:  product.bonusPoints,
+          userId:       user.uid,
+          userEmail:    user.email || "",
+        }),
       });
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({}));
+        throw new Error(error || "server_error");
+      }
       setToast({ msg: `📋 구매 신청 완료! 검토 후 +${product.bonusPoints}P 지급 예정`, type: "success" });
       setTimeout(() => setToast(null), 4000);
+      return true;
     } catch (e) {
-      setToast({ msg: "오류가 발생했습니다. 다시 시도해주세요.", type: "error" });
-      setTimeout(() => setToast(null), 3000);
+      console.error("[ShopPurchase] error:", e.message);
+      const msg = e.message === "already_applied"
+        ? "이미 신청한 상품이에요."
+        : "오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+      setToast({ msg, type: "error" });
+      setTimeout(() => setToast(null), 4000);
+      return false;
     }
   }, [user, router]);
 

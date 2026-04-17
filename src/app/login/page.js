@@ -1,18 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
-  signInWithPopup,        // ✅ 추가
-  GoogleAuthProvider,     // ✅ 추가
+  signInWithCredential,
+  GoogleAuthProvider,
 } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, getDoc, updateDoc, increment, collection, query, where, getDocs, serverTimestamp } from "firebase/firestore";
 
-// 추천인 코드로 추천인 UID 조회
+// Capacitor 네이티브 환경 감지
+const isCapacitorNative = () => {
+  try {
+    return typeof window !== "undefined" &&
+      !!(window?.Capacitor?.isNativePlatform?.());
+  } catch { return false; }
+};
+
+// 추천인 코드 → UID 조회
 async function resolveReferrer(refCode) {
   if (!refCode || refCode.length < 6) return null;
   const code = refCode.toUpperCase().slice(0, 8);
@@ -26,6 +34,47 @@ async function resolveReferrer(refCode) {
   return null;
 }
 
+// 구글 로그인 후 Firestore 유저 문서 생성
+async function ensureGoogleUserDoc(user) {
+  const userRef = doc(db, "users", user.uid);
+  const userSnap = await getDoc(userRef);
+  if (userSnap.exists()) return;
+
+  let referrerUid = null;
+  let refCode = "";
+  try {
+    const stored = localStorage.getItem("pending_referral");
+    if (stored) {
+      const { code, expires } = JSON.parse(stored);
+      if (Date.now() < expires) refCode = code.toUpperCase().slice(0, 8);
+    }
+  } catch {}
+  if (refCode) referrerUid = await resolveReferrer(refCode);
+
+  const myRef = user.uid.slice(0, 8).toUpperCase();
+  const welcome = referrerUid ? 150 : 100;
+
+  await setDoc(userRef, {
+    uid: user.uid,
+    email: user.email,
+    displayName: user.displayName || "구글유저",
+    provider: "google",
+    totalPoints: welcome,
+    totalDistance: 0,
+    ploggingCount: 0,
+    createdAt: serverTimestamp(),
+    refCode: myRef,
+    ...(referrerUid ? { referredBy: referrerUid } : {}),
+  });
+
+  if (referrerUid) {
+    try {
+      await updateDoc(doc(db, "users", referrerUid), { totalPoints: increment(100) });
+      localStorage.removeItem("pending_referral");
+    } catch {}
+  }
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [isSignup, setIsSignup] = useState(false);
@@ -35,62 +84,85 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ✅ 구글 로그인
-  const handleGoogleLogin = async () => {
+  // ✅ iOS 딥링크 수신: Safari에서 Google 인증 완료 후 앱으로 복귀
+  const handleDeepLinkToken = useCallback(async (idToken) => {
     setLoading(true);
     setError("");
     try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      // Firestore에 유저 정보 없으면 생성
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-      if (!userSnap.exists()) {
-        // 신규 구글 가입 — 추천인 코드 처리
-        let referrerUid = null;
-        let refCode = "";
-        try {
-          const stored = localStorage.getItem("pending_referral");
-          if (stored) {
-            const { code, expires } = JSON.parse(stored);
-            if (Date.now() < expires) refCode = code.toUpperCase().slice(0, 8);
-          }
-        } catch {}
-        if (refCode) referrerUid = await resolveReferrer(refCode);
-
-        const myRef   = user.uid.slice(0, 8).toUpperCase();
-        const welcome = referrerUid ? 150 : 100; // 추천 가입 시 +50P 추가
-
-        await setDoc(userRef, {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName || "구글유저",
-          provider: "google",
-          totalPoints: welcome,
-          totalDistance: 0,
-          ploggingCount: 0,
-          createdAt: serverTimestamp(),
-          refCode: myRef,
-          ...(referrerUid ? { referredBy: referrerUid } : {}),
-        });
-
-        if (referrerUid) {
-          try {
-            await updateDoc(doc(db, "users", referrerUid), { totalPoints: increment(100) });
-            localStorage.removeItem("pending_referral");
-          } catch {}
-        }
-      }
-
+      const credential = GoogleAuthProvider.credential(idToken);
+      const result = await signInWithCredential(auth, credential);
+      await ensureGoogleUserDoc(result.user);
       router.push("/");
     } catch (err) {
-      if (err.code !== "auth/popup-closed-by-user") {
-        setError("구글 로그인 실패: " + err.message);
-      }
+      setError("구글 로그인 실패: " + err.message);
     } finally {
       setLoading(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (!isCapacitorNative()) return;
+    let cleanup = () => {};
+    (async () => {
+      try {
+        const { App } = await import("@capacitor/app");
+        const listener = await App.addListener("appUrlOpen", async (event) => {
+          console.log("[AppUrlOpen]", event.url);
+          if (event.url?.includes("google-auth")) {
+            try {
+              const { Browser } = await import("@capacitor/browser");
+              await Browser.close();
+            } catch {}
+            const url = new URL(event.url);
+            const idToken = url.searchParams.get("id_token");
+            if (idToken) handleDeepLinkToken(idToken);
+          }
+        });
+        cleanup = () => listener.remove();
+      } catch {}
+    })();
+    return () => cleanup();
+  }, [handleDeepLinkToken]);
+
+  // ✅ 구글 로그인
+  // iOS앱: Browser.open → 시스템 Safari → 콜백에서 딥링크로 복귀
+  // 웹: 같은 페이지 내 redirect
+  const handleGoogleLogin = async () => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      setError("Google Client ID가 설정되지 않았습니다.");
+      return;
+    }
+
+    const nonce = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem("google_auth_nonce", nonce);
+
+    const isNative = isCapacitorNative();
+    const redirectUri = isNative
+      ? "https://happy500.kr/auth/google"
+      : `${window.location.origin}/auth/google`;
+
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: "id_token",
+      scope: "openid email profile",
+      nonce: nonce,
+      prompt: "select_account",
+      state: isNative ? "capacitor" : "web",
+    });
+
+    const url = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+
+    if (isNative) {
+      try {
+        const { Browser } = await import("@capacitor/browser");
+        await Browser.open({ url });
+      } catch {
+        window.location.href = url;
+      }
+    } else {
+      window.location.href = url;
     }
   };
 
@@ -127,12 +199,12 @@ export default function LoginPage() {
           uid: cred.user.uid,
           email: cred.user.email,
           displayName: nickname,
-          totalPoints: 100,   // 신규 가입 환영 포인트
+          totalPoints: 100,
           totalDistance: 0,
           ploggingCount: 0,
           provider: "email",
           createdAt: serverTimestamp(),
-          refCode: cred.user.uid.slice(0, 8).toUpperCase(), // 내 추천 코드 저장
+          refCode: cred.user.uid.slice(0, 8).toUpperCase(),
         });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
@@ -154,7 +226,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-500 to-green-400 flex flex-col items-center justify-center p-6">
-      {/* 로고 */}
       <div className="text-center mb-8">
         <div className="text-5xl mb-2">🌿</div>
         <h1 className="text-2xl font-bold text-white">오백원의 행복</h1>
@@ -162,7 +233,6 @@ export default function LoginPage() {
       </div>
 
       <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl">
-        {/* 탭 */}
         <div className="flex bg-gray-100 rounded-xl p-1 mb-5">
           <button
             onClick={() => { setIsSignup(false); setError(""); }}
@@ -182,7 +252,6 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {/* ✅ 구글 로그인 버튼 */}
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
@@ -197,7 +266,6 @@ export default function LoginPage() {
           Google로 시작하기
         </button>
 
-        {/* 카카오 로그인 버튼 */}
         <button
           onClick={handleKakaoLogin}
           disabled={loading}
@@ -213,7 +281,6 @@ export default function LoginPage() {
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 
-        {/* 이메일 폼 */}
         <form onSubmit={handleEmailAuth} className="space-y-3">
           {isSignup && (
             <input

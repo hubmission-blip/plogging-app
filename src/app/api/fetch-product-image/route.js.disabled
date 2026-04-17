@@ -9,6 +9,9 @@
  * 4. m.coupang.com 모바일 페이지 재시도 (데스크탑 차단 시)
  */
 
+// Static export 호환 설정 (모바일 앱 빌드용)
+export const dynamic = 'force-static';
+
 // 모바일 iPhone User-Agent (봇 감지 우회에 효과적)
 const MOBILE_UA =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) " +

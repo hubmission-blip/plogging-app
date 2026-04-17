@@ -8,9 +8,21 @@
     "start": "next start",
     "lint": "eslint",
     "push": "git push",
-    "unlock": "rm -f .git/HEAD.lock .git/index.lock && echo '락 파일 해제 완료'"
+    "unlock": "rm -f .git/HEAD.lock .git/index.lock && echo '락 파일 해제 완료'",
+    "deploy": "BUILD_TARGET=capacitor next build && firebase deploy --only hosting",
+    "deploy:preview": "BUILD_TARGET=capacitor next build && firebase hosting:channel:deploy preview --expires 7d",
+    "firebase:login": "firebase login",
+    "cap:build": "BUILD_TARGET=capacitor next build",
+    "cap:sync": "npx cap sync ios",
+    "cap:sync:dev": "CAPACITOR_SERVER_URL=http://localhost:3000 npx cap sync ios",
+    "cap:open": "npx cap open ios"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/browser": "^8.0.3",
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/ios": "^8.3.0",
     "date-fns": "^4.1.0",
     "firebase": "^12.11.0",
     "geofire-common": "^6.0.0",

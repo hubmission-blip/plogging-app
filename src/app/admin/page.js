@@ -394,17 +394,26 @@ export default function AdminPage() {
       active:        p.active !== false,
       updatedAt:     serverTimestamp(),
     };
-    if (editingProduct?.id) {
-      await updateDoc(doc(db, "products", editingProduct.id), data);
-    } else {
-      await addDoc(collection(db, "products"), { ...data, createdAt: serverTimestamp() });
+    try {
+      if (editingProduct?.id) {
+        await updateDoc(doc(db, "products", editingProduct.id), data);
+      } else {
+        await addDoc(collection(db, "products"), { ...data, createdAt: serverTimestamp() });
+      }
+      setEditingProduct(null);
+      setNewProduct(EMPTY_PRODUCT);
+      setProductMode(false);
+      fetchProducts();
+      setActionMsg("✅ 상품 저장 완료");
+      setTimeout(() => setActionMsg(""), 2000);
+    } catch (e) {
+      console.error("[handleSaveProduct] error:", e.code, e.message);
+      if (e.code === "permission-denied") {
+        alert("❌ 권한 오류: Firebase Console → Firestore → 규칙에서 products 컬렉션 쓰기 권한을 확인해주세요.");
+      } else {
+        alert("❌ 저장 실패: " + e.message);
+      }
     }
-    setEditingProduct(null);
-    setNewProduct(EMPTY_PRODUCT);
-    setProductMode(false);
-    fetchProducts();
-    setActionMsg("✅ 상품 저장 완료");
-    setTimeout(() => setActionMsg(""), 2000);
   };
 
   const handleDeleteProduct = async (id) => {
