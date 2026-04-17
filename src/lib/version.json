@@ -1,7 +1,17 @@
 {
-  "version": "v1.68",
-  "build": 68,
+  "version": "v1.69",
+  "build": 69,
   "changelog": [
+    {
+      "version": "v1.69",
+      "build": 69,
+      "date": "2026-04-17",
+      "emoji": "⚡",
+      "title": "커뮤니티 현황 및 최신 업데이트 아이콘/레이아웃 개선",
+      "items": [
+        "아이콘 3개 왼쪽 정렬, 제목 오른쪽 정렬 구조"
+      ]
+    },
     {
       "version": "v1.68",
       "build": 68,

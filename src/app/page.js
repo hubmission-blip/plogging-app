@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, BookOpen, Star, Smartphone, UserPlus, Navigation, Footprints, Flag, Camera, Trophy, HeartHandshake, Globe, Coins, Target, Zap } from "lucide-react";
+import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, BookOpen, Star, Smartphone, UserPlus, Navigation, Footprints, Flag, Camera, Trophy, HeartHandshake, Globe, Coins, Target, Zap, Activity, Sparkles, RefreshCw, Bell, Rocket } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
 import CharacterGuide from "@/components/CharacterGuide";
@@ -474,10 +474,14 @@ export default function HomePage() {
 
           {/* ── 커뮤니티 현황 ── */}
           <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-4 text-white shadow">
-            <p className="font-black text-sm text-white mb-3 flex items-center gap-1.5">
-              <Globe className="w-4 h-4 text-green-100" strokeWidth={2} />
-              오백원의 행복 커뮤니티 현황
-            </p>
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-1.5">
+                <Globe className="w-4 h-4 text-white/80" strokeWidth={1.8} />
+                <Activity className="w-4 h-4 text-white/80" strokeWidth={1.8} />
+                <Sparkles className="w-4 h-4 text-white/80" strokeWidth={1.8} />
+              </div>
+              <p className="font-bold text-xs text-white/90">오백원의 행복 커뮤니티 현황</p>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white/20 rounded-xl px-4 py-3 text-center">
                 <p className="text-2xl font-black">
@@ -685,12 +689,19 @@ export default function HomePage() {
             return (
               <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-green-400">
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="font-bold text-gray-700 text-sm">🆕 최신 업데이트</h2>
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
-                    {latest.version}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <RefreshCw className="w-4 h-4 text-green-500" strokeWidth={1.8} />
+                    <Bell className="w-4 h-4 text-green-500" strokeWidth={1.8} />
+                    <Rocket className="w-4 h-4 text-green-500" strokeWidth={1.8} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-bold text-gray-700 text-sm">최신 업데이트</h2>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
+                      {latest.version}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-400 mb-1">{latest.date}</p>
+                <p className="text-xs text-gray-400 mb-1 text-right">{latest.date}</p>
                 <p className="text-sm font-semibold text-gray-700">
                   {latest.emoji} {latest.title}
                 </p>
