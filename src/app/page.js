@@ -533,7 +533,7 @@ export default function HomePage() {
                   const appStoreId = "6744194047";
                   window.open(`https://apps.apple.com/app/id${appStoreId}?action=write-review`, "_blank");
                 }}
-                className="bg-gradient-to-br from-yellow-400 to-orange-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+                className="bg-gradient-to-br from-green-500 to-teal-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
               >
                 <span className="text-3xl flex-shrink-0">⭐</span>
                 <div className="text-right flex-1">
