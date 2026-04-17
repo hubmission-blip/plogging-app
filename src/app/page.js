@@ -708,12 +708,12 @@ export default function HomePage() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-400 mb-1 text-right">{latest.date}</p>
-                <p className="text-sm font-semibold text-gray-500">
+                <p className="text-sm font-semibold text-gray-400">
                   {latest.emoji} {latest.title}
                 </p>
                 <ul className="mt-1.5 space-y-0.5">
                   {latest.items.map((item, i) => (
-                    <li key={i} className="text-xs text-gray-300">· {item}</li>
+                    <li key={i} className="text-xs text-gray-400">· {item}</li>
                   ))}
                 </ul>
               </div>
