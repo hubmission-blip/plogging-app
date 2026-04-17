@@ -1,7 +1,17 @@
 {
-  "version": "v1.72",
-  "build": 72,
+  "version": "v1.73",
+  "build": 73,
   "changelog": [
+    {
+      "version": "v1.73",
+      "build": 73,
+      "date": "2026-04-17",
+      "emoji": "🎯",
+      "title": "로딩 페이지 아이콘 교체",
+      "items": [
+        "Recycle 아이콘 올리브그린 적용"
+      ]
+    },
     {
       "version": "v1.72",
       "build": 72,
