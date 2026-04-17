@@ -14,6 +14,8 @@ const STOP_SPEED_MS = 0.5;   // m/s 이하 → "정지" 판정 (≈ 1.8 km/h)
 const GPS_ACCURACY_THRESHOLD = 50;   // 50m 이상 오차면 무시
 const GPS_OUTLIER_MAX_MS     = 30;   // 30m/s(108km/h) 이상 순간이동이면 GPS 오류로 판단
 const GPS_WARMUP_COUNT       = 3;    // 연속 3회 정상 신호 확인 후 기록 시작
+const GPS_GAP_THRESHOLD_SEC  = 15;   // 15초 이상 갭 → 거리/속도 계산 건너뜀 (점핑 방지)
+const GPS_RESUME_SETTLE      = 3;    // 갭 후 연속 3회 정상 수신해야 다시 기록 시작
 
 // ─── Haversine 거리 공식 (GPS 두 점 사이 km) ──────────────
 function haversineDistance(lat1, lon1, lat2, lon2) {
@@ -85,6 +87,7 @@ export function useLocation({ onSpeedViolation, backgroundModeEnabled = false } 
   const autoStopCalledRef   = useRef(false);
   const goodReadingsRef     = useRef(0);   // 연속 정상 수신 횟수 (워밍업용)
   const bgWatcherIdRef      = useRef(null); // 네이티브 백그라운드 워처 ID
+  const gapSettleRef        = useRef(0);   // GPS 갭 후 재안정화 카운터
 
   // ── Wake Lock (화면 꺼짐 방지) ─────────────────────────
   const [wakeLockActive, setWakeLockActive] = useState(false);
@@ -149,11 +152,12 @@ export function useLocation({ onSpeedViolation, backgroundModeEnabled = false } 
     setGpsAccuracy(Math.round(accuracy));
     if (accuracy > GPS_ACCURACY_THRESHOLD) {
       goodReadingsRef.current = 0;
+      gapSettleRef.current = 0;
       setGpsReady(false);
       return;
     }
 
-    // ── [필터 3] GPS 워밍업 ──────────────────────────────
+    // ── [필터 2] GPS 워밍업 (최초 시작 시) ───────────────
     if (goodReadingsRef.current < GPS_WARMUP_COUNT) {
       goodReadingsRef.current += 1;
       lastPositionRef.current = { lat, lng, timestamp: now };
@@ -163,15 +167,42 @@ export function useLocation({ onSpeedViolation, backgroundModeEnabled = false } 
 
     if (lastPositionRef.current) {
       const { lat: pLat, lng: pLng, timestamp: pTime } = lastPositionRef.current;
+      const elapsedSec = Math.max((now - pTime) / 1000, 0.001);
+
+      // ── [필터 3] GPS 갭 감지 (신호 끊김 후 복귀) ────────
+      // 15초 이상 갭이 발생하면 → 위치만 갱신, 거리/속도 계산 건너뜀
+      // 이후 연속 3회 정상 수신될 때까지 재안정화 기간
+      if (elapsedSec > GPS_GAP_THRESHOLD_SEC) {
+        gapSettleRef.current = 0; // 재안정화 카운터 리셋
+        lastPositionRef.current = { lat, lng, timestamp: now };
+        setCurrentSpeed(0);
+        setIsSpeedWarning(false);
+        violationStartRef.current = null;
+        // 경로에는 추가 (선 연결은 유지하되 거리는 미계산)
+        if (!autoStopCalledRef.current) {
+          setPath((prev) => [...prev, { lat, lng }]);
+        }
+        return;
+      }
+
+      // ── [필터 3-1] 갭 후 재안정화 기간 ─────────────────
+      // 갭 복귀 직후 GPS가 불안정할 수 있으므로 3회 연속 정상 수신 확인
+      if (gapSettleRef.current < GPS_RESUME_SETTLE) {
+        gapSettleRef.current += 1;
+        lastPositionRef.current = { lat, lng, timestamp: now };
+        if (!autoStopCalledRef.current) {
+          setPath((prev) => [...prev, { lat, lng }]);
+        }
+        return;
+      }
 
       const distKm     = haversineDistance(pLat, pLng, lat, lng);
       const distM      = distKm * 1000;
-      const elapsedSec = Math.max((now - pTime) / 1000, 0.001);
       const elapsedH   = elapsedSec / 3600;
       const speedKmh   = distKm / elapsedH;
       const speedMs    = distM / elapsedSec;
 
-      // ── [필터 2] 이상치(순간이동) 감지 ──────────────────
+      // ── [필터 4] 이상치(순간이동) 감지 ──────────────────
       if (speedMs > GPS_OUTLIER_MAX_MS) return;
 
       const roundedSpeed = Math.round(speedKmh);
@@ -184,7 +215,6 @@ export function useLocation({ onSpeedViolation, backgroundModeEnabled = false } 
           if (!violationStartRef.current) violationStartRef.current = now;
           if (!autoStopCalledRef.current && now - violationStartRef.current >= AUTO_STOP_MS) {
             autoStopCalledRef.current = true;
-            // stopTracking은 아래에서 정의 → ref로 호출
             return;
           }
         } else {
@@ -217,6 +247,8 @@ export function useLocation({ onSpeedViolation, backgroundModeEnabled = false } 
       setPath((prev) => [...prev, { lat, lng }]);
     }
 
+    // 정상 수신 → 갭 카운터 유지 (이미 settle 완료 상태)
+    gapSettleRef.current = GPS_RESUME_SETTLE;
     lastPositionRef.current = { lat, lng, timestamp: now };
   }, [onSpeedViolation]);
 
@@ -261,6 +293,7 @@ export function useLocation({ onSpeedViolation, backgroundModeEnabled = false } 
     wasMovingRef.current       = false;
     isTrackingRef.current      = false;
     goodReadingsRef.current    = 0;
+    gapSettleRef.current       = 0;
     releaseWakeLock();
   }, [releaseWakeLock, stopNativeBgWatcher]);
 
@@ -332,6 +365,7 @@ export function useLocation({ onSpeedViolation, backgroundModeEnabled = false } 
     wasMovingRef.current       = false;
     isTrackingRef.current      = true;
     goodReadingsRef.current    = 0;
+    gapSettleRef.current       = 0;
 
     requestWakeLock();
 
