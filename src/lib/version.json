@@ -1,7 +1,18 @@
 {
-  "version": "v1.73",
-  "build": 73,
+  "version": "v1.74",
+  "build": 74,
   "changelog": [
+    {
+      "version": "v1.74",
+      "build": 74,
+      "date": "2026-04-17",
+      "emoji": "🔧",
+      "title": "전체 페이지 이모지→SVG 아이콘 통일",
+      "items": [
+        "lucide-react 단색 아이콘 적용",
+        "메인/지도/탄소중립/후원/캘린더/랭킹/내정보/관리자/로딩 페이지"
+      ]
+    },
     {
       "version": "v1.73",
       "build": 73,
