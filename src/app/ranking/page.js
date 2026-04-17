@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
+import { Trophy, Users, Map } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
@@ -19,8 +20,8 @@ const PERIOD_TABS = [
   { id: "all",     label: "전체" },
 ];
 const VIEW_TABS = [
-  { id: "list", label: "👥 유저 랭킹" },
-  { id: "map",  label: "🗺️ 지역 랭킹" },
+  { id: "list", label: "유저 랭킹",  iconId: "users" },
+  { id: "map",  label: "지역 랭킹", iconId: "map" },
 ];
 
 function getPeriodStart(period) {
@@ -133,7 +134,7 @@ function RankingPageInner() {
             className="h-9 w-auto object-contain"
           />
         </Link>
-        <p className="text-sm font-black text-gray-700">🏆 랭킹</p>
+        <p className="text-sm font-black text-gray-700 flex items-center gap-1"><Trophy className="w-4 h-4" strokeWidth={1.8} /> 랭킹</p>
       </div>
 
       {/* ── 행정구역 랭킹지도 바로가기 카드 ── */}
@@ -169,9 +170,10 @@ function RankingPageInner() {
           <button
             key={v.id}
             onClick={() => setView(v.id)}
-            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors
+            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-1
               ${view === v.id ? "border-green-500 text-green-600" : "border-transparent text-gray-400"}`}
           >
+            {v.iconId === "users" ? <Users className="w-4 h-4" strokeWidth={1.8} /> : <Map className="w-4 h-4" strokeWidth={1.8} />}
             {v.label}
           </button>
         ))}

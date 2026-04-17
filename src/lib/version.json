@@ -1,7 +1,17 @@
 {
-  "version": "v1.71",
-  "build": 71,
+  "version": "v1.72",
+  "build": 72,
   "changelog": [
+    {
+      "version": "v1.72",
+      "build": 72,
+      "date": "2026-04-17",
+      "emoji": "✨",
+      "title": "관리자 대시보드 헤더/탭 아이콘 SVG 교체",
+      "items": [
+        "Settings, BarChart3 등 9개 탭 아이콘 적용"
+      ]
+    },
     {
       "version": "v1.71",
       "build": 71,

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { Settings, RefreshCw, BarChart3, Users, Gift, ShoppingCart, ClipboardList, Image, Recycle, Wrench, Megaphone } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
@@ -868,15 +869,15 @@ export default function AdminPage() {
     : rewards.filter((r) => r.status === rewardFilter && !r.executed);
 
   const TAB_LIST = [
-    { id: "dashboard",   label: "📊",  name: "통계" },
-    { id: "users",       label: "👥",  name: "유저" },
-    { id: "rewards",     label: "🎁",  name: `리워드${rewards.filter(r=>r.status==="pending").length > 0 ? ` (${rewards.filter(r=>r.status==="pending").length})` : ""}` },
-    { id: "shop",        label: "🛒",  name: "쇼핑상품" },
-    { id: "purchases",   label: "📋",  name: `구매검토${purchases.filter(p=>p.status==="pending").length > 0 ? ` (${purchases.filter(p=>p.status==="pending").length})` : ""}` },
-    { id: "banners",     label: "🖼️",  name: "배너" },
-    { id: "ecospots",    label: "♻️",  name: "에코스팟" },
-    { id: "maintenance", label: "🔧",  name: "유지관리" },
-    { id: "notices",     label: "📢",  name: "공지" },
+    { id: "dashboard",   Icon: BarChart3,      name: "통계" },
+    { id: "users",       Icon: Users,           name: "유저" },
+    { id: "rewards",     Icon: Gift,            name: `리워드${rewards.filter(r=>r.status==="pending").length > 0 ? ` (${rewards.filter(r=>r.status==="pending").length})` : ""}` },
+    { id: "shop",        Icon: ShoppingCart,     name: "쇼핑상품" },
+    { id: "purchases",   Icon: ClipboardList,    name: `구매검토${purchases.filter(p=>p.status==="pending").length > 0 ? ` (${purchases.filter(p=>p.status==="pending").length})` : ""}` },
+    { id: "banners",     Icon: Image,            name: "배너" },
+    { id: "ecospots",    Icon: Recycle,          name: "에코스팟" },
+    { id: "maintenance", Icon: Wrench,           name: "유지관리" },
+    { id: "notices",     Icon: Megaphone,        name: "공지" },
   ];
 
   const noticeTypeStyle = {
@@ -892,7 +893,7 @@ export default function AdminPage() {
       <div className="bg-gray-900 text-white px-4 pt-12 pb-4">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-lg font-bold">🔧 관리자 대시보드</h1>
+            <h1 className="text-lg font-bold flex items-center gap-1.5"><Settings className="w-5 h-5" strokeWidth={1.8} /> 관리자 대시보드</h1>
             <p className="text-gray-400 text-xs mt-0.5">{user.email}</p>
           </div>
           <button
@@ -906,7 +907,7 @@ export default function AdminPage() {
             }}
             className="bg-gray-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
           >
-            🔄 새로고침
+            <RefreshCw className="w-3.5 h-3.5 inline -mt-0.5" strokeWidth={2} /> 새로고침
           </button>
         </div>
       </div>
@@ -927,7 +928,7 @@ export default function AdminPage() {
             className={`flex-shrink-0 flex-1 py-3 text-xs font-medium border-b-2 transition-colors min-w-[56px]
               ${activeTab === tab.id ? "border-green-500 text-green-600" : "border-transparent text-gray-400"}`}
           >
-            <span className="block text-base">{tab.label}</span>
+            <tab.Icon className="w-4 h-4 mx-auto mb-0.5" strokeWidth={1.8} />
             <span>{tab.name}</span>
           </button>
         ))}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { Coins, MapPin, Footprints, UserPlus, Pencil, BarChart3, Trophy, Map, Users, Gift, Shield, Settings } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
@@ -284,12 +285,12 @@ export default function ProfilePage() {
         {/* ── 핵심 통계 3가지 ── */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { icon: "💰", label: "총 포인트",   value: `${stats.totalPoints.toLocaleString()}P` },
-            { icon: "📍", label: "총 거리",     value: `${stats.totalDistance.toFixed(1)}km` },
-            { icon: "🏃", label: "플로깅 횟수", value: `${stats.ploggingCount}회` },
+            { icon: <Coins className="w-5 h-5 text-yellow-500" strokeWidth={1.8} />, label: "총 포인트",   value: `${stats.totalPoints.toLocaleString()}P` },
+            { icon: <MapPin className="w-5 h-5 text-green-500" strokeWidth={1.8} />, label: "총 거리",     value: `${stats.totalDistance.toFixed(1)}km` },
+            { icon: <Footprints className="w-5 h-5 text-blue-500" strokeWidth={1.8} />, label: "플로깅 횟수", value: `${stats.ploggingCount}회` },
           ].map((item) => (
             <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm text-center">
-              <div className="text-2xl mb-1">{item.icon}</div>
+              <div className="flex justify-center mb-1">{item.icon}</div>
               <p className="text-lg font-bold text-gray-800">{item.value}</p>
               <p className="text-xs text-gray-400 mt-0.5">{item.label}</p>
             </div>
@@ -368,7 +369,7 @@ export default function ProfilePage() {
               className="w-full flex items-center justify-between px-4 py-4"
               onClick={() => setFriendsExpanded((v) => !v)}
             >
-              <h2 className="font-bold text-gray-700">🎁 내가 추천한 친구 ({referredUsers.length}명)</h2>
+              <h2 className="font-bold text-gray-700 flex items-center gap-1"><UserPlus className="w-4 h-4" strokeWidth={1.8} /> 내가 추천한 친구 ({referredUsers.length}명)</h2>
               <svg
                 width="16" height="16" viewBox="0 0 14 14" fill="none"
                 style={{ transform: friendsExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }}
@@ -410,16 +411,16 @@ export default function ProfilePage() {
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <p className="text-xs text-gray-400 font-medium px-4 pt-3 pb-1">바로가기</p>
           {[
-            { href: "/profile/edit", icon: "✏️", label: "내정보 수정 (닉네임 · 1365 회원번호)" },
-            { href: "/history",      icon: "📊", label: "전체 플로깅 기록" },
-            { href: "/ranking",      icon: "🏆", label: "랭킹 보기" },
-            { href: "/ranking?view=map", icon: "🗺️", label: "행정구역별 랭킹 지도" },
-            { href: "/group",        icon: "👥", label: "그룹 플로깅" },
-            { href: "/reward",       icon: "🎁", label: "포인트 리워드 교환" },
+            { href: "/profile/edit", icon: <Pencil className="w-5 h-5 text-gray-500" strokeWidth={1.8} />, label: "내정보 수정 (닉네임 · 1365 회원번호)" },
+            { href: "/history",      icon: <BarChart3 className="w-5 h-5 text-gray-500" strokeWidth={1.8} />, label: "전체 플로깅 기록" },
+            { href: "/ranking",      icon: <Trophy className="w-5 h-5 text-gray-500" strokeWidth={1.8} />, label: "랭킹 보기" },
+            { href: "/ranking?view=map", icon: <Map className="w-5 h-5 text-gray-500" strokeWidth={1.8} />, label: "행정구역별 랭킹 지도" },
+            { href: "/group",        icon: <Users className="w-5 h-5 text-gray-500" strokeWidth={1.8} />, label: "그룹 플로깅" },
+            { href: "/reward",       icon: <Gift className="w-5 h-5 text-gray-500" strokeWidth={1.8} />, label: "포인트 리워드 교환" },
           ].map((item) => (
             <Link key={item.href} href={item.href}
               className="flex items-center gap-3 px-4 py-4 border-b last:border-0 active:bg-gray-50">
-              <span className="text-xl">{item.icon}</span>
+              <span className="flex-shrink-0">{item.icon}</span>
               <span className="flex-1 text-sm font-medium text-gray-700">{item.label}</span>
               <span className="text-gray-300">›</span>
             </Link>
@@ -430,18 +431,16 @@ export default function ProfilePage() {
         {isAdmin && (
           <div className="bg-gray-900 rounded-2xl shadow-sm overflow-hidden">
             <p className="text-xs text-gray-500 font-medium px-4 pt-3 pb-1">관리자 전용</p>
-            {[
-              { href: "/admin",          icon: "📊", label: "관리자 대시보드" },
-              { href: "/admin?tab=users", icon: "👥", label: "유저 관리" },
-              { href: "/admin?tab=rewards", icon: "🎁", label: "리워드 처리" },
-            ].map((item) => (
-              <Link key={item.href} href={item.href}
-                className="flex items-center gap-3 px-4 py-4 border-b border-gray-800 last:border-0 active:bg-gray-800">
-                <span className="text-xl">{item.icon}</span>
-                <span className="flex-1 text-sm font-medium text-gray-300">{item.label}</span>
-                <span className="text-gray-600">›</span>
-              </Link>
-            ))}
+            <Link href="/admin"
+              className="flex items-center gap-3 px-4 py-4 active:bg-gray-800">
+              <div className="flex items-center gap-1.5">
+                <Shield className="w-5 h-5 text-gray-400" strokeWidth={1.8} />
+                <Settings className="w-5 h-5 text-gray-400" strokeWidth={1.8} />
+                <Users className="w-5 h-5 text-gray-400" strokeWidth={1.8} />
+              </div>
+              <span className="flex-1 text-sm font-medium text-gray-300">관리자 페이지 바로가기</span>
+              <span className="text-gray-600">›</span>
+            </Link>
           </div>
         )}
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { CalendarDays, MapPin } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
@@ -68,7 +69,7 @@ function RegionSheet({ current, onSelect, onClose }) {
 
         {/* 헤더 */}
         <div className="flex items-center justify-between px-5 pb-3 border-b border-gray-100">
-          <p className="font-black text-gray-800 text-base">🗺️ 지역 선택</p>
+          <p className="font-black text-gray-800 text-base flex items-center gap-1"><MapPin className="w-4 h-4" strokeWidth={1.8} /> 지역 선택</p>
           <button onClick={onClose} className="text-gray-400 text-sm px-2 py-1">닫기</button>
         </div>
 
@@ -608,7 +609,7 @@ export default function CalendarPage() {
           />
         </Link>
         {/* 페이지 타이틀 */}
-        <p className="text-sm font-black text-gray-700">📅 플로깅 캘린더</p>
+        <p className="text-sm font-black text-gray-700 flex items-center gap-1"><CalendarDays className="w-4 h-4" strokeWidth={1.8} /> 플로깅 캘린더</p>
       </div>
 
       {/* ── 지역 선택 바 ── */}
