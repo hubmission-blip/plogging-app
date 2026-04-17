@@ -386,7 +386,7 @@ export default function HomePage() {
                 className="bg-white w-10 h-10 rounded-full flex items-center justify-center shadow flex-shrink-0"
                 title="플로깅 시작"
               >
-                <PersonStanding className="w-5 h-5 text-green-600" strokeWidth={2} />
+                <span className="text-lg">🚶</span>
               </Link>
             </div>
           ) : (
@@ -490,7 +490,7 @@ export default function HomePage() {
                     ? "…"
                     : `${communityStats.users.toLocaleString()}명`}
                 </p>
-                <p className="text-xs text-green-100 mt-0.5">👥 총 가입자</p>
+                <p className="text-xs text-green-100 mt-0.5 flex items-center justify-center gap-1"><Users className="w-3.5 h-3.5 inline" strokeWidth={2} /> 총 가입자</p>
               </div>
               <div className="bg-white/20 rounded-xl px-4 py-3 text-center">
                 <p className="text-2xl font-black">
@@ -498,7 +498,7 @@ export default function HomePage() {
                     ? "…"
                     : `${communityStats.distance.toFixed(1)}km`}
                 </p>
-                <p className="text-xs text-green-100 mt-0.5">🚶 총 이동 거리</p>
+                <p className="text-xs text-green-100 mt-0.5 flex items-center justify-center gap-1"><Footprints className="w-3.5 h-3.5 inline" strokeWidth={2} /> 총 이동 거리</p>
               </div>
             </div>
           </div>
@@ -584,7 +584,8 @@ export default function HomePage() {
               <h2 className="font-bold text-gray-700">이용 방법</h2>
               <button
                 onClick={() => setShowGuide(true)}
-                className="text-xs text-green-500 font-medium border border-green-200 px-2 py-1 rounded-full"
+                className="text-xs font-medium px-2 py-1 rounded-full"
+                style={{ color: "#8dc63f", borderWidth: "1px", borderStyle: "solid", borderColor: "#8dc63f50" }}
               >
                 가이드 다시 보기
               </button>
@@ -594,7 +595,7 @@ export default function HomePage() {
                 <div key={item.step} className="bg-white rounded-2xl p-4 shadow-sm flex flex-col">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>STEP {item.step}</span>
-                    <span className="text-sm font-bold text-gray-900">{item.title}</span>
+                    <span className="text-sm font-bold text-gray-600">{item.title}</span>
                   </div>
                   <div className="flex items-start gap-2 mt-2">
                     <item.Icon className="w-6 h-6 flex-shrink-0" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
@@ -699,19 +700,19 @@ export default function HomePage() {
                     <Rocket className="w-5 h-5" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
                   </div>
                   <div className="flex items-center gap-2">
-                    <h2 className="font-bold text-gray-700 text-sm">최신 업데이트</h2>
+                    <h2 className="font-bold text-gray-600 text-sm">최신 업데이트</h2>
                     <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
                       {latest.version}
                     </span>
                   </div>
                 </div>
                 <p className="text-xs text-gray-400 mb-1 text-right">{latest.date}</p>
-                <p className="text-sm font-semibold text-gray-700">
+                <p className="text-sm font-semibold text-gray-600">
                   {latest.emoji} {latest.title}
                 </p>
                 <ul className="mt-1.5 space-y-0.5">
                   {latest.items.map((item, i) => (
-                    <li key={i} className="text-xs text-gray-500">· {item}</li>
+                    <li key={i} className="text-xs text-gray-600">· {item}</li>
                   ))}
                 </ul>
               </div>
