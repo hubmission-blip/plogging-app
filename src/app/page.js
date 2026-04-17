@@ -713,7 +713,7 @@ export default function HomePage() {
                 </p>
                 <ul className="mt-1.5 space-y-0.5">
                   {latest.items.map((item, i) => (
-                    <li key={i} className="text-xs text-gray-500">· {item}</li>
+                    <li key={i} className="text-xs text-gray-300">· {item}</li>
                   ))}
                 </ul>
               </div>

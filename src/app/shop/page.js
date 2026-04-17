@@ -253,17 +253,7 @@ function ProductCard({ product, onBuy, onConfirm }) {
           <div className="hidden absolute inset-0 items-center justify-center text-5xl bg-gray-100">
             🛒
           </div>
-          {/* 태그 */}
-          {product.tag && (
-            <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white
-              ${product.tag === "베스트" ? "bg-orange-500"
-              : product.tag === "NEW"    ? "bg-blue-500"
-              : product.tag === "필수템" ? "bg-purple-500"
-              : ""}`}
-              style={!(product.tag === "베스트" || product.tag === "NEW" || product.tag === "필수템") ? { backgroundColor: "#CD5C5C" } : undefined}>
-              {product.tag}
-            </span>
-          )}
+          {/* 태그 — 상품 정보 영역으로 이동 */}
           {/* 플랫폼 뱃지 */}
           <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white ${plt.color}`}>
             {plt.icon} {plt.label}
@@ -290,16 +280,23 @@ function ProductCard({ product, onBuy, onConfirm }) {
             )}
           </div>
 
+          {/* 키워드 태그 */}
+          {product.tag && (
+            <div className="rounded-xl px-3 py-1.5 mb-2 text-center" style={{ backgroundColor: "#8dc63f18" }}>
+              <span className="text-[11px] font-bold" style={{ color: "#8dc63f" }}>{product.tag}</span>
+            </div>
+          )}
+
           {/* 보너스 포인트 안내 */}
-          <div className="rounded-xl px-3 py-2 mb-3 flex items-center justify-between" style={{ backgroundColor: "#CD5C5C15" }}>
-            <span className="text-xs" style={{ color: "#CD5C5C" }}>🎁 구매 시 보너스</span>
-            <span className="text-xs font-black" style={{ color: "#CD5C5C" }}>+{product.bonusPoints}P</span>
+          <div className="rounded-xl px-3 py-2 mb-3 flex items-center justify-between" style={{ backgroundColor: "#8dc63f18" }}>
+            <span className="text-xs" style={{ color: "#8dc63f" }}>🎁 구매 시 보너스</span>
+            <span className="text-xs font-black" style={{ color: "#8dc63f" }}>+{product.bonusPoints}P</span>
           </div>
 
           {/* 구매 버튼 — 항상 유지 */}
           {confirmed ? (
-            <div className="rounded-xl py-2.5 text-center" style={{ backgroundColor: "#CD5C5C15" }}>
-              <p className="text-sm font-bold" style={{ color: "#CD5C5C" }}>🎉 +{product.bonusPoints}P 받음!</p>
+            <div className="rounded-xl py-2.5 text-center" style={{ backgroundColor: "#8dc63f18" }}>
+              <p className="text-sm font-bold" style={{ color: "#8dc63f" }}>🎉 +{product.bonusPoints}P 받음!</p>
             </div>
           ) : (
             <button
