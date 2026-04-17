@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Zap, Car, Leaf, CreditCard, ChevronUp, ChevronDown, Globe, LinkIcon, Building2, ExternalLink } from "lucide-react";
 
 // ── 녹색생활 실천 17개 항목 ─────────────────────────────
 const GREEN_ITEMS = [
@@ -30,7 +31,7 @@ const GREEN_ITEMS = [
 const SECTIONS = [
   {
     id: "energy",
-    emoji: "⚡",
+    Icon: Zap,
     title: "탄소중립포인트 에너지",
     subtitle: "전기·도시가스·수도 절약",
     color: "from-yellow-400 to-orange-500",
@@ -62,7 +63,7 @@ const SECTIONS = [
   },
   {
     id: "car",
-    emoji: "🚗",
+    Icon: Car,
     title: "탄소중립포인트 자동차",
     subtitle: "연간 주행거리 감축",
     color: "from-blue-400 to-blue-600",
@@ -94,7 +95,7 @@ const SECTIONS = [
   },
   {
     id: "green",
-    emoji: "🌿",
+    Icon: Leaf,
     title: "탄소중립포인트 녹색생활 실천",
     subtitle: "일상 속 17가지 친환경 실천",
     color: "from-green-400 to-green-600",
@@ -121,7 +122,7 @@ const SECTIONS = [
   },
   {
     id: "greencard",
-    emoji: "💳",
+    Icon: CreditCard,
     title: "그린카드 (에코머니)",
     subtitle: "친환경 소비로 포인트 적립",
     color: "from-emerald-400 to-green-500",
@@ -167,13 +168,16 @@ function SectionCard({ sec, greenItems }) {
         onClick={() => setOpen((v) => !v)}
       >
         <div className="flex items-center gap-3">
-          <span className="text-3xl">{sec.emoji}</span>
+          <sec.Icon className="w-8 h-8 text-white/90" strokeWidth={1.8} />
           <div className="text-left">
             <p className="font-black text-base leading-tight">{sec.title}</p>
             <p className="text-white/80 text-xs mt-0.5">{sec.subtitle}</p>
           </div>
         </div>
-        <span className="text-white/70 text-lg">{open ? "▲" : "▼"}</span>
+        {open
+          ? <ChevronUp className="w-5 h-5 text-white/70" strokeWidth={2} />
+          : <ChevronDown className="w-5 h-5 text-white/70" strokeWidth={2} />
+        }
       </button>
 
       {open && (
@@ -272,7 +276,7 @@ function SectionCard({ sec, greenItems }) {
             className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm text-white
               bg-gradient-to-r ${sec.color} active:opacity-80 transition-opacity`}
           >
-            🔗 {sec.urlLabel} 바로가기
+            <ExternalLink className="w-4 h-4 inline" strokeWidth={2} /> {sec.urlLabel} 바로가기
           </a>
         </div>
       )}
@@ -293,7 +297,7 @@ export default function CarbonPage() {
           ← 홈
         </Link>
         <div className="text-center mt-4">
-          <div className="text-5xl mb-3">🌍</div>
+          <Globe className="w-12 h-12 text-white/90 mx-auto mb-3" strokeWidth={1.5} />
           <h1 className="text-2xl font-black leading-tight">탄소중립포인트</h1>
           <p className="text-green-100 text-sm mt-1">환경부 운영 · 친환경 실천 국가 인센티브</p>
         </div>
@@ -322,12 +326,12 @@ export default function CarbonPage() {
         {/* ── 빠른 요약 카드 ── */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { emoji: "⚡", label: "에너지",   sub: "최대\n21만원/년",  color: "bg-orange-50 border-orange-200" },
-            { emoji: "🚗", label: "자동차",   sub: "최대\n10만원/년",  color: "bg-blue-50 border-blue-200" },
-            { emoji: "🌿", label: "녹색생활", sub: "17가지\n실천항목", color: "bg-green-50 border-green-200" },
+            { Icon: Zap,  label: "에너지",   sub: "최대\n21만원/년",  color: "bg-orange-50 border-orange-200", iconColor: "text-orange-500" },
+            { Icon: Car,  label: "자동차",   sub: "최대\n10만원/년",  color: "bg-blue-50 border-blue-200",     iconColor: "text-blue-500" },
+            { Icon: Leaf, label: "녹색생활", sub: "17가지\n실천항목", color: "bg-green-50 border-green-200",   iconColor: "text-green-500" },
           ].map((c) => (
             <div key={c.label} className={`${c.color} border rounded-2xl p-3 text-center`}>
-              <div className="text-2xl">{c.emoji}</div>
+              <c.Icon className={`w-6 h-6 mx-auto ${c.iconColor}`} strokeWidth={1.8} />
               <p className="text-xs font-bold text-gray-700 mt-1">{c.label}</p>
               <p className="text-[10px] text-gray-500 mt-0.5 whitespace-pre-line leading-tight">{c.sub}</p>
             </div>
@@ -356,7 +360,7 @@ export default function CarbonPage() {
 
         {/* ── 플로깅 연계 안내 ── */}
         <div className="bg-white border border-green-200 rounded-2xl p-4">
-          <p className="text-sm font-bold text-green-700 mb-2">🌿 오백원의행복 + 탄소중립포인트</p>
+          <p className="text-sm font-bold text-green-700 mb-2 flex items-center gap-1.5"><Leaf className="w-4 h-4 text-green-600" strokeWidth={2} /> 오백원의행복 + 탄소중립포인트</p>
           <p className="text-xs text-gray-600 leading-relaxed">
             오백원의행복으로 플로깅하면서 포인트를 적립하고,
             탄소중립포인트 녹색생활 실천(공유자전거, 텀블러 등)에도 함께 참여하면
@@ -366,13 +370,13 @@ export default function CarbonPage() {
 
         {/* ── 공식 링크 모음 ── */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-xs font-bold text-gray-500 mb-3">🔗 공식 누리집 바로가기</p>
+          <p className="text-xs font-bold text-gray-500 mb-3 flex items-center gap-1.5"><LinkIcon className="w-3.5 h-3.5" strokeWidth={2} /> 공식 누리집 바로가기</p>
           <div className="space-y-2">
             {[
-              { label: "⚡ 탄소중립포인트 에너지",       url: "https://cpoint.or.kr",                      sub: "cpoint.or.kr" },
-              { label: "🚗 탄소중립포인트 자동차",        url: "https://car.cpoint.or.kr",                  sub: "car.cpoint.or.kr" },
-              { label: "🌿 탄소중립포인트 녹색생활 실천", url: "https://www.cpoint.or.kr/netzero/main.do",  sub: "cpoint.or.kr/netzero" },
-              { label: "💳 그린카드 (에코머니)",          url: "https://www.green-card.co.kr",              sub: "green-card.co.kr" },
+              { label: "탄소중립포인트 에너지",       Icon: Zap,        url: "https://cpoint.or.kr",                      sub: "cpoint.or.kr" },
+              { label: "탄소중립포인트 자동차",        Icon: Car,        url: "https://car.cpoint.or.kr",                  sub: "car.cpoint.or.kr" },
+              { label: "탄소중립포인트 녹색생활 실천", Icon: Leaf,       url: "https://www.cpoint.or.kr/netzero/main.do",  sub: "cpoint.or.kr/netzero" },
+              { label: "그린카드 (에코머니)",          Icon: CreditCard, url: "https://www.green-card.co.kr",              sub: "green-card.co.kr" },
             ].map((link) => (
               <a
                 key={link.label}
@@ -381,11 +385,14 @@ export default function CarbonPage() {
                 rel="noopener noreferrer"
                 className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2.5 active:bg-gray-100"
               >
-                <div>
-                  <p className="text-xs font-bold text-gray-700">{link.label}</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">{link.sub}</p>
+                <div className="flex items-center gap-2">
+                  <link.Icon className="w-4 h-4 text-gray-500 flex-shrink-0" strokeWidth={1.8} />
+                  <div>
+                    <p className="text-xs font-bold text-gray-700">{link.label}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{link.sub}</p>
+                  </div>
                 </div>
-                <span className="text-gray-400 text-sm">→</span>
+                <ExternalLink className="w-3.5 h-3.5 text-gray-400" strokeWidth={2} />
               </a>
             ))}
           </div>
@@ -394,7 +401,7 @@ export default function CarbonPage() {
         {/* ── 지자체별 에코마일리지 바로가기 ── */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-bold text-gray-700">🏙️ 지자체별 에코마일리지 바로가기</p>
+            <p className="text-sm font-bold text-gray-700 flex items-center gap-1.5"><Building2 className="w-4 h-4 text-gray-600" strokeWidth={1.8} /> 지자체별 에코마일리지 바로가기</p>
             <Link
               href="/ecomileage"
               className="text-xs text-sky-600 font-bold border border-sky-200 px-2.5 py-1 rounded-full bg-sky-50"

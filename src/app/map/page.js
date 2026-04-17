@@ -2,6 +2,7 @@
 
 import { notifyPloggingComplete } from "@/lib/notify";
 import Link from "next/link";
+import { MapPin as MapPinIcon, Timer, Gauge, Radio, CheckCircle, Square, Sun, Footprints as FootprintsIcon, AlertTriangle as AlertTriangleIcon, Flag as FlagIcon, Users as UsersIcon, Smartphone as SmartphoneIcon } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -1183,21 +1184,21 @@ function MapPageInner() {
       {/* ── 상단 정보바 ─────────────────────────────────── */}
       <div className="absolute top-4 left-0 right-0 flex justify-center z-10 px-4">
         <div className="bg-white rounded-2xl px-4 py-2.5 shadow-lg flex items-center gap-2.5 flex-wrap justify-center">
-          <span className="text-sm font-bold text-green-700">📍 {distance.toFixed(2)} km</span>
+          <span className="text-sm font-bold text-green-700 flex items-center gap-1"><MapPinIcon className="w-3.5 h-3.5 inline" strokeWidth={2} /> {distance.toFixed(2)} km</span>
           {isTracking && (
             <>
               <span className="text-gray-300">|</span>
-              <span className={`text-sm font-bold ${duration >= MIN_DURATION_SEC ? "text-green-500" : "text-gray-600"}`}>
-                ⏱ {formatDuration(duration)}
+              <span className={`text-sm font-bold flex items-center gap-1 ${duration >= MIN_DURATION_SEC ? "text-green-500" : "text-gray-600"}`}>
+                <Timer className="w-3.5 h-3.5 inline" strokeWidth={2} /> {formatDuration(duration)}
               </span>
               <span className="text-gray-300">|</span>
-              <span className={`text-sm font-bold ${isSpeedWarning ? "text-red-500" : "text-blue-500"}`}>
-                🚀 {currentSpeed} km/h
+              <span className={`text-sm font-bold flex items-center gap-1 ${isSpeedWarning ? "text-red-500" : "text-blue-500"}`}>
+                <Gauge className="w-3.5 h-3.5 inline" strokeWidth={2} /> {currentSpeed} km/h
               </span>
               {/* GPS 상태 표시 */}
               {!gpsReady ? (
-                <span className="text-xs text-orange-500 animate-pulse basis-full text-center">
-                  📡 GPS 신호 확인 중… {gpsAccuracy ? `(오차 ${gpsAccuracy}m)` : ""}
+                <span className="text-xs text-orange-500 animate-pulse basis-full text-center flex items-center justify-center gap-1">
+                  <Radio className="w-3 h-3 inline" strokeWidth={2} /> GPS 신호 확인 중… {gpsAccuracy ? `(오차 ${gpsAccuracy}m)` : ""}
                 </span>
               ) : (
                 <span className="text-xs text-red-500 animate-pulse basis-full text-center">
@@ -1219,7 +1220,7 @@ function MapPageInner() {
               { label: "3회 이상 줍기", ok: stopCount >= MIN_STOPS, val: `${stopCount}회` },
             ].map((item, i) => (
               <div key={i} className={`flex flex-col items-center ${item.ok ? "text-green-600" : "text-gray-400"}`}>
-                <span>{item.ok ? "✅" : "⬜"}</span>
+                <span>{item.ok ? <CheckCircle className="w-4 h-4 text-green-600" strokeWidth={2} /> : <Square className="w-4 h-4 text-gray-300" strokeWidth={1.5} />}</span>
                 <span>{item.label}</span>
                 <span className="font-bold">{item.val}</span>
               </div>
@@ -1232,14 +1233,14 @@ function MapPageInner() {
       {isBackground && isTracking && (
         <div className="absolute inset-0 bg-black/70 z-[60] flex flex-col items-center justify-center p-6 text-center">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-xs w-full">
-            <div className="text-5xl mb-3">📱</div>
+            <SmartphoneIcon className="w-12 h-12 text-gray-700 mx-auto mb-3" strokeWidth={1.5} />
             <h3 className="font-black text-gray-800 text-lg mb-2">앱이 백그라운드로 전환됐어요</h3>
             <p className="text-sm text-gray-500 mb-4 leading-relaxed">
               다른 앱으로 전환되면 GPS 추적이 중단될 수 있어요.<br />
               플로깅 중에는 이 앱을 화면에 띄워두세요.
             </p>
-            <p className="text-xs text-orange-500 font-medium bg-orange-50 rounded-xl px-3 py-2">
-              ⚠️ 화면을 끄고 주머니에 넣는 건 괜찮아요<br />(화면 꺼짐 방지 기능이 작동 중)
+            <p className="text-xs text-orange-500 font-medium bg-orange-50 rounded-xl px-3 py-2 flex items-center justify-center gap-1">
+              <AlertTriangleIcon className="w-3.5 h-3.5 inline flex-shrink-0" strokeWidth={2} /> 화면을 끄고 주머니에 넣는 건 괜찮아요<br />(화면 꺼짐 방지 기능이 작동 중)
             </p>
           </div>
         </div>
@@ -1250,7 +1251,7 @@ function MapPageInner() {
       {speedLimitEnabled && isSpeedWarning && isTracking && (
         <div className="absolute top-36 left-0 right-0 flex justify-center z-10 px-4">
           <div className="bg-red-500 text-white rounded-2xl px-5 py-3 shadow-xl flex items-center gap-2 animate-pulse">
-            <span className="text-xl">⚠️</span>
+            <AlertTriangleIcon className="w-6 h-6 text-white flex-shrink-0" strokeWidth={2} />
             <div>
               <p className="font-bold text-sm">이동수단 감지!</p>
               <p className="text-xs opacity-90">시속 30km/h 초과 — 5초 지속 시 자동 종료됩니다</p>
@@ -1263,7 +1264,7 @@ function MapPageInner() {
       {groupId && isTracking && !isSpeedWarning && (
         <div className="absolute top-36 left-0 right-0 flex justify-center z-10">
           <div className="bg-purple-500 text-white rounded-full px-4 py-1 text-xs font-bold shadow">
-            👥 그룹 플로깅 중 · {groupSize}명 · +{groupSize * 5}P 보너스
+            <UsersIcon className="w-3.5 h-3.5 inline -mt-0.5" strokeWidth={2} /> 그룹 플로깅 중 · {groupSize}명 · +{groupSize * 5}P 보너스
           </div>
         </div>
       )}
@@ -1322,23 +1323,26 @@ function MapPageInner() {
       <div className="absolute bottom-24 left-0 right-0 flex flex-col items-center gap-2 z-10">
         {!isTracking ? (
           <>
-            <p className="text-xs text-white bg-black/40 rounded-full px-3 py-1">
-              🔆 시작 시 화면 꺼짐이 자동으로 방지돼요
+            <p className="text-xs text-white bg-black/40 rounded-full px-3 py-1 flex items-center gap-1">
+              <Sun className="w-3.5 h-3.5 inline" strokeWidth={2} /> 시작 시 화면 꺼짐이 자동으로 방지돼요
             </p>
             <button onClick={() => setShowReadyCheck(true)}
-              className="bg-green-500 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform">
-              🚶 플로깅 시작
+              className="bg-green-500 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform flex items-center gap-2">
+              <FootprintsIcon className="w-5 h-5" strokeWidth={2} /> 플로깅 시작
             </button>
           </>
         ) : (
           <>
             <div className={`text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow
               ${wakeLockActive ? "bg-green-500 text-white" : "bg-gray-200 text-gray-500"}`}>
-              {wakeLockActive ? "🔆 화면 켜짐 유지" : "⚠️ 화면 꺼짐 주의"}
+              {wakeLockActive
+                ? <><Sun className="w-3.5 h-3.5 inline" strokeWidth={2} /> 화면 켜짐 유지</>
+                : <><AlertTriangleIcon className="w-3.5 h-3.5 inline" strokeWidth={2} /> 화면 꺼짐 주의</>
+              }
             </div>
             <button onClick={handleStop}
-              className="bg-red-500 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform">
-              🏁 플로깅 종료
+              className="bg-red-500 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform flex items-center gap-2">
+              <FlagIcon className="w-5 h-5" strokeWidth={2} /> 플로깅 종료
             </button>
           </>
         )}

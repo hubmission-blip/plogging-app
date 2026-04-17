@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { CalendarDays, Leaf, Monitor, Cloud, Lightbulb, Medal, Star, Megaphone, Mail, Gift, Coins, Landmark, CreditCard, Smartphone, Info, PenLine } from "lucide-react";
 
 // ── 후원 계좌 정보 ─────────────────────────────────────────────
 const ACCOUNTS = [
@@ -20,18 +21,18 @@ const AMOUNTS = [
 
 // ── 후원자 혜택 ────────────────────────────────────────────────
 const BENEFITS = [
-  { icon: "🏅", title: "후원자 배지",     desc: "프로필에 특별 배지가 표시돼요" },
-  { icon: "⭐", title: "포인트 보너스",   desc: "월 300P 추가 적립 (정기 후원자)" },
-  { icon: "📢", title: "개발 참여",       desc: "신기능 우선 체험 및 의견 반영" },
-  { icon: "💌", title: "감사 메시지",     desc: "후원자 명단에 이름을 올려드려요" },
+  { Icon: Medal,     title: "후원자 배지",     desc: "프로필에 특별 배지가 표시돼요" },
+  { Icon: Star,      title: "포인트 보너스",   desc: "월 300P 추가 적립 (정기 후원자)" },
+  { Icon: Megaphone, title: "개발 참여",       desc: "신기능 우선 체험 및 의견 반영" },
+  { Icon: Mail,      title: "감사 메시지",     desc: "후원자 명단에 이름을 올려드려요" },
 ];
 
 // ── 프로젝트 현황 ──────────────────────────────────────────────
 const PROJECT_STATS = [
-  { icon: "🗓️", label: "서비스 시작",  value: "2025년" },
-  { icon: "🌿", label: "환경 미션",    value: "쓰레기 줍기" },
-  { icon: "💻", label: "운영 주체",    value: "GYEA·HubM" },
-  { icon: "☁️", label: "서버 비용",    value: "월 약 5만원" },
+  { Icon: CalendarDays, label: "서비스 시작",  value: "2025년" },
+  { Icon: Leaf,         label: "환경 미션",    value: "쓰레기 줍기" },
+  { Icon: Monitor,      label: "운영 주체",    value: "GYEA·HubM" },
+  { Icon: Cloud,        label: "서버 비용",    value: "월 약 5만원" },
 ];
 
 export default function DonatePage() {
@@ -98,7 +99,7 @@ export default function DonatePage() {
           <div className="grid grid-cols-2 gap-2 mt-4">
             {PROJECT_STATS.map((s) => (
               <div key={s.label} className="bg-purple-50 rounded-xl px-3 py-2.5">
-                <p className="text-base">{s.icon}</p>
+                <s.Icon className="w-5 h-5 text-purple-500" strokeWidth={1.8} />
                 <p className="text-xs text-purple-400 mt-0.5">{s.label}</p>
                 <p className="text-sm font-bold text-purple-700">{s.value}</p>
               </div>
@@ -108,7 +109,7 @@ export default function DonatePage() {
 
         {/* ── 후원이 필요한 이유 ── */}
         <div className="bg-purple-50 rounded-2xl p-4">
-          <p className="text-sm font-bold text-purple-700 mb-2">💡 후원금은 이렇게 쓰여요</p>
+          <p className="text-sm font-bold text-purple-700 mb-2 flex items-center gap-1.5"><Lightbulb className="w-4 h-4" strokeWidth={2} /> 후원금은 이렇게 쓰여요</p>
           <div className="space-y-2">
             {[
               { pct: 50, label: "서버·인프라 비용",  color: "bg-purple-500" },
@@ -134,11 +135,11 @@ export default function DonatePage() {
 
         {/* ── 후원자 혜택 ── */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-sm font-bold text-gray-700 mb-3">🎁 후원자 혜택</p>
+          <p className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5"><Gift className="w-4 h-4 text-gray-600" strokeWidth={2} /> 후원자 혜택</p>
           <div className="grid grid-cols-2 gap-2">
             {BENEFITS.map((b) => (
               <div key={b.title} className="bg-gray-50 rounded-xl p-3">
-                <p className="text-xl mb-1">{b.icon}</p>
+                <b.Icon className="w-5 h-5 text-purple-500 mb-1" strokeWidth={1.8} />
                 <p className="text-xs font-bold text-gray-700">{b.title}</p>
                 <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">{b.desc}</p>
               </div>
@@ -151,7 +152,7 @@ export default function DonatePage() {
 
         {/* ── 후원 금액 선택 ── */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-sm font-bold text-gray-700 mb-3">💰 후원 금액 선택</p>
+          <p className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5"><Coins className="w-4 h-4 text-gray-600" strokeWidth={2} /> 후원 금액 선택</p>
           <div className="grid grid-cols-3 gap-2 mb-3">
             {AMOUNTS.map((a) => (
               <button
@@ -195,7 +196,7 @@ export default function DonatePage() {
 
         {/* ── 계좌 정보 ── */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-sm font-bold text-gray-700 mb-3">🏦 후원 계좌</p>
+          <p className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5"><Landmark className="w-4 h-4 text-gray-600" strokeWidth={2} /> 후원 계좌</p>
           <div className="space-y-2">
             {ACCOUNTS.map((acc) => (
               <div
@@ -231,7 +232,7 @@ export default function DonatePage() {
 
           {/* 복사 안내 */}
           <div className="mt-3 bg-purple-50 rounded-xl px-3 py-2.5 flex items-start gap-2">
-            <span className="text-base mt-0.5">💡</span>
+            <Info className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" strokeWidth={2} />
             <p className="text-[11px] text-purple-700 leading-relaxed">
               <strong>금액을 먼저 선택</strong>하고 복사 버튼을 누르면
               <strong> 계좌번호 + 예금주 + 후원금액</strong>이 한 번에 복사돼요.
@@ -240,7 +241,7 @@ export default function DonatePage() {
           </div>
           {/* 입금자명 안내 */}
           <div className="mt-2 bg-yellow-50 rounded-xl px-3 py-2.5 flex items-start gap-2">
-            <span className="text-base mt-0.5">📝</span>
+            <PenLine className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
             <p className="text-[11px] text-yellow-700 leading-relaxed">
               입금 시 <strong>입금자명에 닉네임 또는 연락처</strong>를 남겨주시면 후원자 혜택 적용이 빨라져요.
               혜택 문의: <strong>hubmission@gmail.com</strong>
@@ -250,15 +251,15 @@ export default function DonatePage() {
 
         {/* ── 간편 후원 (토스·카카오페이) ── */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-sm font-bold text-gray-700 mb-1">📱 간편 후원</p>
+          <p className="text-sm font-bold text-gray-700 mb-1 flex items-center gap-1.5"><Smartphone className="w-4 h-4 text-gray-600" strokeWidth={2} /> 간편 후원</p>
           <p className="text-xs text-gray-400 mb-3">준비 중 · 곧 오픈 예정이에요</p>
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-gray-50 rounded-xl py-3 flex flex-col items-center gap-1.5 opacity-50">
-              <span className="text-2xl">💙</span>
+              <CreditCard className="w-6 h-6 text-blue-400" strokeWidth={1.5} />
               <p className="text-xs font-bold text-gray-500">토스 (준비중)</p>
             </div>
             <div className="bg-gray-50 rounded-xl py-3 flex flex-col items-center gap-1.5 opacity-50">
-              <span className="text-2xl">🟡</span>
+              <CreditCard className="w-6 h-6 text-yellow-500" strokeWidth={1.5} />
               <p className="text-xs font-bold text-gray-500">카카오페이 (준비중)</p>
             </div>
           </div>

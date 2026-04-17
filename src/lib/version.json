@@ -1,7 +1,17 @@
 {
-  "version": "v1.70",
-  "build": 70,
+  "version": "v1.71",
+  "build": 71,
   "changelog": [
+    {
+      "version": "v1.71",
+      "build": 71,
+      "date": "2026-04-17",
+      "emoji": "🚀",
+      "title": "프로젝트 후원 페이지 아이콘 SVG 교체",
+      "items": [
+        "프로젝트현황, 혜택, 금액, 계좌, 간편후원 아이콘 적용"
+      ]
+    },
     {
       "version": "v1.70",
       "build": 70,

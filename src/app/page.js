@@ -652,7 +652,7 @@ export default function HomePage() {
                 <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">전국 17개 시/도 안내</p>
               </div>
               <div className="flex justify-between items-end">
-                <Clover className="w-10 h-10 text-white/80" strokeWidth={1.5} />
+                <Building2 className="w-10 h-10 text-white/80" strokeWidth={1.5} />
                 <span className="text-white/60 text-xs font-bold">바로가기 →</span>
               </div>
             </Link>
@@ -665,7 +665,7 @@ export default function HomePage() {
                 <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">구매 시 포인트 보너스</p>
               </div>
               <div className="flex justify-between items-end">
-                <Building2 className="w-10 h-10 text-white/80" strokeWidth={1.5} />
+                <Clover className="w-10 h-10 text-white/80" strokeWidth={1.5} />
                 <span className="text-white/60 text-xs font-bold">바로가기 →</span>
               </div>
             </Link>
