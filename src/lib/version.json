@@ -1,7 +1,18 @@
 {
-  "version": "v1.61",
-  "build": 61,
+  "version": "v1.62",
+  "build": 62,
   "changelog": [
+    {
+      "version": "v1.62",
+      "build": 62,
+      "date": "2026-04-17",
+      "emoji": "✨",
+      "title": "포인트 적립기준 UI 개선",
+      "items": [
+        "지도 버튼 스타일 배경 적용",
+        "제목 우측정렬 및 폰트 조정"
+      ]
+    },
     {
       "version": "v1.61",
       "build": 61,

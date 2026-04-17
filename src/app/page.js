@@ -593,8 +593,8 @@ export default function HomePage() {
           </div>
 
           {/* ── 포인트 안내 ── */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <h2 className="font-bold text-gray-700 mb-3">💰 포인트 적립 기준</h2>
+          <div className="bg-green-50 border border-green-200 rounded-2xl p-4 shadow-sm">
+            <h2 className="font-bold text-gray-700 mb-3 text-right">💰 포인트 적립 기준</h2>
             <div className="space-y-2">
               {[
                 { label: "거리 1km 달성",      point: "+50P" },
@@ -602,8 +602,8 @@ export default function HomePage() {
                 { label: "그룹 참여 (인원 × 5)", point: "+αP" },
                 { label: "신규 가입 환영 포인트", point: "+100P" },
               ].map((item) => (
-                <div key={item.label} className="flex justify-between items-center py-1.5 border-b last:border-0">
-                  <span className="text-sm text-gray-600">{item.label}</span>
+                <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/60 last:border-0">
+                  <span className="text-xs text-gray-500">{item.label}</span>
                   <span className="text-sm font-bold text-green-600">{item.point}</span>
                 </div>
               ))}
