@@ -376,7 +376,7 @@ export default function HomePage() {
 
           {/* ── 웰컴 / 로그인 유도 ── */}
           {user ? (
-            <div className="bg-gradient-to-r rounded-2xl px-4 py-3 flex items-center justify-between text-white shadow-sm" style={{ backgroundImage: "linear-gradient(to right, #6B7F3B, #22c55e)" }}>
+            <div className="bg-gradient-to-r rounded-2xl px-4 py-3 flex items-center justify-between text-white shadow-sm" style={{ backgroundImage: "linear-gradient(to right, #8dc63f, #4cb748)" }}>
               <div>
                 <p className="text-xs text-green-100">반갑습니다!</p>
                 <p className="font-bold text-sm">{user.displayName || user.email?.split("@")[0]}</p>
