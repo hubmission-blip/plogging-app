@@ -265,6 +265,7 @@ export function useLocation({ onSpeedViolation, backgroundModeEnabled = false } 
   }, [releaseWakeLock, stopNativeBgWatcher]);
 
   // ─── 네이티브 백그라운드 워처 시작 ────────────────────
+  // 포그라운드에서는 웹 GPS가 담당, 백그라운드 진입 시에만 네이티브가 위치 수신
   const startNativeBgWatcher = useCallback(async () => {
     const plugin = await getBgGeoPlugin();
     if (!plugin) {
@@ -280,13 +281,14 @@ export function useLocation({ onSpeedViolation, backgroundModeEnabled = false } 
           stale: false,
           distanceFilter: 5, // 5m 이동마다 업데이트
         },
-        // 위치 콜백 — 백그라운드에서도 호출됨
+        // 위치 콜백 — 백그라운드에서만 위치 처리 (포그라운드는 웹 GPS가 담당)
         (location, error) => {
           if (error) {
             console.warn("[BgGeo] 위치 오류:", error);
             return;
           }
-          if (location) {
+          if (location && document.visibilityState === "hidden") {
+            // 백그라운드 상태일 때만 네이티브 위치 데이터 사용
             processPosition(
               location.latitude,
               location.longitude,
@@ -344,19 +346,17 @@ export function useLocation({ onSpeedViolation, backgroundModeEnabled = false } 
 
     setIsTracking(true);
 
-    // ── 네이티브 백그라운드 모드 시도 ──────────────────────
+    // ── 네이티브 백그라운드 모드 (보조) ────────────────────
+    // 웹 GPS와 병행 — 포그라운드는 웹 GPS, 백그라운드는 네이티브가 담당
     if (useNativeBg) {
-      const started = await startNativeBgWatcher();
-      if (started) {
-        // 네이티브 플러그인이 GPS를 담당 → 웹 watchPosition 불필요
-        console.log("[BgGeo] 네이티브 백그라운드 GPS 활성화");
-        return;
-      }
-      // 플러그인 실패 시 웹 방식으로 폴백
-      console.warn("[BgGeo] 네이티브 실패 → 웹 GPS 폴백");
+      startNativeBgWatcher().then((started) => {
+        if (started) {
+          console.log("[BgGeo] 네이티브 백그라운드 GPS 대기 중 (백그라운드 진입 시 활성화)");
+        }
+      });
     }
 
-    // ── 웹 기본 GPS 추적 ────────────────────────────────
+    // ── 웹 기본 GPS 추적 (항상 실행) ────────────────────
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         processPosition(
