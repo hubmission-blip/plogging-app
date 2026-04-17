@@ -303,7 +303,7 @@ function ProductCard({ product, onBuy, onConfirm }) {
           ) : (
             <button
               onClick={handleBuy}
-              className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-2.5 rounded-xl text-sm font-bold active:scale-95 transition-transform"
+              className="w-full bg-gradient-to-r from-orange-400 to-pink-500 text-white py-2.5 rounded-xl text-sm font-bold active:scale-95 transition-transform"
             >
               {plt.icon} {plt.label}에서 구매하기 →
             </button>
@@ -427,11 +427,11 @@ export default function ShopPage() {
         </div>
 
         {/* 안내 배너 */}
-        <div className="mt-2 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl px-3 py-2.5 flex items-center gap-2">
+        <div className="mt-2 bg-gradient-to-r from-orange-400 to-pink-500 rounded-xl px-3 py-2.5 flex items-center gap-2">
           <span className="text-xl">💚</span>
           <div>
             <p className="text-xs font-bold text-white">쇼핑하면 지구도 살려요</p>
-            <p className="text-[10px] text-green-100">제휴 수수료 일부 → 환경 단체 기부 · 구매 시 앱 포인트 지급</p>
+            <p className="text-[10px] text-orange-100">제휴 수수료 일부 → 환경 단체 기부 · 구매 시 앱 포인트 지급</p>
           </div>
         </div>
       </div>

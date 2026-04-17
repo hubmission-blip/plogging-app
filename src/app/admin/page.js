@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, RefreshCw, BarChart3, Users, Gift, ShoppingCart, ClipboardList, Image, Recycle, Wrench, Megaphone } from "lucide-react";
+import { Settings, RefreshCw, BarChart3, Users, Gift, ShoppingCart, ClipboardList, Image, Recycle, Wrench, Megaphone, Footprints, MapPin, CalendarDays, UserRound, Route, PackageOpen } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
@@ -16,7 +16,7 @@ import {
 const ADMIN_EMAILS = ["hubmission@gmail.com"];
 
 // ─── 공통 컴포넌트 ────────────────────────────────────────
-function StatCard({ icon, label, value, sub, color = "green" }) {
+function StatCard({ icon, Icon, label, value, sub, color = "green" }) {
   const colors = {
     green:  "bg-green-50  text-green-700",
     blue:   "bg-blue-50   text-blue-700",
@@ -27,7 +27,9 @@ function StatCard({ icon, label, value, sub, color = "green" }) {
   };
   return (
     <div className={`rounded-2xl p-4 ${colors[color]}`}>
-      <div className="text-2xl mb-1">{icon}</div>
+      <div className="text-2xl mb-1">
+        {Icon ? <Icon className="w-6 h-6" strokeWidth={1.8} /> : icon}
+      </div>
       <p className="text-2xl font-black">{value}</p>
       <p className="text-xs font-medium opacity-70">{label}</p>
       {sub && <p className="text-xs opacity-50 mt-0.5">{sub}</p>}
@@ -950,9 +952,9 @@ export default function AdminPage() {
               <div>
                 <SectionTitle>📅 오늘 현황</SectionTitle>
                 <div className="grid grid-cols-3 gap-2">
-                  <StatCard icon="🏃" label="오늘 플로깅"  value={`${today.todayCount}회`}       color="green" />
-                  <StatCard icon="📍" label="오늘 거리"    value={`${today.todayDist}km`}         color="blue"  />
-                  <StatCard icon="📆" label="이번주 전체"  value={`${today.weekCount}회`}          color="orange" />
+                  <StatCard Icon={Footprints}    label="오늘 플로깅"  value={`${today.todayCount}회`}       color="green" />
+                  <StatCard Icon={MapPin}        label="오늘 거리"    value={`${today.todayDist}km`}         color="blue"  />
+                  <StatCard Icon={CalendarDays}  label="이번주 전체"  value={`${today.weekCount}회`}          color="orange" />
                 </div>
               </div>
 
@@ -960,10 +962,10 @@ export default function AdminPage() {
               <div>
                 <SectionTitle>📈 전체 누적</SectionTitle>
                 <div className="grid grid-cols-2 gap-3">
-                  <StatCard icon="👤" label="총 가입자"    value={`${stats.userCount}명`}          color="blue"   />
-                  <StatCard icon="🏃" label="총 플로깅"    value={`${stats.routeCount}회`}          color="green"  />
-                  <StatCard icon="📍" label="총 거리"      value={`${stats.totalDist.toFixed(0)}km`} color="orange" />
-                  <StatCard icon="🎁" label="리워드 신청"  value={`${stats.rewardCount}건`}         color="purple" />
+                  <StatCard Icon={UserRound}    label="총 가입자"    value={`${stats.userCount}명`}          color="blue"   />
+                  <StatCard Icon={Route}        label="총 플로깅"    value={`${stats.routeCount}회`}          color="green"  />
+                  <StatCard Icon={MapPin}       label="총 거리"      value={`${stats.totalDist.toFixed(0)}km`} color="orange" />
+                  <StatCard Icon={PackageOpen}  label="리워드 신청"  value={`${stats.rewardCount}건`}         color="purple" />
                 </div>
               </div>
 

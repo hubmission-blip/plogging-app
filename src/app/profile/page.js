@@ -438,7 +438,7 @@ export default function ProfilePage() {
                 <Settings className="w-5 h-5 text-gray-400" strokeWidth={1.8} />
                 <Users className="w-5 h-5 text-gray-400" strokeWidth={1.8} />
               </div>
-              <span className="flex-1 text-sm font-medium text-gray-300">관리자 페이지 바로가기</span>
+              <span className="flex-1 text-sm font-medium text-gray-300 text-center">관리자 페이지 바로가기</span>
               <span className="text-gray-600">›</span>
             </Link>
           </div>
