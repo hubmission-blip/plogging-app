@@ -1,7 +1,17 @@
 {
-  "version": "v1.64",
-  "build": 64,
+  "version": "v1.65",
+  "build": 65,
   "changelog": [
+    {
+      "version": "v1.65",
+      "build": 65,
+      "date": "2026-04-17",
+      "emoji": "💡",
+      "title": "퀵메뉴 아이콘 단색 SVG로 교체",
+      "items": [
+        "MapPin, Users, Gift, BookOpen 적용"
+      ]
+    },
     {
       "version": "v1.64",
       "build": 64,

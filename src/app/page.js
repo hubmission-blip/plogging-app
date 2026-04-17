@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Recycle, Clover, Building2, Heart } from "lucide-react";
+import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, BookOpen } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
 import CharacterGuide from "@/components/CharacterGuide";
@@ -501,28 +501,28 @@ export default function HomePage() {
               href="/map"
               className="bg-green-50 border border-green-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <span className="text-2xl">🗺️</span>
+              <MapPin className="w-6 h-6 text-green-600" strokeWidth={1.8} />
               <span className="text-xs text-green-700 font-bold">지도</span>
             </Link>
             <Link
               href="/group"
               className="bg-sky-50 border border-sky-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <span className="text-2xl">👥</span>
+              <Users className="w-6 h-6 text-sky-600" strokeWidth={1.8} />
               <span className="text-xs text-sky-700 font-bold">그룹</span>
             </Link>
             <Link
               href="/reward"
               className="bg-orange-50 border border-orange-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <span className="text-2xl">🎁</span>
+              <Gift className="w-6 h-6 text-orange-600" strokeWidth={1.8} />
               <span className="text-xs text-orange-700 font-bold">리워드</span>
             </Link>
             <button
               onClick={() => setShowManual(true)}
               className="bg-purple-50 border border-purple-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <span className="text-2xl">▶️</span>
+              <BookOpen className="w-6 h-6 text-purple-600" strokeWidth={1.8} />
               <span className="text-xs text-purple-700 font-bold">매뉴얼</span>
             </button>
           </div>
