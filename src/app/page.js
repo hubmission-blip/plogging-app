@@ -408,6 +408,7 @@ export default function HomePage() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-black ${style.text} opacity-70`}>공지</span>
                           <span className="text-base">{style.icon}</span>
                           <p className={`text-sm font-bold ${style.text}`}>{notice.title}</p>
                         </div>
@@ -483,35 +484,35 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ── 빠른 메뉴 (컬러 카드) ── */}
+          {/* ── 빠른 메뉴 (라이트 컬러 카드) ── */}
           <div className="grid grid-cols-4 gap-2">
             <Link
               href="/map"
-              className="bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl py-3 flex flex-col items-center gap-1 shadow-sm active:scale-95 transition-transform"
+              className="bg-green-50 border border-green-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
               <span className="text-2xl">🗺️</span>
-              <span className="text-xs text-white font-bold">지도</span>
+              <span className="text-xs text-green-700 font-bold">지도</span>
             </Link>
             <Link
               href="/group"
-              className="bg-gradient-to-br from-sky-500 to-cyan-500 rounded-2xl py-3 flex flex-col items-center gap-1 shadow-sm active:scale-95 transition-transform"
+              className="bg-sky-50 border border-sky-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
               <span className="text-2xl">👥</span>
-              <span className="text-xs text-white font-bold">그룹</span>
+              <span className="text-xs text-sky-700 font-bold">그룹</span>
             </Link>
             <Link
               href="/reward"
-              className="bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl py-3 flex flex-col items-center gap-1 shadow-sm active:scale-95 transition-transform"
+              className="bg-orange-50 border border-orange-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
               <span className="text-2xl">🎁</span>
-              <span className="text-xs text-white font-bold">리워드</span>
+              <span className="text-xs text-orange-700 font-bold">리워드</span>
             </Link>
             <button
               onClick={() => setShowManual(true)}
-              className="bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl py-3 flex flex-col items-center gap-1 shadow-sm active:scale-95 transition-transform"
+              className="bg-purple-50 border border-purple-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
               <span className="text-2xl">▶️</span>
-              <span className="text-xs text-white font-bold">매뉴얼</span>
+              <span className="text-xs text-purple-700 font-bold">매뉴얼</span>
             </button>
           </div>
 
