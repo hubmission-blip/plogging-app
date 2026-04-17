@@ -1,7 +1,19 @@
 {
-  "version": "v1.54",
-  "build": 54,
+  "version": "v1.55",
+  "build": 55,
   "changelog": [
+    {
+      "version": "v1.55",
+      "build": 55,
+      "date": "2026-04-17",
+      "emoji": "🔧",
+      "title": "GitHub Actions 배포 파이프라인 수정 및 커뮤니티 통계 오류 수정",
+      "items": [
+        "GitHub Actions 빌드에 BUILD_TARGET 추가로 정적 export 정상화",
+        "커뮤니티 통계(가입자/이동거리) 데이터 로드 오류 수정",
+        "Google Client ID 환경변수 배포 파이프라인 연동"
+      ]
+    },
     {
       "version": "v1.54",
       "build": 54,

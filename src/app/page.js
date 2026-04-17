@@ -228,27 +228,34 @@ export default function HomePage() {
   // 커뮤니티 통계 (총 가입자 수 + 총 이동 거리)
   useEffect(() => {
     const fetchCommunityStats = async () => {
+      let totalUsers = 0;
+      let totalDistance = 0;
+
       try {
         // 총 가입자 수
         const usersSnap = await getCountFromServer(collection(db, "users"));
-        const totalUsers = usersSnap.data().count;
+        totalUsers = usersSnap.data().count;
+      } catch (e) {
+        console.warn("가입자 수 로드 실패:", e.message);
+      }
 
-        // 총 이동 거리 (포인트 > 0인 유효 기록만)
-        const routesSnap = await getDocs(
-          query(collection(db, "routes"), where("points", ">", 0))
-        );
-        let totalDistance = 0;
+      try {
+        // 총 이동 거리 (전체 routes에서 클라이언트 필터링)
+        const routesSnap = await getDocs(collection(db, "routes"));
         routesSnap.forEach((d) => {
-          totalDistance += d.data().distance || 0;
-        });
-
-        setCommunityStats({
-          users: totalUsers,
-          distance: totalDistance,
+          const data = d.data();
+          if ((data.points || 0) > 0) {
+            totalDistance += data.distance || 0;
+          }
         });
       } catch (e) {
-        console.warn("커뮤니티 통계 로드 실패:", e.message);
+        console.warn("이동 거리 로드 실패:", e.message);
       }
+
+      setCommunityStats({
+        users: totalUsers,
+        distance: totalDistance,
+      });
     };
     fetchCommunityStats();
   }, []);
