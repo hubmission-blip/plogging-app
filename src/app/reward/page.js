@@ -9,7 +9,7 @@ import {
   doc, getDoc, updateDoc, addDoc,
   collection, serverTimestamp, runTransaction
 } from "firebase/firestore";
-import { Coins, Target, Zap } from "lucide-react";
+import { Coins, Target, Zap, ChevronDown } from "lucide-react";
 
 // ─── 리워드 아이템 목록 ────────────────────────────────────
 const REWARDS = [
@@ -150,6 +150,7 @@ export default function RewardPage() {
   const [loading, setLoading]         = useState(true);
   const [exchanging, setExchanging]   = useState(false);
   const [successMsg, setSuccessMsg]   = useState("");
+  const [pointAccordion, setPointAccordion] = useState(false);
 
   // ── 내 포인트 조회 ────────────────────────────────────────
   const fetchPoints = useCallback(async () => {
@@ -320,29 +321,73 @@ export default function RewardPage() {
         })}
       </div>
 
-      {/* ── 포인트 적립 기준 (메인과 동일) ── */}
-      <div className="mx-4 mt-4 rounded-2xl p-4 shadow-sm" style={{ backgroundColor: "#8dc63f1a", border: "1px solid #8dc63f40" }}>
-        <div className="flex justify-between items-center mb-3">
+      {/* ── 포인트 적립 기준 (아코디언) ── */}
+      <div className="mx-4 mt-4 rounded-2xl shadow-sm overflow-hidden" style={{ backgroundColor: "#8dc63f1a", border: "1px solid #8dc63f40" }}>
+        <button
+          onClick={() => setPointAccordion(!pointAccordion)}
+          className="w-full flex justify-between items-center p-4"
+        >
           <div className="flex items-center gap-1.5">
             <Coins className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
             <Target className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
             <Zap className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
           </div>
-          <h2 className="font-black text-sm text-gray-700">포인트 적립 기준</h2>
-        </div>
-        <div className="space-y-2">
-          {[
-            { label: "거리 1km 달성",      point: "+50P" },
-            { label: "2km 이상 완주",       point: "+100P 보너스" },
-            { label: "그룹 참여 (인원 × 5)", point: "+αP" },
-            { label: "신규 가입 환영 포인트", point: "+100P" },
-          ].map((item) => (
-            <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/60 last:border-0">
-              <span className="text-xs text-gray-500">{item.label}</span>
-              <span className="text-sm font-bold" style={{ color: "#8dc63f" }}>{item.point}</span>
-            </div>
-          ))}
-        </div>
+          <div className="flex items-center gap-2">
+            <h2 className="font-black text-sm text-gray-700">포인트 적립 기준</h2>
+            <ChevronDown
+              className="w-4 h-4 text-gray-500 transition-transform duration-300"
+              style={{ transform: pointAccordion ? "rotate(180deg)" : "rotate(0deg)" }}
+              strokeWidth={2}
+            />
+          </div>
+        </button>
+        {pointAccordion && (
+          <div className="px-4 pb-4 space-y-2">
+            <p className="text-[10px] font-bold text-gray-400 mt-1">🏃 플로깅</p>
+            {[
+              { label: "거리 1km 달성",       point: "+50P" },
+              { label: "2km 이상 완주 보너스",  point: "+100P" },
+              { label: "그룹 참여 (인원 × 5)",  point: "+αP" },
+            ].map((item) => (
+              <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/40 last:border-0">
+                <span className="text-xs text-gray-500">{item.label}</span>
+                <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>{item.point}</span>
+              </div>
+            ))}
+
+            <p className="text-[10px] font-bold text-gray-400 mt-2">👋 가입 & 추천</p>
+            {[
+              { label: "신규 가입 환영 포인트",         point: "+100P" },
+              { label: "추천인 코드 입력 (신규 회원)",    point: "+50P" },
+              { label: "내 추천 코드로 가입 시 (추천인)", point: "+100P" },
+            ].map((item) => (
+              <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/40 last:border-0">
+                <span className="text-xs text-gray-500">{item.label}</span>
+                <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>{item.point}</span>
+              </div>
+            ))}
+
+            <p className="text-[10px] font-bold text-gray-400 mt-2">🛒 친환경 쇼핑</p>
+            {[
+              { label: "제휴 상품 구매 시 보너스",  point: "+20~100P" },
+            ].map((item) => (
+              <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/40 last:border-0">
+                <span className="text-xs text-gray-500">{item.label}</span>
+                <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>{item.point}</span>
+              </div>
+            ))}
+
+            <p className="text-[10px] font-bold text-gray-400 mt-2">🔗 연동 보너스</p>
+            {[
+              { label: "에코마일리지 / 탄소중립포인트 연동", point: "+20% 추가" },
+            ].map((item) => (
+              <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/40 last:border-0">
+                <span className="text-xs text-gray-500">{item.label}</span>
+                <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>{item.point}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── 교환 확인 모달 ── */}
