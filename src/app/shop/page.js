@@ -228,20 +228,20 @@ function ProductDetailSheet({ product, onBuy, onClose }) {
       <div className="absolute inset-0 bg-black/50" />
       <div
         className="relative w-full bg-white rounded-t-3xl shadow-2xl overflow-hidden flex flex-col"
-        style={{ maxHeight: "75vh", paddingBottom: "calc(4.5rem + env(safe-area-inset-bottom, 20px))" }}
+        style={{ maxHeight: "80vh", paddingBottom: "4rem" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* 핸들 */}
-        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-2 flex-shrink-0" />
+        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-2 mb-1 flex-shrink-0" />
 
         <div className="overflow-y-auto flex-1 min-h-0">
-          {/* 이미지 — 원본 비율 유지 */}
+          {/* 이미지 — 원본 비율 유지, 크게 */}
           <div className="relative bg-gray-50 w-full flex items-center justify-center overflow-hidden">
             <img
               src={product.image}
               alt={product.title}
               className="w-full object-contain"
-              style={{ maxHeight: "240px" }}
+              style={{ maxHeight: "320px" }}
               onError={(e) => {
                 e.target.style.display = "none";
                 e.target.nextSibling.style.display = "flex";
@@ -292,9 +292,9 @@ function ProductDetailSheet({ product, onBuy, onClose }) {
           </div>
         </div>
 
-        {/* 하단 고정 버튼 — 하단 네비 위에 고정 */}
+        {/* 하단 고정 버튼 — 하단 네비 바로 위 */}
         <div className="absolute left-0 right-0 px-5 pt-2 pb-3 bg-white border-t border-gray-100"
-          style={{ bottom: "calc(4rem + env(safe-area-inset-bottom, 20px))" }}>
+          style={{ bottom: "0" }}>
           <button
             onClick={() => { onBuy(product); onClose(); }}
             className="w-full text-white py-3.5 rounded-2xl text-base font-bold active:scale-95 transition-transform"
