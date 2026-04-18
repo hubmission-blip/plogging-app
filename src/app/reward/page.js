@@ -9,6 +9,7 @@ import {
   doc, getDoc, updateDoc, addDoc,
   collection, serverTimestamp, runTransaction
 } from "firebase/firestore";
+import { Coins, Target, Zap } from "lucide-react";
 
 // ─── 리워드 아이템 목록 ────────────────────────────────────
 const REWARDS = [
@@ -319,19 +320,29 @@ export default function RewardPage() {
         })}
       </div>
 
-      {/* ── 포인트 적립 안내 ── */}
-      <div className="mx-4 mt-4 bg-white rounded-2xl p-4 shadow-sm">
-        <h2 className="font-bold text-gray-700 mb-2">💡 포인트 적립 방법</h2>
-        {[
-          { label: "1km 플로깅 완료", point: "+50P" },
-          { label: "2km 이상 완주",   point: "+100P 보너스" },
-          { label: "그룹 플로깅 참여", point: "+인원 × 5P" },
-        ].map((item) => (
-          <div key={item.label} className="flex justify-between text-sm py-1.5 border-b last:border-0">
-            <span className="text-gray-600">{item.label}</span>
-            <span className="font-bold text-green-600">{item.point}</span>
+      {/* ── 포인트 적립 기준 (메인과 동일) ── */}
+      <div className="mx-4 mt-4 rounded-2xl p-4 shadow-sm" style={{ backgroundColor: "#8dc63f1a", border: "1px solid #8dc63f40" }}>
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center gap-1.5">
+            <Coins className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
+            <Target className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
+            <Zap className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
           </div>
-        ))}
+          <h2 className="font-black text-sm text-gray-700">포인트 적립 기준</h2>
+        </div>
+        <div className="space-y-2">
+          {[
+            { label: "거리 1km 달성",      point: "+50P" },
+            { label: "2km 이상 완주",       point: "+100P 보너스" },
+            { label: "그룹 참여 (인원 × 5)", point: "+αP" },
+            { label: "신규 가입 환영 포인트", point: "+100P" },
+          ].map((item) => (
+            <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/60 last:border-0">
+              <span className="text-xs text-gray-500">{item.label}</span>
+              <span className="text-sm font-bold" style={{ color: "#8dc63f" }}>{item.point}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ── 교환 확인 모달 ── */}
