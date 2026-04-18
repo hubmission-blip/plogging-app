@@ -227,16 +227,16 @@ function ProductDetailSheet({ product, onBuy, onClose }) {
     <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50" />
       <div
-        className="relative w-full bg-white rounded-t-3xl shadow-2xl overflow-hidden"
-        style={{ maxHeight: "85vh", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 20px))" }}
+        className="relative w-full bg-white rounded-t-3xl shadow-2xl overflow-hidden flex flex-col"
+        style={{ maxHeight: "80vh" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* 핸들 */}
-        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-2" />
+        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-2 flex-shrink-0" />
 
-        <div className="overflow-y-auto" style={{ maxHeight: "calc(85vh - 5rem)" }}>
-          {/* 큰 이미지 */}
-          <div className="relative bg-gray-50 w-full aspect-square flex items-center justify-center overflow-hidden">
+        <div className="overflow-y-auto flex-1 min-h-0">
+          {/* 이미지 — 축소 (aspect-[4/3]) */}
+          <div className="relative bg-gray-50 w-full flex items-center justify-center overflow-hidden" style={{ aspectRatio: "4/3" }}>
             <img
               src={product.image}
               alt={product.title}
@@ -267,12 +267,19 @@ function ProductDetailSheet({ product, onBuy, onClose }) {
             <p className="text-lg font-bold text-gray-800 leading-snug mt-1">{product.title}</p>
             <p className="text-sm text-gray-500 leading-relaxed mt-2">{product.desc}</p>
 
-            {/* 가격 */}
-            <div className="flex items-baseline gap-2 mt-4">
-              <span className="text-2xl font-black text-gray-900">{product.price.toLocaleString()}원</span>
-              {product.originalPrice > product.price && (
-                <span className="text-sm text-gray-400 line-through">{product.originalPrice.toLocaleString()}원</span>
-              )}
+            {/* 가격 + 보너스 포인트 (한 줄) */}
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-black text-gray-900">{product.price.toLocaleString()}원</span>
+                {product.originalPrice > product.price && (
+                  <span className="text-sm text-gray-400 line-through">{product.originalPrice.toLocaleString()}원</span>
+                )}
+              </div>
+              {/* 보너스 포인트 뱃지 */}
+              <div className="rounded-xl px-3 py-1.5 flex items-center gap-1 flex-shrink-0" style={{ backgroundColor: "#CD5C5C15" }}>
+                <span className="text-xs" style={{ color: "#CD5C5C" }}>🎁</span>
+                <span className="text-xs font-black" style={{ color: "#CD5C5C" }}>+{product.bonusPoints}P</span>
+              </div>
             </div>
 
             {/* 키워드 태그 */}
@@ -281,17 +288,11 @@ function ProductDetailSheet({ product, onBuy, onClose }) {
                 <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>{product.tag}</span>
               </div>
             )}
-
-            {/* 보너스 포인트 */}
-            <div className="rounded-xl px-4 py-3 mt-2 flex items-center justify-between" style={{ backgroundColor: "#CD5C5C15" }}>
-              <span className="text-sm" style={{ color: "#CD5C5C" }}>🎁 구매 시 보너스</span>
-              <span className="text-sm font-black" style={{ color: "#CD5C5C" }}>+{product.bonusPoints}P</span>
-            </div>
           </div>
         </div>
 
-        {/* 하단 고정 버튼 */}
-        <div className="px-5 pt-2 pb-2">
+        {/* 하단 고정 버튼 — 네비 위에 충분한 여백 */}
+        <div className="flex-shrink-0 px-5 pt-2" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 20px))" }}>
           <button
             onClick={() => { onBuy(product); onClose(); }}
             className="w-full text-white py-3.5 rounded-2xl text-base font-bold active:scale-95 transition-transform"
