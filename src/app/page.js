@@ -443,18 +443,18 @@ export default function HomePage() {
           {/* ── 커뮤니티 현황 ── */}
           <div className="rounded-2xl px-3 py-3" style={{ backgroundColor: "#8dc63f1a", border: "1px solid #8dc63f40" }}>
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-white rounded-xl py-2.5 px-3 flex items-center justify-center gap-2.5" style={{ border: "1px solid #8dc63f30" }}>
+              <div className="bg-white rounded-xl py-1.5 px-3 flex items-center justify-center gap-2.5" style={{ border: "1px solid #8dc63f30" }}>
                 <Users className="w-7 h-7 flex-shrink-0" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
-                <div className="text-center">
+                <div className="text-center leading-tight">
                   <span className="text-lg font-black block" style={{ color: "#6ba030" }}>
                     {communityStats.users === null ? "…" : `${communityStats.users.toLocaleString()}명`}
                   </span>
                   <span className="text-[10px] text-gray-500 font-bold">총 가입자</span>
                 </div>
               </div>
-              <div className="bg-white rounded-xl py-2.5 px-3 flex items-center justify-center gap-2.5" style={{ border: "1px solid #8dc63f30" }}>
+              <div className="bg-white rounded-xl py-1.5 px-3 flex items-center justify-center gap-2.5" style={{ border: "1px solid #8dc63f30" }}>
                 <Footprints className="w-7 h-7 flex-shrink-0" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
-                <div className="text-center">
+                <div className="text-center leading-tight">
                   <span className="text-lg font-black block" style={{ color: "#6ba030" }}>
                     {communityStats.distance === null ? "…" : `${communityStats.distance.toFixed(1)}km`}
                   </span>
