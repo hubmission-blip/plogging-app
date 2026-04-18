@@ -536,150 +536,6 @@ export default function HomePage() {
             </button>
           </div>
 
-          {/* ── 홈 화면에 추가(웹) / 앱 평가하기(네이티브) + 친구 초대 ── */}
-          <div className="grid grid-cols-2 gap-2">
-            {isCapacitorNative() ? (
-              <button
-                onClick={() => {
-                  // 앱스토어 리뷰 페이지 열기 (앱스토어 ID 확정 후 교체)
-                  const appStoreId = "6744194047";
-                  window.open(`https://apps.apple.com/app/id${appStoreId}?action=write-review`, "_blank");
-                }}
-                className="text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
-                style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
-              >
-                <Star className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
-                <div className="text-right flex-1">
-                  <p className="font-black text-sm leading-tight">앱 평가하기</p>
-                  <p className="text-[11px] text-yellow-100 mt-0.5 leading-relaxed">리뷰를 남겨주세요!</p>
-                </div>
-              </button>
-            ) : (
-              <button
-                onClick={handleInstallClick}
-                className="text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
-                style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
-              >
-                <Smartphone className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
-                <div className="text-right flex-1">
-                  <p className="font-black text-sm leading-tight">홈 화면에 추가</p>
-                  <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">앱처럼 빠르게 접근</p>
-                </div>
-              </button>
-            )}
-            <button
-              onClick={handleShare}
-              className="bg-gradient-to-br from-sky-500 to-cyan-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
-            >
-              <UserPlus className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
-              <div className="text-right flex-1">
-                <p className="font-black text-sm leading-tight">친구 초대</p>
-                <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">보너스 포인트 지급!</p>
-              </div>
-            </button>
-          </div>
-
-          {/* ── 이용 방법 ── */}
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="font-bold text-gray-700">이용 방법</h2>
-              <button
-                onClick={() => setShowGuide(true)}
-                className="text-xs font-medium px-2 py-1 rounded-full"
-                style={{ color: "#8dc63f", borderWidth: "1px", borderStyle: "solid", borderColor: "#8dc63f50" }}
-              >
-                가이드 다시 보기
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-3 items-stretch">
-              {HOW_TO.map((item) => (
-                <div key={item.step} className="bg-white rounded-2xl p-4 shadow-sm flex flex-col">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>STEP {item.step}</span>
-                    <span className="text-sm font-bold text-gray-500">{item.title}</span>
-                  </div>
-                  <div className="flex items-start gap-2 mt-2">
-                    <item.Icon className="w-6 h-6 flex-shrink-0" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
-                    <p className="text-xs text-gray-500 leading-relaxed pt-1">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ── 포인트 적립 기준 (아코디언) ── */}
-          <div className="rounded-2xl shadow-sm overflow-hidden" style={{ backgroundColor: "#8dc63f1a", border: "1px solid #8dc63f40" }}>
-            <button
-              onClick={() => setPointAccordion(!pointAccordion)}
-              className="w-full flex justify-between items-center p-4"
-            >
-              <div className="flex items-center gap-1.5">
-                <Coins className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
-                <Target className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
-                <Zap className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
-              </div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-black text-sm text-gray-700">포인트 적립 기준</h2>
-                <ChevronDown
-                  className="w-4 h-4 text-gray-500 transition-transform duration-300"
-                  style={{ transform: pointAccordion ? "rotate(180deg)" : "rotate(0deg)" }}
-                  strokeWidth={2}
-                />
-              </div>
-            </button>
-            {pointAccordion && (
-              <div className="px-4 pb-4 space-y-2">
-                {/* 플로깅 */}
-                <p className="text-[10px] font-bold text-gray-400 mt-1">🏃 플로깅</p>
-                {[
-                  { label: "거리 1km 달성",       point: "+50P" },
-                  { label: "2km 이상 완주 보너스",  point: "+100P" },
-                  { label: "그룹 참여 (인원 × 5)",  point: "+αP" },
-                ].map((item) => (
-                  <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/40 last:border-0">
-                    <span className="text-xs text-gray-500">{item.label}</span>
-                    <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>{item.point}</span>
-                  </div>
-                ))}
-
-                {/* 가입 & 추천 */}
-                <p className="text-[10px] font-bold text-gray-400 mt-2">👋 가입 & 추천</p>
-                {[
-                  { label: "신규 가입 환영 포인트",         point: "+100P" },
-                  { label: "추천인 코드 입력 (신규 회원)",    point: "+50P" },
-                  { label: "내 추천 코드로 가입 시 (추천인)", point: "+100P" },
-                ].map((item) => (
-                  <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/40 last:border-0">
-                    <span className="text-xs text-gray-500">{item.label}</span>
-                    <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>{item.point}</span>
-                  </div>
-                ))}
-
-                {/* 쇼핑 */}
-                <p className="text-[10px] font-bold text-gray-400 mt-2">🛒 친환경 쇼핑</p>
-                {[
-                  { label: "제휴 상품 구매 시 보너스",  point: "+20~100P" },
-                ].map((item) => (
-                  <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/40 last:border-0">
-                    <span className="text-xs text-gray-500">{item.label}</span>
-                    <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>{item.point}</span>
-                  </div>
-                ))}
-
-                {/* 연동 보너스 */}
-                <p className="text-[10px] font-bold text-gray-400 mt-2">🔗 연동 보너스</p>
-                {[
-                  { label: "에코마일리지 / 탄소중립포인트 연동", point: "+20% 추가" },
-                ].map((item) => (
-                  <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/40 last:border-0">
-                    <span className="text-xs text-gray-500">{item.label}</span>
-                    <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>{item.point}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* ── 서비스 카드 2×2 ── */}
           <div className="grid grid-cols-2 gap-2">
             <Link
@@ -736,6 +592,145 @@ export default function HomePage() {
                 <span className="text-white/60 text-xs font-bold">후원하기 →</span>
               </div>
             </Link>
+          </div>
+
+          {/* ── 포인트 적립 기준 (아코디언) ── */}
+          <div className="rounded-2xl shadow-sm overflow-hidden" style={{ backgroundColor: "#8dc63f1a", border: "1px solid #8dc63f40" }}>
+            <button
+              onClick={() => setPointAccordion(!pointAccordion)}
+              className="w-full flex justify-between items-center p-4"
+            >
+              <div className="flex items-center gap-1.5">
+                <Coins className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
+                <Target className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
+                <Zap className="w-4 h-4" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
+              </div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-black text-sm text-gray-700">포인트 적립 기준</h2>
+                <ChevronDown
+                  className="w-4 h-4 text-gray-500 transition-transform duration-300"
+                  style={{ transform: pointAccordion ? "rotate(180deg)" : "rotate(0deg)" }}
+                  strokeWidth={2}
+                />
+              </div>
+            </button>
+            {pointAccordion && (
+              <div className="px-4 pb-4 space-y-2">
+                <p className="text-[10px] font-bold text-gray-400 mt-1">🏃 플로깅</p>
+                {[
+                  { label: "거리 1km 달성",       point: "+50P" },
+                  { label: "2km 이상 완주 보너스",  point: "+100P" },
+                  { label: "그룹 참여 (인원 × 5)",  point: "+αP" },
+                ].map((item) => (
+                  <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/40 last:border-0">
+                    <span className="text-xs text-gray-500">{item.label}</span>
+                    <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>{item.point}</span>
+                  </div>
+                ))}
+
+                <p className="text-[10px] font-bold text-gray-400 mt-2">👋 가입 & 추천</p>
+                {[
+                  { label: "신규 가입 환영 포인트",         point: "+100P" },
+                  { label: "추천인 코드 입력 (신규 회원)",    point: "+50P" },
+                  { label: "내 추천 코드로 가입 시 (추천인)", point: "+100P" },
+                ].map((item) => (
+                  <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/40 last:border-0">
+                    <span className="text-xs text-gray-500">{item.label}</span>
+                    <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>{item.point}</span>
+                  </div>
+                ))}
+
+                <p className="text-[10px] font-bold text-gray-400 mt-2">🛒 친환경 쇼핑</p>
+                {[
+                  { label: "제휴 상품 구매 시 보너스",  point: "+20~100P" },
+                ].map((item) => (
+                  <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/40 last:border-0">
+                    <span className="text-xs text-gray-500">{item.label}</span>
+                    <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>{item.point}</span>
+                  </div>
+                ))}
+
+                <p className="text-[10px] font-bold text-gray-400 mt-2">🔗 연동 보너스</p>
+                {[
+                  { label: "에코마일리지 / 탄소중립포인트 연동", point: "+20% 추가" },
+                ].map((item) => (
+                  <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-400/40 last:border-0">
+                    <span className="text-xs text-gray-500">{item.label}</span>
+                    <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>{item.point}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── 이용 방법 ── */}
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="font-bold text-gray-700">이용 방법</h2>
+              <button
+                onClick={() => setShowGuide(true)}
+                className="text-xs font-medium px-2 py-1 rounded-full"
+                style={{ color: "#8dc63f", borderWidth: "1px", borderStyle: "solid", borderColor: "#8dc63f50" }}
+              >
+                가이드 다시 보기
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 items-stretch">
+              {HOW_TO.map((item) => (
+                <div key={item.step} className="bg-white rounded-2xl p-4 shadow-sm flex flex-col">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>STEP {item.step}</span>
+                    <span className="text-sm font-bold text-gray-500">{item.title}</span>
+                  </div>
+                  <div className="flex items-start gap-2 mt-2">
+                    <item.Icon className="w-6 h-6 flex-shrink-0" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
+                    <p className="text-xs text-gray-500 leading-relaxed pt-1">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── 홈 화면에 추가(웹) / 앱 평가하기(네이티브) + 친구 초대 ── */}
+          <div className="grid grid-cols-2 gap-2">
+            {isCapacitorNative() ? (
+              <button
+                onClick={() => {
+                  const appStoreId = "6744194047";
+                  window.open(`https://apps.apple.com/app/id${appStoreId}?action=write-review`, "_blank");
+                }}
+                className="text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+                style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
+              >
+                <Star className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
+                <div className="text-right flex-1">
+                  <p className="font-black text-sm leading-tight">앱 평가하기</p>
+                  <p className="text-[11px] text-yellow-100 mt-0.5 leading-relaxed">리뷰를 남겨주세요!</p>
+                </div>
+              </button>
+            ) : (
+              <button
+                onClick={handleInstallClick}
+                className="text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+                style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
+              >
+                <Smartphone className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
+                <div className="text-right flex-1">
+                  <p className="font-black text-sm leading-tight">홈 화면에 추가</p>
+                  <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">앱처럼 빠르게 접근</p>
+                </div>
+              </button>
+            )}
+            <button
+              onClick={handleShare}
+              className="bg-gradient-to-br from-sky-500 to-cyan-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+            >
+              <UserPlus className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
+              <div className="text-right flex-1">
+                <p className="font-black text-sm leading-tight">친구 초대</p>
+                <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">보너스 포인트 지급!</p>
+              </div>
+            </button>
           </div>
 
           {/* ── 최신 업데이트 ── */}
