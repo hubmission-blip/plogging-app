@@ -6,6 +6,7 @@ import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, CirclePlay, Sta
 import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
 import CharacterGuide from "@/components/CharacterGuide";
+import NotificationBell from "@/components/NotificationBell";
 import versionData from "@/lib/version.json";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, getDocs, getCountFromServer } from "firebase/firestore";
@@ -351,14 +352,17 @@ export default function HomePage() {
               )}
             </Link>
             {user ? (
-              <Link href="/profile">
-                <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-lg overflow-hidden">
-                  {user.photoURL
-                    ? <img src={user.photoURL} alt="" className="w-full h-full rounded-full object-cover" />
-                    : <span>👤</span>
-                  }
-                </div>
-              </Link>
+              <div className="flex items-center gap-2.5">
+                <NotificationBell user={user} />
+                <Link href="/profile">
+                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-lg overflow-hidden">
+                    {user.photoURL
+                      ? <img src={user.photoURL} alt="" className="w-full h-full rounded-full object-cover" />
+                      : <span>👤</span>
+                    }
+                  </div>
+                </Link>
+              </div>
             ) : (
               <Link href="/login"
                 className="text-xs font-bold text-green-600 border border-green-300 px-3 py-1.5 rounded-full">

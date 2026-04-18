@@ -220,9 +220,6 @@ export default function ProfilePage() {
                 {levelInfo.icon} Lv.{levelInfo.level} {levelInfo.name}
               </p>
             </div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/25 text-white flex-shrink-0">
-              내 정보
-            </span>
           </div>
 
           {/* 레벨 진행바 */}
