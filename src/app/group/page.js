@@ -138,15 +138,6 @@ export default function GroupPage() {
         {/* ═══════════ ⚡ 1회성 그룹 홈 ═══════════ */}
         {mode === "home" && (
           <>
-            <div className="bg-sky-50 rounded-2xl p-4 border border-sky-100">
-              <h2 className="font-bold text-sky-700 mb-2">🎁 그룹 보너스 포인트</h2>
-              {[{ s:"2명", b:"+10P" },{ s:"3명", b:"+15P" },{ s:"5명", b:"+25P" },{ s:"10명", b:"+50P" }].map(({s,b}) => (
-                <div key={s} className="flex justify-between text-sm py-1 border-b border-sky-100 last:border-0">
-                  <span className="text-gray-600">그룹 {s}</span>
-                  <span className="font-bold text-sky-600">{b} (인원 × 5P)</span>
-                </div>
-              ))}
-            </div>
             <div className="flex gap-2">
               <button onClick={handleCreate} disabled={loading}
                 className="flex-1 bg-sky-500 text-white py-3.5 rounded-2xl shadow-md font-bold text-sm active:scale-95 transition-transform">
@@ -170,15 +161,26 @@ export default function GroupPage() {
               </div>
             )}
 
+            <div className="bg-sky-50 rounded-2xl p-4 border border-sky-100">
+              <h2 className="font-bold text-sky-700 mb-2">🎁 그룹 보너스 포인트</h2>
+              {[{ s:"2명", b:"+10P" },{ s:"3명", b:"+15P" },{ s:"5명", b:"+25P" },{ s:"10명", b:"+50P" }].map(({s,b}) => (
+                <div key={s} className="flex justify-between text-sm py-1 border-b border-sky-100 last:border-0">
+                  <span className="text-gray-600">그룹 {s}</span>
+                  <span className="font-bold text-sky-600">{b} (인원 × 5P)</span>
+                </div>
+              ))}
+            </div>
+
             {/* 바로가기 링크 */}
             <div className="grid grid-cols-2 gap-2">
               <Link href="/club" className="block bg-cyan-50 rounded-2xl p-4 text-center border-2 border-cyan-400 active:bg-cyan-100 transition-colors">
                 <p className="text-cyan-700 font-bold text-sm">🏅 플로깅 동아리</p>
                 <p className="text-cyan-400 text-xs mt-0.5">함께 뛰어보세요 →</p>
               </Link>
-              <Link href="/shop" className="block bg-orange-50 rounded-2xl p-4 text-center border-2 border-orange-400 active:bg-orange-100 transition-colors">
-                <p className="text-orange-700 font-bold text-sm">🛒 친환경 쇼핑</p>
-                <p className="text-orange-400 text-xs mt-0.5">친환경 제품 보기 →</p>
+              <Link href="/shop" className="block rounded-2xl p-4 text-center border-2 active:opacity-80 transition-colors"
+                style={{ backgroundColor: "#ef558b18", borderColor: "#ef558b" }}>
+                <p className="font-bold text-sm" style={{ color: "#ef3654" }}>🛒 친환경 쇼핑</p>
+                <p className="text-xs mt-0.5" style={{ color: "#ef558baa" }}>친환경 제품 보기 →</p>
               </Link>
             </div>
           </>

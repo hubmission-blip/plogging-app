@@ -203,6 +203,12 @@ export default function ClubPage() {
   const [copied,        setCopied]        = useState(false);
   const [showCodeInput, setShowCodeInput] = useState(false);
 
+  // 알림
+  const [notices,        setNotices]        = useState([]);
+  const [noticeMsg,      setNoticeMsg]      = useState("");
+  const [noticeSending,  setNoticeSending]  = useState(false);
+  const [showNoticeInput, setShowNoticeInput] = useState(false);
+
   const prevClubStatusRef = useRef(null);
 
   // ─── 내 동아리 로드 ──────────────────────────────────────
@@ -239,6 +245,45 @@ export default function ClubPage() {
     } catch (e) { console.error("기록 로드 실패:", e); }
     finally { setHistoryLoading(false); }
   }, []);
+
+  // ─── 알림 실시간 리스너 ──────────────────────────────────
+  useEffect(() => {
+    if (!selectedClub?.code) { setNotices([]); return; }
+    const unsub = onSnapshot(
+      query(collection(db, "clubs", selectedClub.code, "notices"), orderBy("createdAt", "desc"), limit(20)),
+      (snap) => setNotices(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      (e) => console.error("알림 로드 실패:", e),
+    );
+    return () => unsub();
+  }, [selectedClub?.code]);
+
+  // ─── 알림 보내기 ────────────────────────────────────────
+  const handleSendNotice = async () => {
+    if (!selectedClub || !noticeMsg.trim() || selectedClub.hostUid !== user?.uid) return;
+    setNoticeSending(true);
+    try {
+      const name = user.displayName || user.email?.split("@")[0] || "동아리장";
+      await addDoc(collection(db, "clubs", selectedClub.code, "notices"), {
+        message: noticeMsg.trim(),
+        senderUid: user.uid,
+        senderName: name,
+        createdAt: serverTimestamp(),
+        readBy: [user.uid],
+      });
+      setNoticeMsg(""); setShowNoticeInput(false);
+    } catch (e) { alert("알림 전송 실패: " + e.message); }
+    finally { setNoticeSending(false); }
+  };
+
+  // ─── 알림 읽음 처리 ────────────────────────────────────
+  const markNoticeRead = async (notice) => {
+    if (!user || notice.readBy?.includes(user.uid)) return;
+    try {
+      await updateDoc(doc(db, "clubs", selectedClub.code, "notices", notice.id), {
+        readBy: arrayUnion(user.uid),
+      });
+    } catch (e) { console.error("읽음 처리 실패:", e); }
+  };
 
   useEffect(() => {
     if (user) { fetchMyClubs(); fetchAllClubs(); }
@@ -429,6 +474,7 @@ export default function ClubPage() {
     setSelectedClub(club); setMode("clubDetail");
     setClubEditMode(false); setClubDetailTab("home");
     setClubHistory([]); fetchClubHistory(club.code);
+    setShowNoticeInput(false); setNoticeMsg("");
   };
 
   // ─── 지역 필터링 (내 동아리 포함, 상위 정렬) ──────────────
@@ -624,6 +670,59 @@ export default function ClubPage() {
                       ${copied ? "bg-green-100 text-green-600" : "bg-sky-50 text-sky-600 border border-sky-200"}`}>
                     {copied ? "✅ 복사됨!" : "📋 초대 코드 복사하기"}
                   </button>
+                </div>
+
+                {/* ── 알림 섹션 ── */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <h2 className="font-bold text-gray-700 text-sm">🔔 동아리 알림</h2>
+                    {selectedClub.hostUid === user?.uid && (
+                      <button onClick={() => setShowNoticeInput((p) => !p)}
+                        className="text-xs bg-cyan-50 text-cyan-600 border border-cyan-200 px-2.5 py-1 rounded-lg font-bold active:bg-cyan-100">
+                        ✏️ 알림 보내기
+                      </button>
+                    )}
+                  </div>
+                  {/* 방장 알림 입력 */}
+                  {showNoticeInput && selectedClub.hostUid === user?.uid && (
+                    <div className="mb-3">
+                      <textarea value={noticeMsg} onChange={(e) => setNoticeMsg(e.target.value)}
+                        placeholder="멤버에게 전달할 메시지를 입력하세요" maxLength={200} rows={2}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:border-cyan-400" />
+                      <div className="flex justify-between items-center mt-1.5">
+                        <span className="text-xs text-gray-300">{noticeMsg.length}/200</span>
+                        <button onClick={handleSendNotice} disabled={noticeSending || !noticeMsg.trim()}
+                          className="bg-cyan-500 text-white text-xs font-bold px-4 py-2 rounded-xl disabled:opacity-40 active:scale-95 transition-transform">
+                          {noticeSending ? "전송 중..." : "전송"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {/* 알림 목록 */}
+                  {notices.length > 0 ? (
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {notices.map((n) => {
+                        const isRead = n.readBy?.includes(user?.uid);
+                        const timeStr = n.createdAt?.toDate
+                          ? n.createdAt.toDate().toLocaleDateString("ko-KR", { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" })
+                          : "";
+                        if (!isRead) markNoticeRead(n);
+                        return (
+                          <div key={n.id}
+                            className={`rounded-xl px-3 py-2.5 ${isRead ? "bg-gray-50" : "bg-cyan-50 border border-cyan-200"}`}>
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              {!isRead && <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 flex-shrink-0" />}
+                              <span className="text-xs font-bold text-gray-600">{n.senderName}</span>
+                              <span className="text-xs text-gray-300 ml-auto">{timeStr}</span>
+                            </div>
+                            <p className="text-sm text-gray-700 leading-relaxed">{n.message}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-300 text-center py-2">아직 알림이 없어요</p>
+                  )}
                 </div>
 
                 {/* 멤버 목록 */}
