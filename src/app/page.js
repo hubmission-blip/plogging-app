@@ -441,24 +441,24 @@ export default function HomePage() {
           )}
 
           {/* ── 커뮤니티 현황 ── */}
-          <div className="bg-green-50 border border-green-200 rounded-2xl px-3 py-3">
+          <div className="rounded-2xl px-3 py-3" style={{ backgroundColor: "#8dc63f1a", border: "1px solid #8dc63f40" }}>
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-white border border-green-100 rounded-xl py-2.5 px-3 flex items-center justify-center gap-2">
-                <Users className="w-5 h-5 text-green-600 flex-shrink-0" strokeWidth={1.8} />
+              <div className="bg-white rounded-xl py-2.5 px-3 flex items-center justify-center gap-2.5" style={{ border: "1px solid #8dc63f30" }}>
+                <Users className="w-7 h-7 flex-shrink-0" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
                 <div className="text-center">
-                  <span className="text-sm font-black text-green-700 block">
+                  <span className="text-lg font-black block" style={{ color: "#6ba030" }}>
                     {communityStats.users === null ? "…" : `${communityStats.users.toLocaleString()}명`}
                   </span>
-                  <span className="text-[10px] text-green-600 font-bold">총 가입자</span>
+                  <span className="text-[10px] text-gray-500 font-bold">총 가입자</span>
                 </div>
               </div>
-              <div className="bg-white border border-green-100 rounded-xl py-2.5 px-3 flex items-center justify-center gap-2">
-                <Footprints className="w-5 h-5 text-green-600 flex-shrink-0" strokeWidth={1.8} />
+              <div className="bg-white rounded-xl py-2.5 px-3 flex items-center justify-center gap-2.5" style={{ border: "1px solid #8dc63f30" }}>
+                <Footprints className="w-7 h-7 flex-shrink-0" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
                 <div className="text-center">
-                  <span className="text-sm font-black text-green-700 block">
+                  <span className="text-lg font-black block" style={{ color: "#6ba030" }}>
                     {communityStats.distance === null ? "…" : `${communityStats.distance.toFixed(1)}km`}
                   </span>
-                  <span className="text-[10px] text-green-600 font-bold">총 이동 거리</span>
+                  <span className="text-[10px] text-gray-500 font-bold">총 이동 거리</span>
                 </div>
               </div>
             </div>
