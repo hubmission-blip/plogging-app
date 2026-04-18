@@ -95,7 +95,8 @@ service cloud.firestore {
           && request.auth.uid == get(/databases/$(database)/documents/clubs/$(clubCode)).data.hostUid;
         allow update: if request.auth != null
           && request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubCode)).data.memberUids;
-        allow delete: if false;
+        allow delete: if request.auth != null
+          && request.auth.uid == get(/databases/$(database)/documents/clubs/$(clubCode)).data.hostUid;
       }
     }
     // 9. reward_history

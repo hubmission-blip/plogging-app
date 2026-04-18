@@ -154,7 +154,6 @@ export default function HomePage() {
   const [logoError, setLogoError] = useState(false); // 로고 이미지 로드 실패 여부
   const [userRegion, setUserRegion] = useState(null); // 감지된 사용자 지역 (예: "부산광역시")
   const [pointAccordion, setPointAccordion] = useState(false); // 포인트 적립 기준 아코디언
-  const [unreadBell, setUnreadBell] = useState(0); // 동아리 알림 미읽음 수
 
   // 첫 방문 시에만 캐릭터 가이드 표시
   useEffect(() => {
@@ -271,29 +270,6 @@ export default function HomePage() {
     fetchCommunityStats();
   }, []);
 
-  // 동아리 알림 미읽음 수 집계
-  useEffect(() => {
-    if (!user) { setUnreadBell(0); return; }
-    const fetchUnread = async () => {
-      try {
-        const q = query(collection(db, "clubs"), where("memberUids", "array-contains", user.uid));
-        const clubSnap = await getDocs(q);
-        let total = 0;
-        for (const clubDoc of clubSnap.docs) {
-          const noticesSnap = await getDocs(collection(db, "clubs", clubDoc.id, "notices"));
-          noticesSnap.forEach((n) => {
-            const data = n.data();
-            if (!data.readBy?.includes(user.uid)) total++;
-          });
-        }
-        setUnreadBell(total);
-      } catch (e) {
-        console.warn("알림 수 로드 실패:", e.message);
-      }
-    };
-    fetchUnread();
-  }, [user]);
-
   // Android/Desktop: beforeinstallprompt 이벤트 캐치
   useEffect(() => {
     const handler = (e) => {
@@ -375,25 +351,14 @@ export default function HomePage() {
               )}
             </Link>
             {user ? (
-              <div className="flex items-center gap-2">
-                {/* 알림 벨 */}
-                <Link href="/club" className="relative">
-                  <Bell className="w-6 h-6 text-gray-500" />
-                  {unreadBell > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
-                      {unreadBell > 99 ? "99+" : unreadBell}
-                    </span>
-                  )}
-                </Link>
-                <Link href="/profile">
-                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-lg overflow-hidden">
-                    {user.photoURL
-                      ? <img src={user.photoURL} alt="" className="w-full h-full rounded-full object-cover" />
-                      : <span>👤</span>
-                    }
-                  </div>
-                </Link>
-              </div>
+              <Link href="/profile">
+                <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-lg overflow-hidden">
+                  {user.photoURL
+                    ? <img src={user.photoURL} alt="" className="w-full h-full rounded-full object-cover" />
+                    : <span>👤</span>
+                  }
+                </div>
+              </Link>
             ) : (
               <Link href="/login"
                 className="text-xs font-bold text-green-600 border border-green-300 px-3 py-1.5 rounded-full">

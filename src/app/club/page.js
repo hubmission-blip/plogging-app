@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-  doc, setDoc, getDoc, updateDoc, addDoc,
+  doc, setDoc, getDoc, updateDoc, addDoc, deleteDoc,
   collection, serverTimestamp, arrayUnion, arrayRemove,
   onSnapshot, query, where, getDocs, orderBy, limit,
 } from "firebase/firestore";
@@ -316,6 +316,16 @@ export default function ClubPage() {
         readBy: arrayUnion(user.uid),
       });
     } catch (e) { console.error("읽음 처리 실패:", e); }
+  };
+
+  // ─── 알림 삭제 (동아리장만) ─────────────────────────────
+  const handleDeleteNotice = async (noticeId) => {
+    if (!selectedClub || selectedClub.hostUid !== user?.uid) return;
+    if (!confirm("이 알림을 삭제하시겠어요?")) return;
+    try {
+      await deleteDoc(doc(db, "clubs", selectedClub.code, "notices", noticeId));
+      await fetchNotices(selectedClub.code);
+    } catch (e) { alert("알림 삭제 실패: " + e.message); }
   };
 
   useEffect(() => {
@@ -759,6 +769,11 @@ export default function ClubPage() {
                               {!isRead && <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 flex-shrink-0" />}
                               <span className="text-xs font-bold text-gray-600">{n.senderName}</span>
                               <span className="text-xs text-gray-300 ml-auto">{timeStr}</span>
+                              {selectedClub.hostUid === user?.uid && (
+                                <button onClick={() => handleDeleteNotice(n.id)}
+                                  className="text-gray-300 hover:text-red-400 ml-1 text-xs active:scale-90 transition-transform"
+                                  title="알림 삭제">✕</button>
+                              )}
                             </div>
                             <p className="text-sm text-gray-700 leading-relaxed">{n.message}</p>
                           </div>
