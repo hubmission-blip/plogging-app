@@ -32,6 +32,7 @@ export default function GroupPage() {
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
   const [copied,  setCopied]  = useState(false);
+  const [showCodeInput, setShowCodeInput] = useState(false);
 
   // ── 1회성: 실시간 리슨 ────────────────────────────────────
   useEffect(() => {
@@ -146,21 +147,28 @@ export default function GroupPage() {
                 </div>
               ))}
             </div>
-            <button onClick={handleCreate} disabled={loading}
-              className="w-full bg-sky-500 text-white py-5 rounded-2xl shadow-md font-bold text-lg active:scale-95 transition-transform">
-              {loading ? "생성 중..." : "🚀 그룹 방 만들기"}
-            </button>
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <h2 className="font-bold text-gray-700 mb-3">🔑 코드로 참여하기</h2>
-              <div className="flex gap-2">
-                <input value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                  placeholder="6자리 코드 입력" maxLength={6}
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-sky-400" />
-                <button onClick={handleJoin} disabled={loading || joinCode.length < 6}
-                  className="bg-sky-500 text-white px-5 rounded-xl font-bold disabled:opacity-40">참여</button>
-              </div>
-              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+            <div className="flex gap-2">
+              <button onClick={handleCreate} disabled={loading}
+                className="flex-1 bg-sky-500 text-white py-3.5 rounded-2xl shadow-md font-bold text-sm active:scale-95 transition-transform">
+                {loading ? "생성 중..." : "🚀 그룹 방 만들기"}
+              </button>
+              <button onClick={() => setShowCodeInput((p) => !p)}
+                className="flex-shrink-0 bg-white border-2 border-sky-400 text-sky-600 px-4 py-3.5 rounded-2xl font-bold text-sm active:scale-95 transition-transform">
+                🔑 코드 참여
+              </button>
             </div>
+            {showCodeInput && (
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <div className="flex gap-2">
+                  <input value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    placeholder="6자리 초대 코드" maxLength={6}
+                    className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-sky-400" />
+                  <button onClick={handleJoin} disabled={loading || joinCode.length < 6}
+                    className="bg-sky-500 text-white px-5 rounded-xl font-bold disabled:opacity-40 active:scale-95 transition-transform">참여</button>
+                </div>
+                {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+              </div>
+            )}
 
             {/* 바로가기 링크 */}
             <div className="grid grid-cols-2 gap-2">
