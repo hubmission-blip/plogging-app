@@ -437,23 +437,23 @@ export default function HomePage() {
           )}
 
           {/* ── 커뮤니티 현황 ── */}
-          <div className="rounded-2xl p-4 text-white shadow" style={{ backgroundImage: "linear-gradient(to right, #8dc63f, #4cb748)" }}>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white/20 rounded-xl px-4 py-3 text-center">
-                <p className="text-2xl font-black">
+          <div className="rounded-2xl px-3 py-2.5 text-white shadow" style={{ backgroundImage: "linear-gradient(to right, #8dc63f, #4cb748)" }}>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-white/20 rounded-xl px-3 py-2 text-center">
+                <p className="text-xl font-black">
                   {communityStats.users === null
                     ? "…"
                     : `${communityStats.users.toLocaleString()}명`}
                 </p>
-                <p className="text-xs text-green-100 mt-0.5 flex items-center justify-center gap-1"><Users className="w-3.5 h-3.5 inline" strokeWidth={2} /> 총 가입자</p>
+                <p className="text-[10px] text-green-100 flex items-center justify-center gap-1"><Users className="w-3 h-3 inline" strokeWidth={2} /> 총 가입자</p>
               </div>
-              <div className="bg-white/20 rounded-xl px-4 py-3 text-center">
-                <p className="text-2xl font-black">
+              <div className="bg-white/20 rounded-xl px-3 py-2 text-center">
+                <p className="text-xl font-black">
                   {communityStats.distance === null
                     ? "…"
                     : `${communityStats.distance.toFixed(1)}km`}
                 </p>
-                <p className="text-xs text-green-100 mt-0.5 flex items-center justify-center gap-1"><Footprints className="w-3.5 h-3.5 inline" strokeWidth={2} /> 총 이동 거리</p>
+                <p className="text-[10px] text-green-100 flex items-center justify-center gap-1"><Footprints className="w-3 h-3 inline" strokeWidth={2} /> 총 이동 거리</p>
               </div>
             </div>
           </div>
