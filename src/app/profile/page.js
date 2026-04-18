@@ -193,11 +193,18 @@ export default function ProfilePage() {
             className="h-9 w-auto object-contain"
           />
         </Link>
-        <div className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-lg overflow-hidden shadow-sm">
-          {stats.photoURL
-            ? <img src={stats.photoURL} alt="프로필" className="w-full h-full object-cover" />
-            : <span>{levelInfo.icon}</span>
-          }
+        <div className="flex items-center gap-2">
+          <Link href="/profile/edit"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-gray-100 border border-gray-200 active:bg-gray-200 transition-colors">
+            <Pencil className="w-3.5 h-3.5 text-gray-500" strokeWidth={2} />
+            <span className="text-xs font-bold text-gray-600">내정보 수정</span>
+          </Link>
+          <div className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-lg overflow-hidden shadow-sm">
+            {stats.photoURL
+              ? <img src={stats.photoURL} alt="프로필" className="w-full h-full object-cover" />
+              : <span>{levelInfo.icon}</span>
+            }
+          </div>
         </div>
       </div>
 
@@ -213,11 +220,9 @@ export default function ProfilePage() {
                 {levelInfo.icon} Lv.{levelInfo.level} {levelInfo.name}
               </p>
             </div>
-            <Link href="/profile/edit"
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/25 active:bg-white/40 transition-colors flex-shrink-0">
-              <Pencil className="w-3 h-3 text-white" strokeWidth={2} />
-              <span className="text-[10px] font-bold text-white">내정보 수정</span>
-            </Link>
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/25 text-white flex-shrink-0">
+              내 정보
+            </span>
           </div>
 
           {/* 레벨 진행바 */}
