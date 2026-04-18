@@ -221,9 +221,7 @@ export default function ClubPage() {
   const fetchAllClubs = useCallback(async () => {
     setBrowseLoading(true);
     try {
-      const snap = await getDocs(
-        query(collection(db, "clubs"), where("status", "==", "active"))
-      );
+      const snap = await getDocs(collection(db, "clubs"));
       setAllClubs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     } catch (e) { console.error("동아리 탐색 로드 실패:", e); }
     finally { setBrowseLoading(false); }
@@ -428,7 +426,13 @@ export default function ClubPage() {
 
   // ─── 지역 필터링 ────────────────────────────────────────
   const myClubIds = new Set(myClubs.map((c) => c.code || c.id));
-  const filteredClubs = allClubs.filter((c) => {
+  // allClubs + myClubs 합치기 (중복 제거)
+  const mergedClubs = [...allClubs];
+  myClubs.forEach((mc) => {
+    const key = mc.code || mc.id;
+    if (!mergedClubs.some((c) => (c.code || c.id) === key)) mergedClubs.push(mc);
+  });
+  const filteredClubs = mergedClubs.filter((c) => {
     if (regionFilter === "전체") return true;
     const region = c.location?.region || "";
     return region.startsWith(regionFilter);

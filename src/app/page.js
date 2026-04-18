@@ -468,10 +468,10 @@ export default function HomePage() {
           <div className="grid grid-cols-4 gap-2">
             <Link
               href="/club"
-              className="bg-green-50 border border-green-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
+              className="bg-cyan-50 border border-cyan-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <School className="w-6 h-6 text-green-600" strokeWidth={1.8} />
-              <span className="text-xs text-green-700 font-bold">동아리</span>
+              <School className="w-6 h-6 text-cyan-600" strokeWidth={1.8} />
+              <span className="text-xs text-cyan-700 font-bold">동아리</span>
             </Link>
             <Link
               href="/group"

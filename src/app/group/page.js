@@ -167,6 +167,12 @@ export default function GroupPage() {
               <p className="text-cyan-700 font-bold text-sm">🏅 플로깅 동아리</p>
               <p className="text-cyan-400 text-xs mt-0.5">동아리를 만들고 함께 뛰어보세요 →</p>
             </Link>
+
+            {/* 친환경 쇼핑 링크 */}
+            <Link href="/shop" className="block bg-green-50 rounded-2xl p-4 text-center border border-green-100 active:bg-green-100 transition-colors">
+              <p className="text-green-700 font-bold text-sm">🌿 친환경 쇼핑</p>
+              <p className="text-green-400 text-xs mt-0.5">플로깅에 필요한 친환경 제품을 만나보세요 →</p>
+            </Link>
           </>
         )}
 
