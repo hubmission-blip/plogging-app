@@ -467,7 +467,7 @@ export default function HomePage() {
           {/* ── 빠른 메뉴 (라이트 컬러 카드) ── */}
           <div className="grid grid-cols-4 gap-2">
             <Link
-              href="/group?tab=club"
+              href="/club"
               className="bg-green-50 border border-green-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
               <School className="w-6 h-6 text-green-600" strokeWidth={1.8} />
