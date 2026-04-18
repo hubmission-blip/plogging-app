@@ -168,9 +168,9 @@ export default function GroupPage() {
                 <p className="text-cyan-700 font-bold text-sm">🏅 플로깅 동아리</p>
                 <p className="text-cyan-400 text-xs mt-0.5">함께 뛰어보세요 →</p>
               </Link>
-              <Link href="/shop" className="block bg-green-50 rounded-2xl p-4 text-center border-2 border-green-400 active:bg-green-100 transition-colors">
-                <p className="text-green-700 font-bold text-sm">🌿 친환경 쇼핑</p>
-                <p className="text-green-400 text-xs mt-0.5">친환경 제품 보기 →</p>
+              <Link href="/shop" className="block bg-orange-50 rounded-2xl p-4 text-center border-2 border-orange-400 active:bg-orange-100 transition-colors">
+                <p className="text-orange-700 font-bold text-sm">🛒 친환경 쇼핑</p>
+                <p className="text-orange-400 text-xs mt-0.5">친환경 제품 보기 →</p>
               </Link>
             </div>
           </>

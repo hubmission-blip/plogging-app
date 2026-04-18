@@ -130,11 +130,11 @@ function ClubForm({ form, onChange, loading, onSubmit, submitLabel, onCancel }) 
 }
 
 // ─── 동아리 카드 컴포넌트 ──────────────────────────────────
-function ClubCard({ club, isMember, isLeader, onClickDetail, onJoin, loading }) {
+function ClubCard({ club, isMember, isLeader, onClickDetail, onJoin, loading, highlight }) {
   return (
-    <div className="bg-white rounded-2xl p-4 shadow-sm">
+    <div className={`rounded-2xl p-4 shadow-sm ${highlight ? "bg-cyan-50 border-2 border-cyan-300" : "bg-white"}`}>
       <div className="flex items-center gap-3">
-        <div className="text-3xl w-12 h-12 bg-sky-50 rounded-xl flex items-center justify-center flex-shrink-0">
+        <div className={`text-3xl w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${highlight ? "bg-cyan-100" : "bg-sky-50"}`}>
           {club.emoji}
         </div>
         <div className="flex-1 min-w-0">
@@ -201,6 +201,7 @@ export default function ClubPage() {
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState("");
   const [copied,        setCopied]        = useState(false);
+  const [showCodeInput, setShowCodeInput] = useState(false);
 
   const prevClubStatusRef = useRef(null);
 
@@ -430,16 +431,18 @@ export default function ClubPage() {
     setClubHistory([]); fetchClubHistory(club.code);
   };
 
-  // ─── 지역 필터링 ────────────────────────────────────────
-  const myClubIds = new Set(myClubs.map((c) => c.code || c.id));
-  const filteredClubs = allClubs.filter((c) => {
-    // 내가 이미 가입된 동아리 제외 (memberUids 직접 체크 + myClubIds 이중 체크)
-    if (c.memberUids?.includes(user?.uid)) return false;
-    if (myClubIds.has(c.code || c.id)) return false;
+  // ─── 지역 필터링 (내 동아리 포함, 상위 정렬) ──────────────
+  const isMine = (c) => c.memberUids?.includes(user?.uid);
+  const regionFiltered = allClubs.filter((c) => {
     if (regionFilter === "전체") return true;
     const region = c.location?.region || "";
     return region.startsWith(regionFilter);
   });
+  // 내 동아리를 상위에 배치
+  const filteredClubs = [
+    ...regionFiltered.filter((c) => isMine(c)),
+    ...regionFiltered.filter((c) => !isMine(c)),
+  ];
 
   // ─── 로그인 필요 ────────────────────────────────────────
   if (!user) return (
@@ -470,91 +473,76 @@ export default function ClubPage() {
         {/* ═══════════ 홈 모드 ═══════════ */}
         {mode === "home" && (
           <>
-            {/* ── 내 동아리 ── */}
-            <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wide px-1 mb-2">내 동아리</p>
-              {clubsLoading ? (
-                <div className="text-center py-6 text-gray-400 text-sm animate-pulse">불러오는 중...</div>
-              ) : myClubs.length > 0 ? (
-                <div className="space-y-2">
-                  {myClubs.map((club) => (
-                    <ClubCard key={club.id} club={club} isMember={true}
-                      isLeader={club.hostUid === user.uid}
-                      onClickDetail={goDetail} onJoin={() => {}} loading={false} />
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-sky-50 rounded-2xl p-4 text-center border border-sky-100">
-                  <div className="text-3xl mb-1">🏅</div>
-                  <p className="text-sky-700 font-bold text-sm">아직 가입된 동아리가 없어요</p>
-                  <p className="text-sky-400 text-xs mt-1">아래에서 동아리를 찾아 참여하거나 새로 만들어보세요</p>
-                </div>
-              )}
+            {/* ── 새 동아리 + 코드 참여 ── */}
+            <div className="flex gap-2">
+              <button onClick={() => { setMode("createClub"); setError(""); setClubForm(EMPTY_FORM); }}
+                className="flex-1 bg-cyan-500 text-white py-3.5 rounded-2xl shadow-md font-bold text-sm active:scale-95 transition-transform">
+                🏅 새 동아리 만들기
+              </button>
+              <button onClick={() => setShowCodeInput((p) => !p)}
+                className="flex-shrink-0 bg-white border-2 border-cyan-400 text-cyan-600 px-4 py-3.5 rounded-2xl font-bold text-sm active:scale-95 transition-transform">
+                🔑 코드 참여
+              </button>
             </div>
 
-            {/* ── 새 동아리 만들기 버튼 ── */}
-            <button onClick={() => { setMode("createClub"); setError(""); setClubForm(EMPTY_FORM); }}
-              className="w-full bg-cyan-500 text-white py-4 rounded-2xl shadow-md font-bold text-base active:scale-95 transition-transform">
-              🏅 새 동아리 만들기
-            </button>
-
-            {/* ── 코드로 참여 ── */}
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <h2 className="font-bold text-gray-700 mb-2 text-sm">🔑 초대 코드로 참여</h2>
-              <div className="flex gap-2">
-                <input value={clubJoinCode} onChange={(e) => setClubJoinCode(e.target.value.toUpperCase())}
-                  placeholder="6자리 코드" maxLength={6}
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-sky-400" />
-                <button onClick={handleJoinByCode} disabled={loading || clubJoinCode.length < 6}
-                  className="bg-cyan-500 text-white px-5 rounded-xl font-bold disabled:opacity-40 active:scale-95 transition-transform">
-                  참여
-                </button>
+            {/* ── 코드 입력 (토글) ── */}
+            {showCodeInput && (
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <div className="flex gap-2">
+                  <input value={clubJoinCode} onChange={(e) => setClubJoinCode(e.target.value.toUpperCase())}
+                    placeholder="6자리 초대 코드" maxLength={6}
+                    className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-cyan-400" />
+                  <button onClick={handleJoinByCode} disabled={loading || clubJoinCode.length < 6}
+                    className="bg-cyan-500 text-white px-5 rounded-xl font-bold disabled:opacity-40 active:scale-95 transition-transform">
+                    참여
+                  </button>
+                </div>
+                {error && mode === "home" && <p className="text-red-500 text-xs mt-2">{error}</p>}
               </div>
-              {error && mode === "home" && <p className="text-red-500 text-xs mt-2">{error}</p>}
+            )}
+
+            {/* ── 지역 필터 탭 ── */}
+            <div className="overflow-x-auto -mx-4 px-4">
+              <div className="flex gap-1.5 pb-1" style={{ minWidth: "max-content" }}>
+                {SHORT_REGIONS.map((r) => (
+                  <button key={r} onClick={() => setRegionFilter(r)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all
+                      ${regionFilter === r
+                        ? "text-white shadow-sm"
+                        : "bg-white text-gray-500 border border-gray-100"}`}
+                    style={regionFilter === r ? { backgroundColor: "#8dc63f" } : undefined}>
+                    {r}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* ── 지역별 동아리 탐색 ── */}
-            <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wide px-1 mb-2">지역별 동아리 탐색</p>
-
-              {/* 지역 필터 탭 */}
-              <div className="overflow-x-auto -mx-4 px-4 mb-3">
-                <div className="flex gap-1.5 pb-1" style={{ minWidth: "max-content" }}>
-                  {SHORT_REGIONS.map((r) => (
-                    <button key={r} onClick={() => setRegionFilter(r)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all
-                        ${regionFilter === r
-                          ? "text-white shadow-sm"
-                          : "bg-white text-gray-500 border border-gray-100"}`}
-                      style={regionFilter === r ? { backgroundColor: "#8dc63f" } : undefined}>
-                      {r}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 동아리 목록 */}
-              {browseLoading ? (
-                <div className="text-center py-6 text-gray-400 text-sm animate-pulse">동아리 찾는 중...</div>
-              ) : filteredClubs.length > 0 ? (
-                <div className="space-y-2">
-                  {filteredClubs.map((club) => (
+            {/* ── 동아리 목록 (내 동아리 상위 + 하이라이트) ── */}
+            {(clubsLoading || browseLoading) ? (
+              <div className="text-center py-6 text-gray-400 text-sm animate-pulse">동아리 찾는 중...</div>
+            ) : filteredClubs.length > 0 ? (
+              <div className="space-y-2">
+                {filteredClubs.map((club) => {
+                  const mine = isMine(club);
+                  return (
                     <ClubCard key={club.id} club={club}
-                      isMember={false} isLeader={false}
-                      onClickDetail={() => {}}
-                      onJoin={handleDirectJoin} loading={loading} />
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-gray-100 rounded-2xl p-5 text-center">
-                  <div className="text-3xl mb-1">🔍</div>
-                  <p className="text-gray-500 font-bold text-sm">
-                    {regionFilter === "전체" ? "아직 공개된 동아리가 없어요" : `${regionFilter} 지역 동아리가 없어요`}
-                  </p>
-                  <p className="text-gray-400 text-xs mt-1">첫 번째 동아리를 만들어보세요!</p>
-                </div>
-              )}
-            </div>
+                      isMember={mine}
+                      isLeader={club.hostUid === user?.uid}
+                      onClickDetail={mine ? goDetail : () => {}}
+                      onJoin={handleDirectJoin} loading={loading}
+                      highlight={mine} />
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-gray-100 rounded-2xl p-5 text-center">
+                <div className="text-3xl mb-1">🔍</div>
+                <p className="text-gray-500 font-bold text-sm">
+                  {regionFilter === "전체" ? "아직 공개된 동아리가 없어요" : `${regionFilter} 지역 동아리가 없어요`}
+                </p>
+                <p className="text-gray-400 text-xs mt-1">첫 번째 동아리를 만들어보세요!</p>
+              </div>
+            )}
           </>
         )}
 
