@@ -130,12 +130,17 @@ function ClubForm({ form, onChange, loading, onSubmit, submitLabel, onCancel }) 
 }
 
 // ─── 동아리 카드 컴포넌트 ──────────────────────────────────
-function ClubCard({ club, isMember, isLeader, onClickDetail, onJoin, loading, highlight }) {
+function ClubCard({ club, isMember, isLeader, onClickDetail, onJoin, loading, highlight, unreadCount }) {
   return (
     <div className={`rounded-2xl p-4 shadow-sm ${highlight ? "bg-cyan-50 border-2 border-cyan-300" : "bg-white"}`}>
       <div className="flex items-center gap-3">
-        <div className={`text-3xl w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${highlight ? "bg-cyan-100" : "bg-sky-50"}`}>
+        <div className={`relative text-3xl w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${highlight ? "bg-cyan-100" : "bg-sky-50"}`}>
           {club.emoji}
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -208,6 +213,7 @@ export default function ClubPage() {
   const [noticeMsg,      setNoticeMsg]      = useState("");
   const [noticeSending,  setNoticeSending]  = useState(false);
   const [showNoticeInput, setShowNoticeInput] = useState(false);
+  const [unreadCounts,   setUnreadCounts]   = useState({}); // { clubCode: count }
 
   const prevClubStatusRef = useRef(null);
 
@@ -219,7 +225,22 @@ export default function ClubPage() {
       const snap = await getDocs(
         query(collection(db, "clubs"), where("memberUids", "array-contains", user.uid))
       );
-      setMyClubs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const clubs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setMyClubs(clubs);
+      // 각 동아리별 안읽은 알림 수 체크
+      const counts = {};
+      await Promise.all(clubs.map(async (club) => {
+        try {
+          const code = club.code || club.id;
+          const nSnap = await getDocs(collection(db, "clubs", code, "notices"));
+          const unread = nSnap.docs.filter((d) => {
+            const data = d.data();
+            return !(data.readBy || []).includes(user.uid);
+          }).length;
+          if (unread > 0) counts[code] = unread;
+        } catch { /* 권한 없으면 무시 */ }
+      }));
+      setUnreadCounts(counts);
     } catch (e) { console.error("내 동아리 로드 실패:", e); }
     finally { setClubsLoading(false); }
   }, [user]);
@@ -524,7 +545,17 @@ export default function ClubPage() {
           <img src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
             alt="오백원의 행복" className="h-9 w-auto object-contain" />
         </Link>
-        <p className="text-sm font-black text-gray-700">🏅 플로깅 동아리</p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-black text-gray-700">🏅 플로깅 동아리</p>
+          {(() => {
+            const total = Object.values(unreadCounts).reduce((s, n) => s + n, 0);
+            return total > 0 ? (
+              <span className="w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
+                {total > 9 ? "9+" : total}
+              </span>
+            ) : null;
+          })()}
+        </div>
       </div>
 
       <div className="px-4 mt-4 space-y-4">
@@ -552,7 +583,7 @@ export default function ClubPage() {
                     placeholder="6자리 초대 코드" maxLength={6}
                     className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-cyan-400" />
                   <button onClick={handleJoinByCode} disabled={loading || clubJoinCode.length < 6}
-                    className="bg-cyan-500 text-white px-5 rounded-xl font-bold disabled:opacity-40 active:scale-95 transition-transform">
+                    className="bg-cyan-500 text-white px-5 rounded-xl font-bold whitespace-nowrap disabled:opacity-40 active:scale-95 transition-transform">
                     참여
                   </button>
                 </div>
@@ -589,7 +620,8 @@ export default function ClubPage() {
                       isLeader={club.hostUid === user?.uid}
                       onClickDetail={mine ? goDetail : () => {}}
                       onJoin={handleDirectJoin} loading={loading}
-                      highlight={mine} />
+                      highlight={mine}
+                      unreadCount={mine ? (unreadCounts[club.code || club.id] || 0) : 0} />
                   );
                 })}
               </div>

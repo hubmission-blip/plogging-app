@@ -1,0 +1,155 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ── [공통 헬퍼 함수] ─────────────────────────────────────
+    function isAuth() {
+      return request.auth != null;
+    }
+    function isAdmin() {
+      return isAuth() && (
+        request.auth.token.email == "hubmission@gmail.com" ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+    // ── [컬렉션별 규칙] ──────────────────────────────────────
+    // 1. users
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isAuth();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+    // 2. routes
+    match /routes/{docId} {
+      allow read: if true;
+      allow create: if isAuth();
+      allow update: if isAuth() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+    // 3. events
+    match /events/{docId} {
+      allow read: if true;
+      allow create: if isAuth();
+      allow update: if isAuth() &&
+        (resource.data.hostUid == request.auth.uid || isAdmin());
+      allow delete: if isAdmin() ||
+        (isAuth() && resource.data.hostUid == request.auth.uid);
+    }
+    // 4. banners
+    match /banners/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    // 5. partners
+    match /partners/{partnerId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+    // 6. partner_requests
+    match /partner_requests/{docId} {
+      allow create: if isAuth() &&
+        request.resource.data.userId == request.auth.uid;
+      allow read: if isAuth() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+    // 7. groups (1회성, 2시간 만료)
+    match /groups/{groupId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update: if isAuth();
+      allow delete: if isAuth() &&
+        (resource.data.hostUid == request.auth.uid || isAdmin());
+    }
+    // 8. clubs (동아리)
+    match /clubs/{clubCode} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update: if isAuth() && (
+        request.auth.uid in resource.data.memberUids ||
+        request.auth.uid == resource.data.hostUid ||
+        isAdmin()
+      );
+      allow delete: if isAuth() &&
+        (request.auth.uid == resource.data.hostUid || isAdmin());
+
+      // 8-1. clubs > history (플로깅 기록)
+      match /history/{entryId} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubCode)).data.memberUids;
+        allow create: if request.auth != null
+          && request.auth.uid == request.resource.data.uid
+          && request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubCode)).data.memberUids;
+        allow update, delete: if false;
+      }
+
+      // 8-2. clubs > notices (동아리 알림)
+      match /notices/{noticeId} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubCode)).data.memberUids;
+        allow create: if request.auth != null
+          && request.auth.uid == get(/databases/$(database)/documents/clubs/$(clubCode)).data.hostUid;
+        allow update: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubCode)).data.memberUids;
+        allow delete: if false;
+      }
+    }
+    // 9. reward_history
+    match /reward_history/{docId} {
+      allow read: if isAuth() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuth() &&
+        request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+    // 10. point_history
+    match /point_history/{docId} {
+      allow read: if isAuth() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuth() &&
+        request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+    // 11. settings & notices
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /notices/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    // 12. kakaoUsers
+    match /kakaoUsers/{userId} {
+      allow read: if isAuth() && (isOwner(userId) || isAdmin());
+      allow create, update: if isAuth() && isOwner(userId);
+      allow delete: if isAdmin();
+    }
+    // 13. admins & rankings
+    match /admins/{userId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+    match /rankings/{docId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+    // 14. shopPurchases & shopClicks
+    match /shopPurchases/{docId} {
+      allow create: if request.resource.data.keys().hasAll(['productId', 'userId', 'status']);
+      allow read, update: if request.auth != null;
+    }
+    match /shopClicks/{docId} {
+      allow create: if true;
+    }
+    // 15. products (친환경 쇼핑 상품)
+    match /products/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

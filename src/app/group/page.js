@@ -155,7 +155,7 @@ export default function GroupPage() {
                     placeholder="6자리 초대 코드" maxLength={6}
                     className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-sky-400" />
                   <button onClick={handleJoin} disabled={loading || joinCode.length < 6}
-                    className="bg-sky-500 text-white px-5 rounded-xl font-bold disabled:opacity-40 active:scale-95 transition-transform">참여</button>
+                    className="bg-sky-500 text-white px-5 rounded-xl font-bold whitespace-nowrap disabled:opacity-40 active:scale-95 transition-transform">참여</button>
                 </div>
                 {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
               </div>
