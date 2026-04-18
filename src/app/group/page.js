@@ -178,9 +178,9 @@ export default function GroupPage() {
                 <p className="text-cyan-400 text-xs mt-0.5">함께 뛰어보세요 →</p>
               </Link>
               <Link href="/shop" className="block rounded-2xl p-4 text-center border-2 active:opacity-80 transition-colors"
-                style={{ backgroundColor: "#ef558b18", borderColor: "#ef558b" }}>
+                style={{ backgroundColor: "#ef558b0c", borderColor: "#ef558b80" }}>
                 <p className="font-bold text-sm" style={{ color: "#ef3654" }}>🛒 친환경 쇼핑</p>
-                <p className="text-xs mt-0.5" style={{ color: "#ef558baa" }}>친환경 제품 보기 →</p>
+                <p className="text-xs mt-0.5" style={{ color: "#ef558b99" }}>친환경 제품 보기 →</p>
               </Link>
             </div>
           </>

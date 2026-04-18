@@ -246,16 +246,25 @@ export default function ClubPage() {
     finally { setHistoryLoading(false); }
   }, []);
 
-  // ─── 알림 실시간 리스너 ──────────────────────────────────
-  useEffect(() => {
-    if (!selectedClub?.code) { setNotices([]); return; }
-    const unsub = onSnapshot(
-      query(collection(db, "clubs", selectedClub.code, "notices"), orderBy("createdAt", "desc"), limit(20)),
-      (snap) => setNotices(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
-      (e) => console.error("알림 로드 실패:", e),
-    );
-    return () => unsub();
-  }, [selectedClub?.code]);
+  // ─── 알림 로드 ──────────────────────────────────────────
+  const fetchNotices = useCallback(async (code) => {
+    if (!code) { setNotices([]); return; }
+    try {
+      const snap = await getDocs(
+        query(collection(db, "clubs", code, "notices"), orderBy("createdAt", "desc"), limit(20))
+      );
+      setNotices(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    } catch (e) {
+      console.error("알림 로드 실패:", e);
+      // orderBy 인덱스 없을 경우 인덱스 없이 재시도
+      try {
+        const snap = await getDocs(collection(db, "clubs", code, "notices"));
+        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        setNotices(list.slice(0, 20));
+      } catch { setNotices([]); }
+    }
+  }, []);
 
   // ─── 알림 보내기 ────────────────────────────────────────
   const handleSendNotice = async () => {
@@ -263,7 +272,8 @@ export default function ClubPage() {
     setNoticeSending(true);
     try {
       const name = user.displayName || user.email?.split("@")[0] || "동아리장";
-      await addDoc(collection(db, "clubs", selectedClub.code, "notices"), {
+      const noticesRef = collection(db, "clubs", selectedClub.code, "notices");
+      await addDoc(noticesRef, {
         message: noticeMsg.trim(),
         senderUid: user.uid,
         senderName: name,
@@ -271,6 +281,8 @@ export default function ClubPage() {
         readBy: [user.uid],
       });
       setNoticeMsg(""); setShowNoticeInput(false);
+      // 즉시 새로고침
+      await fetchNotices(selectedClub.code);
     } catch (e) { alert("알림 전송 실패: " + e.message); }
     finally { setNoticeSending(false); }
   };
@@ -410,7 +422,7 @@ export default function ClubPage() {
     setMyClubs((prev) => [...prev, joined]);
     prevClubStatusRef.current = freshData.status ?? "active";
     setClubDetailTab("home"); setClubHistory([]); fetchClubHistory(code);
-    setMode("clubDetail");
+    fetchNotices(code); setMode("clubDetail");
   };
 
   const handleStartClubPlogging = async () => {
@@ -475,6 +487,7 @@ export default function ClubPage() {
     setClubEditMode(false); setClubDetailTab("home");
     setClubHistory([]); fetchClubHistory(club.code);
     setShowNoticeInput(false); setNoticeMsg("");
+    fetchNotices(club.code);
   };
 
   // ─── 지역 필터링 (내 동아리 포함, 상위 정렬) ──────────────
