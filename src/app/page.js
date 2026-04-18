@@ -403,44 +403,6 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* ── 공지사항 배너 ── */}
-          {notices.length > 0 && (
-            <div className="space-y-2">
-              {notices.map((notice) => {
-                const style = NOTICE_STYLE[notice.type] || NOTICE_STYLE.info;
-                const isExpanded = expandedNotice === notice.id;
-                return (
-                  <div
-                    key={notice.id}
-                    className={`${style.bg} border ${style.border} rounded-2xl px-4 py-3`}
-                  >
-                    <button
-                      className="w-full text-left"
-                      onClick={() => setExpandedNotice(isExpanded ? null : notice.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-black ${style.text} opacity-70`}>공지</span>
-                          <style.Icon className={`w-4 h-4 ${style.text}`} strokeWidth={1.8} />
-                          <p className={`text-sm font-bold ${style.text}`}>{notice.title}</p>
-                        </div>
-                        {isExpanded
-                          ? <ChevronUp className={`w-4 h-4 ${style.text} opacity-70`} strokeWidth={2} />
-                          : <ChevronDown className={`w-4 h-4 ${style.text} opacity-70`} strokeWidth={2} />
-                        }
-                      </div>
-                    </button>
-                    {isExpanded && (
-                      <p className="text-xs text-gray-800 mt-2 leading-relaxed whitespace-pre-line" style={{ paddingLeft: "calc(1.5rem + 20px + 8px)" }}>
-                        {notice.content}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
           {/* ── 사용법 영상 모달 ── */}
           {showManual && (
             <div
@@ -593,6 +555,44 @@ export default function HomePage() {
               </div>
             </Link>
           </div>
+
+          {/* ── 공지사항 배너 ── */}
+          {notices.length > 0 && (
+            <div className="space-y-2">
+              {notices.map((notice) => {
+                const style = NOTICE_STYLE[notice.type] || NOTICE_STYLE.info;
+                const isExpanded = expandedNotice === notice.id;
+                return (
+                  <div
+                    key={notice.id}
+                    className={`${style.bg} border ${style.border} rounded-2xl px-4 py-3`}
+                  >
+                    <button
+                      className="w-full text-left"
+                      onClick={() => setExpandedNotice(isExpanded ? null : notice.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-black ${style.text} opacity-70`}>공지</span>
+                          <style.Icon className={`w-4 h-4 ${style.text}`} strokeWidth={1.8} />
+                          <p className={`text-sm font-bold ${style.text}`}>{notice.title}</p>
+                        </div>
+                        {isExpanded
+                          ? <ChevronUp className={`w-4 h-4 ${style.text} opacity-70`} strokeWidth={2} />
+                          : <ChevronDown className={`w-4 h-4 ${style.text} opacity-70`} strokeWidth={2} />
+                        }
+                      </div>
+                    </button>
+                    {isExpanded && (
+                      <p className="text-xs text-gray-800 mt-2 leading-relaxed whitespace-pre-line" style={{ paddingLeft: "calc(1.5rem + 20px + 8px)" }}>
+                        {notice.content}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* ── 포인트 적립 기준 (아코디언) ── */}
           <div className="rounded-2xl shadow-sm overflow-hidden" style={{ backgroundColor: "#8dc63f1a", border: "1px solid #8dc63f40" }}>
