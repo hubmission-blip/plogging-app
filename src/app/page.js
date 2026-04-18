@@ -444,7 +444,7 @@ export default function HomePage() {
           <div className="rounded-2xl px-1.5 py-1.5" style={{ backgroundColor: "#8dc63f1a", border: "1px solid #8dc63f40" }}>
             <div className="grid grid-cols-2 gap-1.5">
               <div className="bg-white rounded-xl py-3 px-3 flex items-center justify-center gap-2.5" style={{ border: "1px solid #8dc63f30" }}>
-                <Users className="w-8 h-8 flex-shrink-0" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
+                <Users className="w-10 h-10 flex-shrink-0" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
                 <div className="leading-none text-left">
                   <span className="text-lg font-black block" style={{ color: "#6ba030" }}>
                     {communityStats.users === null ? "…" : `${communityStats.users.toLocaleString()}명`}
@@ -453,7 +453,7 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="bg-white rounded-xl py-3 px-3 flex items-center justify-center gap-2.5" style={{ border: "1px solid #8dc63f30" }}>
-                <Footprints className="w-8 h-8 flex-shrink-0" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
+                <Footprints className="w-10 h-10 flex-shrink-0" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
                 <div className="leading-none text-left">
                   <span className="text-lg font-black block" style={{ color: "#6ba030" }}>
                     {communityStats.distance === null ? "…" : `${communityStats.distance.toFixed(1)}km`}
