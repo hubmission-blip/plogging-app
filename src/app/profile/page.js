@@ -213,9 +213,11 @@ export default function ProfilePage() {
                 {levelInfo.icon} Lv.{levelInfo.level} {levelInfo.name}
               </p>
             </div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/25 text-white flex-shrink-0">
-              내 정보
-            </span>
+            <Link href="/profile/edit"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/25 active:bg-white/40 transition-colors flex-shrink-0">
+              <Pencil className="w-3 h-3 text-white" strokeWidth={2} />
+              <span className="text-[10px] font-bold text-white">내정보 수정</span>
+            </Link>
           </div>
 
           {/* 레벨 진행바 */}
@@ -411,7 +413,6 @@ export default function ProfilePage() {
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <p className="text-xs text-gray-400 font-medium px-4 pt-3 pb-1">바로가기</p>
           {[
-            { href: "/profile/edit", icon: <Pencil className="w-5 h-5 text-gray-500" strokeWidth={1.8} />, label: "내정보 수정 (닉네임 · 1365 회원번호)" },
             { href: "/history",      icon: <BarChart3 className="w-5 h-5 text-gray-500" strokeWidth={1.8} />, label: "전체 플로깅 기록" },
             { href: "/ranking",      icon: <Trophy className="w-5 h-5 text-gray-500" strokeWidth={1.8} />, label: "랭킹 보기" },
             { href: "/ranking?view=map", icon: <Map className="w-5 h-5 text-gray-500" strokeWidth={1.8} />, label: "행정구역별 랭킹 지도" },
