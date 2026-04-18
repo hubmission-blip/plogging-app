@@ -131,7 +131,7 @@ service cloud.firestore {
 
       // ── 8-2. clubs > notices — 동아리 알림 메시지
       //  읽기: 멤버만 | 생성: 동아리장만 | 수정(읽음처리): 멤버
-      //  삭제: 동아리장만
+      //  삭제: 동아리장만 (알림 관리용)
       match /notices/{noticeId} {
         allow read: if request.auth != null
           && request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubCode)).data.memberUids;

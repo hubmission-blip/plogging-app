@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { Bell } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
@@ -75,7 +76,7 @@ export default function NotificationBell({ user }) {
 
   return (
     <Link href="/club" className="relative flex items-center">
-      <span className="text-xl">🔔</span>
+      <Bell className="w-5.5 h-5.5 text-gray-500" strokeWidth={2} />
       {ready && count > 0 && (
         <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-sm">
           {count > 99 ? "99+" : count}
