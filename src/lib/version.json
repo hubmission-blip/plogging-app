@@ -1,7 +1,18 @@
 {
-  "version": "v1.77",
-  "build": 77,
+  "version": "v1.78",
+  "build": 78,
   "changelog": [
+    {
+      "version": "v1.78",
+      "build": 78,
+      "date": "2026-04-19",
+      "emoji": "📱",
+      "title": "동아리 기능 활성화 및 UI 수정",
+      "items": [
+        "페이지 디자인 정리 및 중복코드 정리",
+        "친환경 쇼핑 활성화"
+      ]
+    },
     {
       "version": "v1.77",
       "build": 77,

@@ -429,7 +429,6 @@ export default function ClubPage() {
   // ─── 지역 필터링 ────────────────────────────────────────
   const myClubIds = new Set(myClubs.map((c) => c.code || c.id));
   const filteredClubs = allClubs.filter((c) => {
-    if (myClubIds.has(c.code || c.id)) return false; // 내 동아리 제외
     if (regionFilter === "전체") return true;
     const region = c.location?.region || "";
     return region.startsWith(regionFilter);
@@ -492,6 +491,12 @@ export default function ClubPage() {
               )}
             </div>
 
+            {/* ── 새 동아리 만들기 버튼 ── */}
+            <button onClick={() => { setMode("createClub"); setError(""); setClubForm(EMPTY_FORM); }}
+              className="w-full bg-cyan-500 text-white py-4 rounded-2xl shadow-md font-bold text-base active:scale-95 transition-transform">
+              🏅 새 동아리 만들기
+            </button>
+
             {/* ── 코드로 참여 ── */}
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <h2 className="font-bold text-gray-700 mb-2 text-sm">🔑 초대 코드로 참여</h2>
@@ -532,10 +537,16 @@ export default function ClubPage() {
                 <div className="text-center py-6 text-gray-400 text-sm animate-pulse">동아리 찾는 중...</div>
               ) : filteredClubs.length > 0 ? (
                 <div className="space-y-2">
-                  {filteredClubs.map((club) => (
-                    <ClubCard key={club.id} club={club} isMember={false} isLeader={false}
-                      onClickDetail={() => {}} onJoin={handleDirectJoin} loading={loading} />
-                  ))}
+                  {filteredClubs.map((club) => {
+                    const isMine = myClubIds.has(club.code || club.id);
+                    return (
+                      <ClubCard key={club.id} club={club}
+                        isMember={isMine}
+                        isLeader={club.hostUid === user?.uid}
+                        onClickDetail={isMine ? goDetail : () => {}}
+                        onJoin={handleDirectJoin} loading={loading} />
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="bg-gray-100 rounded-2xl p-5 text-center">
