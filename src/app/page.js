@@ -386,7 +386,7 @@ export default function HomePage() {
                 <div className="w-px h-8 bg-white/40" />
                 <Link
                   href="/map"
-                  className="flex items-center gap-1.5"
+                  className="flex items-center gap-0.5 -mr-1"
                   title="플로깅 시작"
                 >
                   <span className="text-lg font-black text-yellow-300">출발!</span>
