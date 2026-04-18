@@ -382,14 +382,17 @@ export default function HomePage() {
                 <p className="text-xs text-green-100">반갑습니다!</p>
                 <p className="font-bold text-sm">{user.displayName || user.email?.split("@")[0]}</p>
               </div>
-              <Link
-                href="/map"
-                className="flex items-center gap-1.5 flex-shrink-0"
-                title="플로깅 시작"
-              >
-                <span className="text-lg font-black text-yellow-300">출발!</span>
-                <span className="text-3xl">🚶</span>
-              </Link>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <div className="w-px h-8 bg-white/40" />
+                <Link
+                  href="/map"
+                  className="flex items-center gap-1.5"
+                  title="플로깅 시작"
+                >
+                  <span className="text-lg font-black text-yellow-300">출발!</span>
+                  <span className="text-3xl">🚶</span>
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="flex gap-2">
@@ -440,19 +443,23 @@ export default function HomePage() {
           {/* ── 커뮤니티 현황 ── */}
           <div className="bg-green-50 border border-green-200 rounded-2xl px-3 py-3">
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-white border border-green-100 rounded-xl py-2.5 flex flex-col items-center gap-1">
-                <Users className="w-6 h-6 text-green-600" strokeWidth={1.8} />
-                <span className="text-sm font-black text-green-700">
-                  {communityStats.users === null ? "…" : `${communityStats.users.toLocaleString()}명`}
-                </span>
-                <span className="text-[10px] text-green-600 font-bold">총 가입자</span>
+              <div className="bg-white border border-green-100 rounded-xl py-2.5 px-3 flex items-center justify-center gap-2">
+                <Users className="w-5 h-5 text-green-600 flex-shrink-0" strokeWidth={1.8} />
+                <div className="text-center">
+                  <span className="text-sm font-black text-green-700 block">
+                    {communityStats.users === null ? "…" : `${communityStats.users.toLocaleString()}명`}
+                  </span>
+                  <span className="text-[10px] text-green-600 font-bold">총 가입자</span>
+                </div>
               </div>
-              <div className="bg-white border border-green-100 rounded-xl py-2.5 flex flex-col items-center gap-1">
-                <Footprints className="w-6 h-6 text-green-600" strokeWidth={1.8} />
-                <span className="text-sm font-black text-green-700">
-                  {communityStats.distance === null ? "…" : `${communityStats.distance.toFixed(1)}km`}
-                </span>
-                <span className="text-[10px] text-green-600 font-bold">총 이동 거리</span>
+              <div className="bg-white border border-green-100 rounded-xl py-2.5 px-3 flex items-center justify-center gap-2">
+                <Footprints className="w-5 h-5 text-green-600 flex-shrink-0" strokeWidth={1.8} />
+                <div className="text-center">
+                  <span className="text-sm font-black text-green-700 block">
+                    {communityStats.distance === null ? "…" : `${communityStats.distance.toFixed(1)}km`}
+                  </span>
+                  <span className="text-[10px] text-green-600 font-bold">총 이동 거리</span>
+                </div>
               </div>
             </div>
           </div>
