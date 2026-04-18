@@ -387,8 +387,8 @@ export default function HomePage() {
                 className="flex items-center gap-1.5 flex-shrink-0"
                 title="플로깅 시작"
               >
+                <span className="text-lg font-black text-white">출발!</span>
                 <span className="text-3xl">🚶</span>
-                <span className="text-sm font-black text-white">출발!</span>
               </Link>
             </div>
           ) : (
@@ -438,20 +438,22 @@ export default function HomePage() {
           )}
 
           {/* ── 커뮤니티 현황 ── */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-green-50 border border-green-200 rounded-2xl py-3 flex flex-col items-center gap-1">
-              <Users className="w-6 h-6 text-green-600" strokeWidth={1.8} />
-              <span className="text-sm font-black text-green-700">
-                {communityStats.users === null ? "…" : `${communityStats.users.toLocaleString()}명`}
-              </span>
-              <span className="text-[10px] text-green-600 font-bold">총 가입자</span>
-            </div>
-            <div className="bg-green-50 border border-green-200 rounded-2xl py-3 flex flex-col items-center gap-1">
-              <Footprints className="w-6 h-6 text-green-600" strokeWidth={1.8} />
-              <span className="text-sm font-black text-green-700">
-                {communityStats.distance === null ? "…" : `${communityStats.distance.toFixed(1)}km`}
-              </span>
-              <span className="text-[10px] text-green-600 font-bold">총 이동 거리</span>
+          <div className="bg-green-50 border border-green-200 rounded-2xl px-3 py-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex flex-col items-center gap-1">
+                <Users className="w-6 h-6 text-green-600" strokeWidth={1.8} />
+                <span className="text-sm font-black text-green-700">
+                  {communityStats.users === null ? "…" : `${communityStats.users.toLocaleString()}명`}
+                </span>
+                <span className="text-[10px] text-green-600 font-bold">총 가입자</span>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <Footprints className="w-6 h-6 text-green-600" strokeWidth={1.8} />
+                <span className="text-sm font-black text-green-700">
+                  {communityStats.distance === null ? "…" : `${communityStats.distance.toFixed(1)}km`}
+                </span>
+                <span className="text-[10px] text-green-600 font-bold">총 이동 거리</span>
+              </div>
             </div>
           </div>
 
