@@ -603,15 +603,6 @@ export default function ShopPage() {
         </div>
       </div>
 
-      {/* ── 관리자 상품 추가 안내 ── */}
-      <div className="mx-4 mt-3 mb-2 bg-gray-100 rounded-2xl p-4">
-        <p className="text-xs font-bold text-gray-500 mb-1">🛠️ 상품 추가 방법</p>
-        <p className="text-[11px] text-gray-400 leading-relaxed">
-          Firebase Firestore → <code className="bg-white px-1 rounded">products</code> 컬렉션에 상품을 추가하면 즉시 반영됩니다.
-          쿠팡 파트너스 링크를 <code className="bg-white px-1 rounded">link</code> 필드에 입력하세요.
-        </p>
-      </div>
-
       {/* ── 토스트 알림 ── */}
       {toast && (
         <div className={`fixed bottom-24 left-4 right-4 z-50 rounded-2xl px-4 py-3 shadow-xl text-center font-bold text-sm transition-all

@@ -11,12 +11,12 @@ const ACCOUNTS = [
 
 // ── 후원 금액 프리셋 ──────────────────────────────────────────
 const AMOUNTS = [
-  { label: "1,000원",  value: 1000,  desc: "커피 한 잔 대신" },
-  { label: "5,000원",  value: 5000,  desc: "앱 서버 비용 일부" },
-  { label: "10,000원", value: 10000, desc: "한 달 운영 응원" },
-  { label: "30,000원", value: 30000, desc: "특별 후원자 배지" },
-  { label: "50,000원", value: 50000, desc: "앱 개발비 지원" },
-  { label: "직접입력", value: 0,     desc: "원하는 금액으로" },
+  { label: "500원",    value: 500 },
+  { label: "5,000원",  value: 5000 },
+  { label: "10,000원", value: 10000 },
+  { label: "30,000원", value: 30000 },
+  { label: "50,000원", value: 50000 },
+  { label: "직접입력", value: 0 },
 ];
 
 // ── 후원자 혜택 ────────────────────────────────────────────────
@@ -165,8 +165,7 @@ export default function DonatePage() {
                     ? "bg-orange-500 text-white border-orange-500 shadow-sm"
                     : "bg-gray-50 text-gray-700 border-gray-100"}`}
               >
-                <p className="text-xs font-bold">{a.label}</p>
-                <p className="text-[10px] opacity-70 mt-0.5 leading-tight">{a.desc}</p>
+                <p className="text-sm font-black">{a.label}</p>
               </button>
             ))}
           </div>

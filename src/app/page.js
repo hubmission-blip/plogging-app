@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, CirclePlay, Star, Smartphone, UserPlus, Navigation, Footprints, Flag, Camera, Trophy, HeartHandshake, Globe, Coins, Target, Zap, Activity, Sparkles, RefreshCw, Bell, Rocket, Pin, AlertTriangle, PartyPopper, ChevronUp, ChevronDown, PersonStanding, UserCheck, UsersRound, Contact, Route } from "lucide-react";
+import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, CirclePlay, Star, Smartphone, UserPlus, Navigation, Footprints, Flag, Camera, Trophy, HeartHandshake, Globe, Coins, Target, Zap, Activity, Sparkles, RefreshCw, Bell, Rocket, Pin, AlertTriangle, PartyPopper, ChevronUp, ChevronDown, PersonStanding, UserCheck, UsersRound, Contact, Route, School } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
 import CharacterGuide from "@/components/CharacterGuide";
@@ -467,11 +467,11 @@ export default function HomePage() {
           {/* ── 빠른 메뉴 (라이트 컬러 카드) ── */}
           <div className="grid grid-cols-4 gap-2">
             <Link
-              href="/map"
+              href="/group?tab=club"
               className="bg-green-50 border border-green-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <MapPin className="w-6 h-6 text-green-600" strokeWidth={1.8} />
-              <span className="text-xs text-green-700 font-bold">지도</span>
+              <School className="w-6 h-6 text-green-600" strokeWidth={1.8} />
+              <span className="text-xs text-green-700 font-bold">동아리</span>
             </Link>
             <Link
               href="/group"

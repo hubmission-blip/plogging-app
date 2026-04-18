@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
@@ -182,8 +182,9 @@ function ClubForm({ form, onChange, loading, onSubmit, submitLabel, onCancel }) 
 export default function GroupPage() {
   const { user } = useAuth();
   const router   = useRouter();
+  const searchParams = useSearchParams();
 
-  const [tab,  setTab]  = useState("oneTime");
+  const [tab,  setTab]  = useState(() => searchParams.get("tab") === "club" ? "club" : "oneTime");
   const [mode, setMode] = useState("home"); // home | waiting | createClub | clubDetail
 
   // 1회성
