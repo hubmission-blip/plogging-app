@@ -347,19 +347,22 @@ export default function ClubPage() {
 
   // 공용 참여 로직
   const joinClub = async (code, data) => {
-    if (data.memberUids?.includes(user.uid)) { setError("이미 가입된 동아리예요."); return; }
-    if ((data.members?.length || 0) >= data.maxMembers) {
-      setError(`최대 인원(${data.maxMembers}명)을 초과했어요.`); return;
+    // 최신 데이터로 중복 가입 방지
+    const freshSnap = await getDoc(doc(db, "clubs", code));
+    const freshData = freshSnap.exists() ? freshSnap.data() : data;
+    if (freshData.memberUids?.includes(user.uid)) { setError("이미 가입된 동아리예요."); return; }
+    if ((freshData.members?.length || 0) >= freshData.maxMembers) {
+      setError(`최대 인원(${freshData.maxMembers}명)을 초과했어요.`); return;
     }
     const name = user.displayName || user.email?.split("@")[0] || "멤버";
     await updateDoc(doc(db, "clubs", code), {
       members: arrayUnion({ uid: user.uid, name, photoURL: user.photoURL || "" }),
       memberUids: arrayUnion(user.uid),
     });
-    const joined = { id: code, ...data };
+    const joined = { id: code, ...freshData };
     setSelectedClub(joined);
     setMyClubs((prev) => [...prev, joined]);
-    prevClubStatusRef.current = data.status ?? "active";
+    prevClubStatusRef.current = freshData.status ?? "active";
     setClubDetailTab("home"); setClubHistory([]); fetchClubHistory(code);
     setMode("clubDetail");
   };
@@ -395,10 +398,13 @@ export default function ClubPage() {
     }
     if (!confirm(`'${selectedClub.name}' 동아리에서 탈퇴하시겠어요?`)) return;
     try {
-      const me = selectedClub.members?.find((m) => m.uid === user.uid);
-      await updateDoc(doc(db, "clubs", selectedClub.code), {
-        members: arrayRemove(me), memberUids: arrayRemove(user.uid),
-      });
+      const clubRef = doc(db, "clubs", selectedClub.code);
+      const snap = await getDoc(clubRef);
+      if (!snap.exists()) { alert("동아리를 찾을 수 없어요."); return; }
+      const data = snap.data();
+      const newMembers = (data.members || []).filter((m) => m.uid !== user.uid);
+      const newMemberUids = (data.memberUids || []).filter((uid) => uid !== user.uid);
+      await updateDoc(clubRef, { members: newMembers, memberUids: newMemberUids });
       setMyClubs((prev) => prev.filter((c) => c.code !== selectedClub.code));
       setSelectedClub(null); setMode("home");
     } catch (e) { alert("탈퇴 실패: " + e.message); }
@@ -427,7 +433,9 @@ export default function ClubPage() {
   // ─── 지역 필터링 ────────────────────────────────────────
   const myClubIds = new Set(myClubs.map((c) => c.code || c.id));
   const filteredClubs = allClubs.filter((c) => {
-    if (myClubIds.has(c.code || c.id)) return false; // 내 동아리는 위에서 별도 표시
+    // 내가 이미 가입된 동아리 제외 (memberUids 직접 체크 + myClubIds 이중 체크)
+    if (c.memberUids?.includes(user?.uid)) return false;
+    if (myClubIds.has(c.code || c.id)) return false;
     if (regionFilter === "전체") return true;
     const region = c.location?.region || "";
     return region.startsWith(regionFilter);
