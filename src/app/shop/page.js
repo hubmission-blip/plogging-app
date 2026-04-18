@@ -218,17 +218,111 @@ function PurchaseSheet({ product, onConfirm, onClose }) {
   );
 }
 
-// ─── 상품 카드 ───────────────────────────────────────────────
-function ProductCard({ product, onBuy, onConfirm }) {
-  const [showSheet, setShowSheet] = useState(false); // 구매 확인 시트
-  const [confirmed, setConfirmed] = useState(false); // 포인트 이미 받음
+// ─── 상품 상세 팝업 ─────────────────────────────────────────
+function ProductDetailSheet({ product, onBuy, onClose }) {
   const pct = discountPct(product.price, product.originalPrice);
   const plt = PLATFORM_LABEL[product.platform] || PLATFORM_LABEL.coupang;
 
-  // 링크 클릭 → 외부 이동 + 시트 표시 (카드 버튼은 그대로 유지)
+  return (
+    <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50" />
+      <div
+        className="relative w-full bg-white rounded-t-3xl shadow-2xl overflow-hidden"
+        style={{ maxHeight: "85vh", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 20px))" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 핸들 */}
+        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-2" />
+
+        <div className="overflow-y-auto" style={{ maxHeight: "calc(85vh - 5rem)" }}>
+          {/* 큰 이미지 */}
+          <div className="relative bg-gray-50 w-full aspect-square flex items-center justify-center overflow-hidden">
+            <img
+              src={product.image}
+              alt={product.title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.style.display = "none";
+                e.target.nextSibling.style.display = "flex";
+              }}
+            />
+            <div className="hidden absolute inset-0 items-center justify-center text-6xl bg-gray-100">
+              🛒
+            </div>
+            {/* 플랫폼 뱃지 */}
+            <span className={`absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full text-white ${plt.color}`}>
+              {plt.icon} {plt.label}
+            </span>
+            {/* 할인율 */}
+            {pct > 0 && (
+              <span className="absolute bottom-3 right-3 bg-red-500 text-white text-sm font-black px-2 py-1 rounded-xl">
+                {pct}% OFF
+              </span>
+            )}
+          </div>
+
+          {/* 상품 정보 */}
+          <div className="px-5 pt-4 pb-3">
+            <p className="text-xs text-gray-400 font-medium">{product.brand}</p>
+            <p className="text-lg font-bold text-gray-800 leading-snug mt-1">{product.title}</p>
+            <p className="text-sm text-gray-500 leading-relaxed mt-2">{product.desc}</p>
+
+            {/* 가격 */}
+            <div className="flex items-baseline gap-2 mt-4">
+              <span className="text-2xl font-black text-gray-900">{product.price.toLocaleString()}원</span>
+              {product.originalPrice > product.price && (
+                <span className="text-sm text-gray-400 line-through">{product.originalPrice.toLocaleString()}원</span>
+              )}
+            </div>
+
+            {/* 키워드 태그 */}
+            {product.tag && (
+              <div className="rounded-xl px-3 py-2 mt-3 text-center" style={{ backgroundColor: "#8dc63f18" }}>
+                <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>{product.tag}</span>
+              </div>
+            )}
+
+            {/* 보너스 포인트 */}
+            <div className="rounded-xl px-4 py-3 mt-2 flex items-center justify-between" style={{ backgroundColor: "#CD5C5C15" }}>
+              <span className="text-sm" style={{ color: "#CD5C5C" }}>🎁 구매 시 보너스</span>
+              <span className="text-sm font-black" style={{ color: "#CD5C5C" }}>+{product.bonusPoints}P</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 하단 고정 버튼 */}
+        <div className="px-5 pt-2 pb-2">
+          <button
+            onClick={() => { onBuy(product); onClose(); }}
+            className="w-full text-white py-3.5 rounded-2xl text-base font-bold active:scale-95 transition-transform"
+            style={{ backgroundImage: "linear-gradient(to right, #ef558b, #ef3654)" }}
+          >
+            {plt.icon} {plt.label}에서 구매하기 →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── 상품 카드 ───────────────────────────────────────────────
+function ProductCard({ product, onBuy, onConfirm }) {
+  const [showSheet, setShowSheet]   = useState(false); // 구매 확인 시트
+  const [showDetail, setShowDetail] = useState(false); // 상세 팝업
+  const [confirmed, setConfirmed]   = useState(false); // 포인트 이미 받음
+  const pct = discountPct(product.price, product.originalPrice);
+  const plt = PLATFORM_LABEL[product.platform] || PLATFORM_LABEL.coupang;
+
+  // 구매 버튼 → 외부 이동 + 구매확인 시트
   const handleBuy = () => {
-    onBuy(product);       // 외부 링크 열기 + 클릭 로그
-    setShowSheet(true);   // 구매 확인 시트 올라오기
+    onBuy(product);
+    setShowSheet(true);
+  };
+
+  // 상세 팝업에서 구매 → 외부 이동 + 구매확인 시트
+  const handleBuyFromDetail = (p) => {
+    onBuy(p);
+    setShowSheet(true);
   };
 
   const handleConfirm = async (p) => {
@@ -239,8 +333,11 @@ function ProductCard({ product, onBuy, onConfirm }) {
   return (
     <>
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
-        {/* 상품 이미지 */}
-        <div className="relative bg-gray-50 h-40 flex items-center justify-center overflow-hidden flex-shrink-0">
+        {/* 상품 이미지 — 클릭 시 상세 팝업 */}
+        <div
+          className="relative bg-gray-50 h-40 flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer active:opacity-80"
+          onClick={() => setShowDetail(true)}
+        >
           <img
             src={product.image}
             alt={product.title}
@@ -253,7 +350,6 @@ function ProductCard({ product, onBuy, onConfirm }) {
           <div className="hidden absolute inset-0 items-center justify-center text-5xl bg-gray-100">
             🛒
           </div>
-          {/* 태그 — 상품 정보 영역으로 이동 */}
           {/* 플랫폼 뱃지 */}
           <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white ${plt.color}`}>
             {plt.icon} {plt.label}
@@ -311,6 +407,15 @@ function ProductCard({ product, onBuy, onConfirm }) {
           </div>
         </div>
       </div>
+
+      {/* 상품 상세 팝업 */}
+      {showDetail && (
+        <ProductDetailSheet
+          product={product}
+          onBuy={handleBuyFromDetail}
+          onClose={() => setShowDetail(false)}
+        />
+      )}
 
       {/* 구매 확인 바텀시트 */}
       {showSheet && (
