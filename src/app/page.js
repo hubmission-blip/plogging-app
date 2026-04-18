@@ -438,14 +438,6 @@ export default function HomePage() {
 
           {/* ── 커뮤니티 현황 ── */}
           <div className="rounded-2xl p-4 text-white shadow" style={{ backgroundImage: "linear-gradient(to right, #8dc63f, #4cb748)" }}>
-            <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center gap-1.5">
-                <Globe className="w-4 h-4 text-white/80" strokeWidth={1.8} />
-                <Activity className="w-4 h-4 text-white/80" strokeWidth={1.8} />
-                <Sparkles className="w-4 h-4 text-white/80" strokeWidth={1.8} />
-              </div>
-              <p className="font-bold text-xs text-white/90">오백원의 행복 커뮤니티 현황</p>
-            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white/20 rounded-xl px-4 py-3 text-center">
                 <p className="text-2xl font-black">
