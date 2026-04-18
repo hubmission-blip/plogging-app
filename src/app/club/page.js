@@ -450,21 +450,15 @@ export default function ClubPage() {
       style={{ paddingBottom: "calc(6rem + env(safe-area-inset-bottom, 20px))" }}>
 
       {/* ── 헤더 ── */}
-      <div className="bg-white px-4 pt-4 pb-3 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-black text-gray-800">🏅 플로깅 동아리</h1>
-            <p className="text-xs text-gray-400 mt-0.5">함께 뛰면 더 즐거워요</p>
-          </div>
-          <button onClick={() => { setMode("createClub"); setError(""); setClubForm(EMPTY_FORM); }}
-            className="px-3 py-1.5 rounded-xl text-xs font-bold text-white active:scale-95 transition-transform"
-            style={{ backgroundColor: "#8dc63f" }}>
-            + 새 동아리
-          </button>
-        </div>
+      <div className="bg-gray-50 px-4 pt-4 pb-1 flex justify-between items-center">
+        <Link href="/">
+          <img src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+            alt="오백원의 행복" className="h-9 w-auto object-contain" />
+        </Link>
+        <p className="text-sm font-black text-gray-700">🏅 플로깅 동아리</p>
       </div>
 
-      <div className="px-4 mt-3 space-y-4">
+      <div className="px-4 mt-4 space-y-4">
 
         {/* ═══════════ 홈 모드 ═══════════ */}
         {mode === "home" && (
