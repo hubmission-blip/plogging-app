@@ -121,6 +121,7 @@ export default function ProfilePage() {
           photoURL:         d.photoURL         || user.photoURL    || "",
           ecomileageLinked: d.ecomileageLinked || false,
           ecomileageProgram: d.ecomileageProgram || "",
+          realEmail:         d.email            || "",
         });
         // 내 추천 코드 (없으면 Firestore에 자동 저장)
         const rc = d.refCode || user.uid.slice(0, 8).toUpperCase();
@@ -262,12 +263,19 @@ export default function ProfilePage() {
 
           {/* 계정 정보 — 완전 흰색 인터박스 */}
           <div className="mt-3 bg-white/80 rounded-xl px-3 py-3 space-y-2">
-            {user?.email && !user.email.includes("kakao-auth") && !user.email.includes("apple-auth") && !user.email.includes("naver-auth") && (
-              <div className="flex items-center gap-2">
-                <p className="text-[11px] text-green-600 font-medium w-14 flex-shrink-0">이메일</p>
-                <p className="text-[11px] text-gray-700 truncate flex-1">{user.email}</p>
-              </div>
-            )}
+            {(() => {
+              // Firestore에 저장된 실제 이메일 우선, 없으면 Firebase Auth 이메일 (브릿지 이메일 제외)
+              const realEmail = stats?.realEmail;
+              const authEmail = user?.email;
+              const isFake = (e) => e && (e.includes("kakao-auth") || e.includes("apple-auth") || e.includes("naver-auth"));
+              const displayEmail = (realEmail && !isFake(realEmail)) ? realEmail : (!isFake(authEmail) ? authEmail : null);
+              return displayEmail ? (
+                <div className="flex items-center gap-2">
+                  <p className="text-[11px] text-green-600 font-medium w-14 flex-shrink-0">이메일</p>
+                  <p className="text-[11px] text-gray-700 truncate flex-1">{displayEmail}</p>
+                </div>
+              ) : null;
+            })()}
             <div className="flex items-center gap-2">
               <p className="text-[11px] text-green-600 font-medium w-14 flex-shrink-0">고유번호</p>
               <p className="text-[11px] font-mono text-gray-700 truncate flex-1">{user?.uid}</p>
