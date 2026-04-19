@@ -7,7 +7,7 @@ import { db } from "@/lib/firebase";
 import {
   collection, query, where, getDocs, addDoc, serverTimestamp,
 } from "firebase/firestore";
-import { FileCheck, Download, ChevronLeft, CalendarDays, Clock, MapPin, Award, AlertCircle, History, RotateCcw } from "lucide-react";
+import { FileCheck, Download, ChevronLeft, CalendarDays, Clock, MapPin, Award, AlertCircle, History, RotateCcw, Printer } from "lucide-react";
 
 // ─── 상수: 인정 기준 ─────────────────────────────────────────
 const MIN_DISTANCE_KM  = 0.5;    // 최소 500m
@@ -260,6 +260,109 @@ export default function CertificatePage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  // ─── 재출력 (발급 내역에서) ─────────────────────────────────
+  const handleReprint = (cert) => {
+    const pStart = cert.periodStart?.toDate?.();
+    const pEnd   = cert.periodEnd?.toDate?.();
+    const issuedDate = cert.issuedAt?.toDate?.();
+    const periodStr = pStart && pEnd
+      ? `${pStart.toLocaleDateString("ko-KR")} ~ ${pEnd.toLocaleDateString("ko-KR")}`
+      : "";
+    const dateStr = issuedDate
+      ? `${issuedDate.getFullYear()}년 ${issuedDate.getMonth() + 1}월 ${issuedDate.getDate()}일`
+      : todayStr;
+
+    const html = buildCertHTML({
+      certNumber: cert.certNumber,
+      realName: cert.realName,
+      email: cert.email,
+      periodStr,
+      totalSessions: cert.totalSessions,
+      totalHours: cert.totalHours,
+      totalDistance: cert.totalDistance,
+      dateStr,
+    });
+    openPrintWindow(html);
+  };
+
+  // ─── 증명서 HTML 생성 ────────────────────────────────────
+  const buildCertHTML = ({ certNumber: num, realName: name, email, periodStr, totalSessions, totalHours, totalDistance, dateStr }) => {
+    return `
+      <div style="max-width:700px;margin:0 auto;border:3px solid #2c5f2d;padding:30px">
+        <div style="border:1px solid #2c5f2d;padding:25px">
+          <div style="text-align:center;margin-bottom:25px">
+            <p style="font-size:24px;font-weight:900;letter-spacing:6px;color:#2c5f2d;margin:0">봉 사 활 동 증 명 서</p>
+            <p style="font-size:11px;color:#999;margin-top:4px">Certificate of Volunteer Service</p>
+          </div>
+          <p style="font-size:11px;color:#999;text-align:right;margin-bottom:12px">발급번호: ${num}</p>
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <tr>
+              <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;width:25%;text-align:center">성 명</td>
+              <td style="border:1px solid #ccc;padding:8px 12px;font-size:15px;font-weight:700">${name}</td>
+            </tr>
+            <tr>
+              <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">아이디</td>
+              <td style="border:1px solid #ccc;padding:8px 12px;font-size:13px;color:#555">${email}</td>
+            </tr>
+            <tr>
+              <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">활동 기간</td>
+              <td style="border:1px solid #ccc;padding:8px 12px">${periodStr}</td>
+            </tr>
+            <tr>
+              <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">활동 내용</td>
+              <td style="border:1px solid #ccc;padding:8px 12px">환경정화 봉사활동 (플로깅)</td>
+            </tr>
+            <tr>
+              <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">활동 횟수</td>
+              <td style="border:1px solid #ccc;padding:8px 12px">${totalSessions}회</td>
+            </tr>
+            <tr>
+              <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">봉사 시간</td>
+              <td style="border:1px solid #ccc;padding:8px 12px;font-weight:700;font-size:15px">${totalHours} 시간</td>
+            </tr>
+            <tr>
+              <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">이동 거리</td>
+              <td style="border:1px solid #ccc;padding:8px 12px">${totalDistance} km</td>
+            </tr>
+          </table>
+          <p style="text-align:center;font-size:14px;line-height:2;margin:25px 0 10px">
+            위 사람은 상기 기간 동안 환경정화 봉사활동(플로깅)에<br/>성실히 참여하였음을 증명합니다.
+          </p>
+          <p style="font-size:11px;color:#888;line-height:1.6;margin:15px 0">
+            ※ 본 증명서는 GPS 기반 활동 기록을 근거로 자동 발급되었습니다.<br/>
+            ※ 성명은 본인 신고에 의하며, 허위 기재 시 효력이 인정되지 않습니다.<br/>
+            ※ 발급번호를 통해 진위 여부를 확인할 수 있습니다.
+          </p>
+          <div style="text-align:center;margin-top:30px">
+            <p style="font-size:14px;color:#333;margin-bottom:20px">${dateStr}</p>
+            <p style="font-size:15px;font-weight:700;color:#2c5f2d;margin-bottom:5px">사단법인 국제청년환경연합회</p>
+            <p style="font-size:12px;color:#666">Global Youth Environmental Association</p>
+            <img src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png" alt="직인" style="width:100px;height:auto;margin-top:15px" />
+          </div>
+        </div>
+      </div>`;
+  };
+
+  // ─── 인쇄 창 열기 ──────────────────────────────────────────
+  const openPrintWindow = (bodyContent) => {
+    const win = window.open("", "_blank", "width=800,height=1000");
+    win.document.write(`
+      <!DOCTYPE html>
+      <html><head>
+        <meta charset="utf-8" />
+        <title>봉사활동 증명서</title>
+        <style>
+          @page { size: A4; margin: 15mm; }
+          body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; margin: 0; padding: 20px; color: #1a1a1a; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head><body>${bodyContent}
+        <script>window.onload = function() { window.print(); }<\/script>
+      </body></html>
+    `);
+    win.document.close();
   };
 
   // ─── PDF 다운로드 (브라우저 print) ────────────────────────
@@ -608,10 +711,19 @@ export default function CertificatePage() {
                       <span className="text-gray-300">|</span>
                       <span>{periodStr}</span>
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-500">
-                      <span>{cert.totalSessions}회</span>
-                      <span>{cert.totalHours}시간</span>
-                      <span>{cert.totalDistance}km</span>
+                    <div className="flex items-center justify-between mt-1">
+                      <div className="flex items-center gap-3 text-[11px] text-gray-500">
+                        <span>{cert.totalSessions}회</span>
+                        <span>{cert.totalHours}시간</span>
+                        <span>{cert.totalDistance}km</span>
+                      </div>
+                      <button
+                        onClick={() => handleReprint(cert)}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-white shadow-sm"
+                        style={{ backgroundColor: "#2c5f2d" }}
+                      >
+                        <Printer className="w-3 h-3" /> 재출력
+                      </button>
                     </div>
                   </div>
                 );
