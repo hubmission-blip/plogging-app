@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CalendarDays, Leaf, Monitor, Cloud, Lightbulb, Medal, Star, Megaphone, Mail, UserRound, Coins, Landmark, CreditCard, Smartphone, Info, PenLine } from "lucide-react";
+import { CalendarDays, Leaf, Monitor, Cloud, Lightbulb, Medal, Star, Megaphone, Mail, UserRound, Coins, Landmark, Info, PenLine } from "lucide-react";
 
 // ── 후원 계좌 정보 ─────────────────────────────────────────────
 const ACCOUNTS = [
@@ -247,22 +247,6 @@ export default function DonatePage() {
               입금 시 <strong>입금자명에 닉네임 또는 연락처</strong>를 남겨주시면 후원자 혜택 적용이 빨라져요.
               혜택 문의: <strong>hubmission@gmail.com</strong>
             </p>
-          </div>
-        </div>
-
-        {/* ── 간편 후원 (토스·카카오페이) ── */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-sm font-bold text-gray-700 mb-1 flex items-center gap-1.5"><Smartphone className="w-4 h-4 text-gray-600" strokeWidth={2} /> 간편 후원</p>
-          <p className="text-xs text-gray-400 mb-3">준비 중 · 곧 오픈 예정이에요</p>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-gray-50 rounded-xl py-3 flex flex-col items-center gap-1.5 opacity-50">
-              <CreditCard className="w-6 h-6 text-blue-400" strokeWidth={1.5} />
-              <p className="text-xs font-bold text-gray-500">토스 (준비중)</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl py-3 flex flex-col items-center gap-1.5 opacity-50">
-              <CreditCard className="w-6 h-6 text-yellow-500" strokeWidth={1.5} />
-              <p className="text-xs font-bold text-gray-500">카카오페이 (준비중)</p>
-            </div>
           </div>
         </div>
 
