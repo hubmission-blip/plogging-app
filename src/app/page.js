@@ -596,61 +596,6 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* ── 이용 방법 ── */}
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="font-bold text-gray-700">이용 방법</h2>
-              <button
-                onClick={() => setShowGuide(true)}
-                className="text-xs font-medium px-2 py-1 rounded-full"
-                style={{ color: "#8dc63f", borderWidth: "1px", borderStyle: "solid", borderColor: "#8dc63f50" }}
-              >
-                가이드 다시 보기
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-3 items-stretch">
-              {HOW_TO.map((item) => (
-                <div key={item.step} className="bg-white rounded-2xl p-4 shadow-sm flex flex-col">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>STEP {item.step}</span>
-                    <span className="text-sm font-bold text-gray-500">{item.title}</span>
-                  </div>
-                  <div className="flex items-start gap-2 mt-2">
-                    <item.Icon className="w-6 h-6 flex-shrink-0" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
-                    <p className="text-xs text-gray-500 leading-relaxed pt-1">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ── 봉사활동 증명서 + 1365 자원봉사 ── */}
-          <div className="grid grid-cols-2 gap-2">
-            <Link
-              href="/certificate"
-              className="text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
-              style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
-            >
-              <FileCheck className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
-              <div className="text-right flex-1">
-                <p className="font-black text-sm leading-tight">봉사활동 증명</p>
-                <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">증명서 발급하기</p>
-              </div>
-            </Link>
-            <a
-              href="https://www.1365.go.kr"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-gradient-to-br from-orange-400 to-orange-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
-            >
-              <HeartHandshake className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
-              <div className="text-right flex-1">
-                <p className="font-black text-sm leading-tight">1365 자원봉사</p>
-                <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">자원봉사 포털 →</p>
-              </div>
-            </a>
-          </div>
-
           {/* ── 홈 화면에 추가(웹) / 앱 평가하기(네이티브) + 친구 초대 ── */}
           <div className="grid grid-cols-2 gap-2">
             {isCapacitorNative() ? (
@@ -689,6 +634,61 @@ export default function HomePage() {
                 <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">보너스 포인트 지급!</p>
               </div>
             </button>
+          </div>
+
+          {/* ── 봉사활동 증명서 + 1365 자원봉사 ── */}
+          <div className="grid grid-cols-2 gap-2">
+            <Link
+              href="/certificate"
+              className="text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+              style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
+            >
+              <FileCheck className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
+              <div className="text-right flex-1">
+                <p className="font-black text-sm leading-tight">봉사활동 증명</p>
+                <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">증명서 발급하기</p>
+              </div>
+            </Link>
+            <a
+              href="https://www.1365.go.kr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-gradient-to-br from-orange-400 to-orange-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+            >
+              <HeartHandshake className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
+              <div className="text-right flex-1">
+                <p className="font-black text-sm leading-tight">1365 자원봉사</p>
+                <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">자원봉사 포털 →</p>
+              </div>
+            </a>
+          </div>
+
+          {/* ── 이용 방법 ── */}
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="font-bold text-gray-700">이용 방법</h2>
+              <button
+                onClick={() => setShowGuide(true)}
+                className="text-xs font-medium px-2 py-1 rounded-full"
+                style={{ color: "#8dc63f", borderWidth: "1px", borderStyle: "solid", borderColor: "#8dc63f50" }}
+              >
+                가이드 다시 보기
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 items-stretch">
+              {HOW_TO.map((item) => (
+                <div key={item.step} className="bg-white rounded-2xl p-4 shadow-sm flex flex-col">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>STEP {item.step}</span>
+                    <span className="text-sm font-bold text-gray-500">{item.title}</span>
+                  </div>
+                  <div className="flex items-start gap-2 mt-2">
+                    <item.Icon className="w-6 h-6 flex-shrink-0" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
+                    <p className="text-xs text-gray-500 leading-relaxed pt-1">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* ── 포인트 적립 기준 (아코디언) ── */}
