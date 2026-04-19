@@ -300,7 +300,7 @@ export default function CertificatePage() {
   const buildCertHTML = ({ certNumber: num, realName: name, email, nickname = "", periodStr, totalSessions, totalHours, totalDistance, dateStr }) => {
     return `
       <div style="max-width:700px;margin:0 auto;border:3px solid #2c5f2d;padding:30px">
-        <div style="border:1px solid #2c5f2d;padding:25px;min-height:720px;display:flex;flex-direction:column">
+        <div style="border:1px solid #2c5f2d;padding:25px;min-height:796px;display:flex;flex-direction:column">
           <div style="text-align:center;margin-bottom:25px">
             <p style="font-size:24px;font-weight:900;letter-spacing:6px;color:#2c5f2d;margin:0">봉 사 활 동 증 명 서</p>
             <p style="font-size:11px;color:#999;margin-top:4px">Certificate of Volunteer Service</p>
@@ -601,7 +601,7 @@ export default function CertificatePage() {
               <div className="p-4 overflow-x-auto">
                 <div ref={certRef}>
                   <div className="cert-container" style={{ maxWidth: 700, margin: "0 auto", border: "3px solid #2c5f2d", padding: 30 }}>
-                    <div style={{ border: "1px solid #2c5f2d", padding: 25, minHeight: 720, display: "flex", flexDirection: "column" }}>
+                    <div style={{ border: "1px solid #2c5f2d", padding: 25, minHeight: 796, display: "flex", flexDirection: "column" }}>
 
                       {/* 헤더 */}
                       <div style={{ textAlign: "center", marginBottom: 25 }}>
