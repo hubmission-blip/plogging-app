@@ -345,14 +345,14 @@ export default function CertificatePage() {
             ※ 성명은 본인 신고에 의하며, 허위 기재 시 효력이 인정되지 않습니다.<br/>
             ※ 발급번호를 통해 진위 여부를 확인할 수 있습니다.
           </p>
-          <div style="display:flex;justify-content:center;align-items:center;gap:30px;margin-top:auto;padding-top:40px">
+          <div style="position:relative;margin-top:auto;padding-top:40px">
             <div style="text-align:center">
               <p style="font-size:14px;color:#333;margin-bottom:12px">${dateStr}</p>
               <p style="font-size:15px;font-weight:700;color:#2c5f2d;margin-bottom:2px">사단법인 국제청년환경연합회</p>
               <p style="font-size:13px;font-weight:700;color:#333;margin-bottom:2px">회장 장희재</p>
               <p style="font-size:12px;color:#666">Global Youth Environmental Association</p>
             </div>
-            <img src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png" alt="직인" style="width:100px;height:auto" />
+            <img src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png" alt="직인" style="width:100px;height:auto;position:absolute;right:0;top:50%;transform:translateY(-50%)" />
           </div>
         </div>
       </div>`;
@@ -665,7 +665,7 @@ export default function CertificatePage() {
                       </p>
 
                       {/* 하단: 날짜 + 기관 + 직인 */}
-                      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 30, marginTop: "auto", paddingTop: 40 }}>
+                      <div style={{ position: "relative", marginTop: "auto", paddingTop: 40 }}>
                         <div style={{ textAlign: "center" }}>
                           <p style={{ fontSize: 14, color: "#333", marginBottom: 12 }}>{todayStr}</p>
                           <p style={{ fontSize: 15, fontWeight: 700, color: "#2c5f2d", marginBottom: 2 }}>사단법인 국제청년환경연합회</p>
@@ -675,7 +675,7 @@ export default function CertificatePage() {
                         <img
                           src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png"
                           alt="국제청년환경연합회 직인"
-                          style={{ width: 100, height: "auto" }}
+                          style={{ width: 100, height: "auto", position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)" }}
                         />
                       </div>
                     </div>
