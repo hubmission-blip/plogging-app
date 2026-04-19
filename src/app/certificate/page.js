@@ -86,6 +86,10 @@ export default function CertificatePage() {
   const [certNumber, setCertNumber]   = useState("");
   const certRef = useRef(null);
 
+  // 재출력 미리보기
+  const [reprintData, setReprintData] = useState(null);
+  const reprintRef = useRef(null);
+
   // 발급 내역
   const [issuedCerts, setIssuedCerts] = useState([]);
   const [dupWarning, setDupWarning]   = useState("");
@@ -282,7 +286,7 @@ export default function CertificatePage() {
       ? `${issuedDate.getFullYear()}년 ${issuedDate.getMonth() + 1}월 ${issuedDate.getDate()}일`
       : todayStr;
 
-    const html = buildCertHTML({
+    setReprintData({
       certNumber: cert.certNumber,
       realName: cert.realName,
       email: cert.email,
@@ -293,7 +297,9 @@ export default function CertificatePage() {
       totalDistance: cert.totalDistance,
       dateStr,
     });
-    openPrintWindow(html);
+
+    // 스크롤을 상단으로 이동
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
   };
 
   // ─── 증명서 HTML 생성 ────────────────────────────────────
@@ -379,9 +385,10 @@ export default function CertificatePage() {
   };
 
   // ─── PDF 다운로드 (브라우저 print) ────────────────────────
-  const handleDownload = () => {
-    if (!certRef.current) return;
-    const content = certRef.current.innerHTML;
+  const handleDownload = (targetRef) => {
+    const ref = targetRef || certRef;
+    if (!ref.current) return;
+    const content = ref.current.innerHTML;
     const win = window.open("", "_blank", "width=800,height=1000");
     win.document.write(`
       <!DOCTYPE html>
@@ -694,6 +701,94 @@ export default function CertificatePage() {
             <button onClick={() => setShowPreview(false)}
               className="w-full bg-white text-gray-400 py-3 rounded-2xl text-sm font-medium shadow-sm">
               미리보기 닫기
+            </button>
+          </>
+        )}
+
+        {/* ═══════════ 재출력 미리보기 ═══════════ */}
+        {reprintData && (
+          <>
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-green-200">
+              <div className="bg-green-700 text-white text-center py-2 text-xs font-bold">증명서 재출력</div>
+              <div className="p-4 overflow-x-auto">
+                <div ref={reprintRef}>
+                  <div className="cert-container" style={{ maxWidth: 700, margin: "0 auto", border: "3px solid #2c5f2d", padding: 30 }}>
+                    <div style={{ border: "1px solid #2c5f2d", padding: 25, minHeight: 796, display: "flex", flexDirection: "column" }}>
+                      <div style={{ textAlign: "center", marginBottom: 25 }}>
+                        <p style={{ fontSize: 24, fontWeight: 900, letterSpacing: 6, color: "#2c5f2d", margin: 0 }}>봉 사 활 동 증 명 서</p>
+                        <p style={{ fontSize: 11, color: "#999", marginTop: 4 }}>Certificate of Volunteer Service</p>
+                      </div>
+                      <p style={{ fontSize: 11, color: "#999", textAlign: "right", marginBottom: 12 }}>발급번호: {reprintData.certNumber}</p>
+                      <div style={{ lineHeight: 2.2, fontSize: 14 }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                          <tbody>
+                            <tr>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", width: "25%", textAlign: "center" }}>성 명</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontSize: 15, fontWeight: 700 }}>{reprintData.realName}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>아이디</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontSize: 13, color: "#555" }}>{reprintData.nickname ? `${reprintData.nickname} / ` : ""}{reprintData.email}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>활동 기간</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px" }}>{reprintData.periodStr}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>활동 내용</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px" }}>환경정화 봉사활동 (플로깅)</td>
+                            </tr>
+                            <tr>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>활동 횟수</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px" }}>{reprintData.totalSessions}회</td>
+                            </tr>
+                            <tr>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>봉사 시간</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontWeight: 700, fontSize: 15 }}>{formatHoursMinutes(reprintData.totalHours)}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>이동 거리</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px" }}>{reprintData.totalDistance} km</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <p style={{ textAlign: "center", fontSize: 14, lineHeight: 2, margin: "25px 0 10px" }}>
+                        위 사람은 상기 기간 동안 환경정화 봉사활동(플로깅)에<br />
+                        성실히 참여하였음을 증명합니다.
+                      </p>
+                      <p style={{ fontSize: 11, color: "#888", lineHeight: 1.6, margin: "15px 0" }}>
+                        ※ 본 증명서는 사단법인 국제청년환경연합회에서 운영중인 '오백원의 행복' 플로깅 앱을 통해 수집된 데이터를 근거로 작성되었습니다.<br />
+                        ※ 활동 기록은 GPS 기반으로 실시간 수집되며, 발급 기준 충족 시 자동 발급됩니다.<br />
+                        ※ 성명은 본인 신고에 의하며, 허위 기재 시 효력이 인정되지 않습니다.<br />
+                        ※ 발급번호를 통해 진위 여부를 확인할 수 있습니다.
+                      </p>
+                      <div style={{ position: "relative", marginTop: "auto", paddingTop: 8 }}>
+                        <div style={{ textAlign: "center" }}>
+                          <p style={{ fontSize: 14, color: "#333", marginBottom: 12 }}>{reprintData.dateStr}</p>
+                          <p style={{ fontSize: 15, fontWeight: 700, color: "#2c5f2d", marginBottom: 2 }}>사단법인 국제청년환경연합회</p>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: "#333", marginBottom: 2 }}>회장 장희재</p>
+                          <p style={{ fontSize: 12, color: "#666" }}>Global Youth Environmental Association</p>
+                        </div>
+                        <img
+                          src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png"
+                          alt="국제청년환경연합회 직인"
+                          style={{ width: 100, height: "auto", position: "absolute", right: "12%", bottom: 0 }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button onClick={() => handleDownload(reprintRef)}
+              className="w-full text-white py-3.5 rounded-2xl text-sm font-bold shadow-sm flex items-center justify-center gap-2"
+              style={{ backgroundColor: "#2c5f2d" }}>
+              <Download className="w-5 h-5" /> PDF 다운로드 / 인쇄
+            </button>
+            <button onClick={() => setReprintData(null)}
+              className="w-full bg-white text-gray-400 py-3 rounded-2xl text-sm font-medium shadow-sm">
+              닫기
             </button>
           </>
         )}
