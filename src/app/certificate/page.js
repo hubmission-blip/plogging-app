@@ -340,19 +340,19 @@ export default function CertificatePage() {
             위 사람은 상기 기간 동안 환경정화 봉사활동(플로깅)에<br/>성실히 참여하였음을 증명합니다.
           </p>
           <p style="font-size:11px;color:#888;line-height:1.6;margin:15px 0">
-            ※ 본 증명서는 사단법인 국제청년환경연합회에서 운영하는 &lsquo;오백원의 행복&rsquo; 앱을 통해 수집된 플로깅 데이터를 근거로 작성되었습니다.<br/>
+            ※ 본 증명서는 사단법인 국제청년환경연합회에서 운영중인 &lsquo;오백원의 행복&rsquo; 플로깅 앱을 통해 수집된 데이터를 근거로 작성되었습니다.<br/>
             ※ 활동 기록은 GPS 기반으로 실시간 수집되며, 발급 기준 충족 시 자동 발급됩니다.<br/>
             ※ 성명은 본인 신고에 의하며, 허위 기재 시 효력이 인정되지 않습니다.<br/>
             ※ 발급번호를 통해 진위 여부를 확인할 수 있습니다.
           </p>
-          <div style="position:relative;margin-top:auto;padding-top:20px">
+          <div style="position:relative;margin-top:auto;padding-top:8px">
             <div style="text-align:center">
               <p style="font-size:14px;color:#333;margin-bottom:12px">${dateStr}</p>
               <p style="font-size:15px;font-weight:700;color:#2c5f2d;margin-bottom:2px">사단법인 국제청년환경연합회</p>
               <p style="font-size:13px;font-weight:700;color:#333;margin-bottom:2px">회장 장희재</p>
               <p style="font-size:12px;color:#666">Global Youth Environmental Association</p>
             </div>
-            <img src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png" alt="직인" style="width:100px;height:auto;position:absolute;right:28%;bottom:0" />
+            <img src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png" alt="직인" style="width:100px;height:auto;position:absolute;right:12%;bottom:0" />
           </div>
         </div>
       </div>`;
@@ -658,14 +658,14 @@ export default function CertificatePage() {
 
                       {/* 비고 */}
                       <p style={{ fontSize: 11, color: "#888", lineHeight: 1.6, margin: "15px 0" }}>
-                        ※ 본 증명서는 사단법인 국제청년환경연합회에서 운영하는 '오백원의 행복' 플로깅 앱을 통해 수집된 데이터를 근거로 작성되었습니다.<br />
+                        ※ 본 증명서는 사단법인 국제청년환경연합회에서 운영중인 '오백원의 행복' 플로깅 앱을 통해 수집된 데이터를 근거로 작성되었습니다.<br />
                         ※ 활동 기록은 GPS 기반으로 실시간 수집되며, 발급 기준 충족 시 자동 발급됩니다.<br />
                         ※ 성명은 본인 신고에 의하며, 허위 기재 시 효력이 인정되지 않습니다.<br />
                         ※ 발급번호를 통해 진위 여부를 확인할 수 있습니다.
                       </p>
 
                       {/* 하단: 날짜 + 기관 + 직인 */}
-                      <div style={{ position: "relative", marginTop: "auto", paddingTop: 20 }}>
+                      <div style={{ position: "relative", marginTop: "auto", paddingTop: 8 }}>
                         <div style={{ textAlign: "center" }}>
                           <p style={{ fontSize: 14, color: "#333", marginBottom: 12 }}>{todayStr}</p>
                           <p style={{ fontSize: 15, fontWeight: 700, color: "#2c5f2d", marginBottom: 2 }}>사단법인 국제청년환경연합회</p>
@@ -675,7 +675,7 @@ export default function CertificatePage() {
                         <img
                           src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png"
                           alt="국제청년환경연합회 직인"
-                          style={{ width: 100, height: "auto", position: "absolute", right: "28%", bottom: 0 }}
+                          style={{ width: 100, height: "auto", position: "absolute", right: "12%", bottom: 0 }}
                         />
                       </div>
                     </div>
