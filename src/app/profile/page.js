@@ -267,7 +267,7 @@ export default function ProfilePage() {
               // Firestore에 저장된 실제 이메일 우선, 없으면 Firebase Auth 이메일 (브릿지 이메일 제외)
               const realEmail = stats?.realEmail;
               const authEmail = user?.email;
-              const isFake = (e) => e && (e.includes("kakao-auth") || e.includes("apple-auth") || e.includes("naver-auth"));
+              const isFake = (e) => e && (e.includes("kakao-auth") || e.includes("apple-auth") || e.includes("naver-auth") || e.match(/^kakao_\d+@kakao\.com$/));
               const displayEmail = (realEmail && !isFake(realEmail)) ? realEmail : (!isFake(authEmail) ? authEmail : null);
               return displayEmail ? (
                 <div className="flex items-center gap-2">
