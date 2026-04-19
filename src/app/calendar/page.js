@@ -6,12 +6,12 @@ import { CalendarDays, MapPin } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-  collection, query, where, getDocs, addDoc, updateDoc, deleteDoc,
+  collection, query, where, getDocs, getDoc, addDoc, updateDoc, deleteDoc,
   doc, arrayUnion, arrayRemove, serverTimestamp, orderBy,
 } from "firebase/firestore";
 
 // ─── 관리자 이메일 ────────────────────────────────────────────
-const ADMIN_EMAILS = ["hubmission@gmail.com"];
+const ADMIN_EMAILS = ["hubmission@gmail.com", "boonma@nate.com"];
 
 // ─── 17개 시도 (권역별 그룹) ──────────────────────────────────
 const REGION_GROUPS = [
@@ -111,13 +111,13 @@ function RegionSheet({ current, onSelect, onClose }) {
 }
 
 // ─── 이벤트 상세 모달 ─────────────────────────────────────────
-function EventModal({ event, user, onClose, onJoin, onLeave, onEdit, onDelete }) {
+function EventModal({ event, user, onClose, onJoin, onLeave, onEdit, onDelete, firestoreEmail }) {
   const isJoined    = event.participants?.includes(user?.uid);
   const isFull      = event.maxParticipants > 0 &&
                       (event.participants?.length || 0) >= event.maxParticipants;
   const isPast      = new Date(event.date) < new Date(new Date().toDateString());
   const isHost      = event.hostUid === user?.uid;
-  const isAdmin     = user && ADMIN_EMAILS.includes(user.email);
+  const isAdmin     = user && (ADMIN_EMAILS.includes(user.email) || ADMIN_EMAILS.includes(firestoreEmail));
   const canManage   = isHost || isAdmin;
   const typeStyle   = EVENT_TYPE[event.type] || EVENT_TYPE.group;
 
@@ -436,7 +436,14 @@ export default function CalendarPage() {
   const [loading,    setLoading]    = useState(false);
   const [msg,        setMsg]        = useState("");
 
-  const isAdmin = user && ADMIN_EMAILS.includes(user.email);
+  const [firestoreEmail, setFirestoreEmail] = useState("");
+  useEffect(() => {
+    if (!user) return;
+    getDoc(doc(db, "users", user.uid)).then(snap => {
+      if (snap.exists()) setFirestoreEmail(snap.data().email || "");
+    }).catch(() => {});
+  }, [user]);
+  const isAdmin = user && (ADMIN_EMAILS.includes(user.email) || ADMIN_EMAILS.includes(firestoreEmail));
 
   // 메시지 표시
   const showMsg = (m) => { setMsg(m); setTimeout(() => setMsg(""), 2500); };
@@ -898,6 +905,7 @@ export default function CalendarPage() {
         <EventModal
           event={selectedEvent}
           user={user}
+          firestoreEmail={firestoreEmail}
           onClose={() => setSelectedEvent(null)}
           onJoin={handleJoin}
           onLeave={handleLeave}

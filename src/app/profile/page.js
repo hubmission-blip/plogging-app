@@ -17,7 +17,7 @@ import Link from "next/link";
 import EcomileageConnect from "@/components/EcomileageConnect";
 
 // ─── 관리자 이메일 목록 ────────────────────────────────────
-const ADMIN_EMAILS = ["hubmission@gmail.com"];
+const ADMIN_EMAILS = ["hubmission@gmail.com", "boonma@nate.com"];
 
 // ─── 뱃지 기준 ────────────────────────────────────────────
 const BADGES = [
@@ -78,7 +78,7 @@ export default function ProfilePage() {
   };
 
   // ── 관리자 여부 ──────────────────────────────────────────
-  const isAdmin = user && ADMIN_EMAILS.includes(user.email);
+  const isAdmin = user && (ADMIN_EMAILS.includes(user.email) || ADMIN_EMAILS.includes(stats?.realEmail));
 
   // ── 데이터 로드 ──────────────────────────────────────────
   const fetchData = useCallback(async () => {

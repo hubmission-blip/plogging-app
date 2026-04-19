@@ -13,7 +13,7 @@ import {
 } from "firebase/firestore";
 
 // ─── 관리자 이메일 ────────────────────────────────────────
-const ADMIN_EMAILS = ["hubmission@gmail.com"];
+const ADMIN_EMAILS = ["hubmission@gmail.com", "boonma@nate.com"];
 
 // ─── 공통 컴포넌트 ────────────────────────────────────────
 function StatCard({ icon, Icon, label, value, sub, color = "green" }) {
@@ -46,7 +46,16 @@ export default function AdminPage() {
   const { user } = useAuth();
   const router   = useRouter();
 
-  const isAdmin = user && ADMIN_EMAILS.includes(user.email);
+  const [firestoreEmail, setFirestoreEmail] = useState("");
+  const isAdmin = user && (ADMIN_EMAILS.includes(user.email) || ADMIN_EMAILS.includes(firestoreEmail));
+
+  // Firestore에서 실제 이메일 조회 (카카오/애플 등 소셜 로그인 대응)
+  useEffect(() => {
+    if (!user) return;
+    getDoc(doc(db, "users", user.uid)).then(snap => {
+      if (snap.exists()) setFirestoreEmail(snap.data().email || "");
+    }).catch(() => {});
+  }, [user]);
 
   // ── 공통 상태 ──────────────────────────────────────────
   const [activeTab,  setActiveTab]  = useState("dashboard");
