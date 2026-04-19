@@ -7,7 +7,7 @@ import { db } from "@/lib/firebase";
 import {
   collection, query, where, getDocs, addDoc, serverTimestamp,
 } from "firebase/firestore";
-import { FileCheck, Download, ChevronLeft, CalendarDays, Clock, MapPin, Award, AlertCircle } from "lucide-react";
+import { FileCheck, Download, ChevronLeft, CalendarDays, Clock, MapPin, Award, AlertCircle, History, RotateCcw } from "lucide-react";
 
 // ─── 상수: 인정 기준 ─────────────────────────────────────────
 const MIN_DISTANCE_KM  = 0.5;    // 최소 500m
@@ -68,6 +68,11 @@ export default function CertificatePage() {
   const [certNumber, setCertNumber]   = useState("");
   const certRef = useRef(null);
 
+  // 발급 내역
+  const [issuedCerts, setIssuedCerts] = useState([]);
+  const [dupWarning, setDupWarning]   = useState("");
+  const [saving, setSaving]           = useState(false);
+
   // 기본 날짜 세팅 (최근 1개월)
   useEffect(() => {
     const end = new Date();
@@ -76,6 +81,26 @@ export default function CertificatePage() {
     setStartDate(toDateStr(start));
     setEndDate(toDateStr(end));
   }, []);
+
+  // 발급 내역 로드
+  useEffect(() => {
+    if (!user?.uid) return;
+    const fetchCerts = async () => {
+      try {
+        const q = query(
+          collection(db, "certificates"),
+          where("userId", "==", user.uid),
+        );
+        const snap = await getDocs(q);
+        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        list.sort((a, b) => (b.issuedAt?.seconds || 0) - (a.issuedAt?.seconds || 0));
+        setIssuedCerts(list);
+      } catch (e) {
+        console.warn("발급 내역 로드 실패:", e.message);
+      }
+    };
+    fetchCerts();
+  }, [user?.uid]);
 
   // ─── 기록 조회 ────────────────────────────────────────────
   const handleSearch = async () => {
@@ -159,19 +184,72 @@ export default function CertificatePage() {
     }
   };
 
+  // ─── 중복 발급 체크 ──────────────────────────────────────
+  const checkDuplicate = () => {
+    if (!summary) return false;
+    const newStart = summary.startDate.getTime();
+    const newEnd   = summary.endDate.getTime();
+
+    return issuedCerts.some((cert) => {
+      const certStart = cert.periodStart?.toDate?.()?.getTime() || 0;
+      const certEnd   = cert.periodEnd?.toDate?.()?.getTime() || 0;
+      // 기간이 겹치는지 확인
+      return newStart <= certEnd && newEnd >= certStart;
+    });
+  };
+
   // ─── 증명서 발급: 실명 입력 단계 ────────────────────────────
   const handleRequestIssue = () => {
+    setDupWarning("");
+    // 중복 체크
+    if (checkDuplicate()) {
+      setDupWarning("해당 기간과 겹치는 증명서가 이미 발급되었습니다. 동일 기간에 대해 중복 발급은 불가합니다.");
+      return;
+    }
     setRealName("");
     setShowNameInput(true);
   };
 
-  const handleConfirmIssue = () => {
+  const handleConfirmIssue = async () => {
     if (!realName.trim()) { alert("실명을 입력해주세요."); return; }
     if (realName.trim().length < 2) { alert("성명은 2자 이상 입력해주세요."); return; }
-    const num = generateCertNumber();
-    setCertNumber(num);
-    setShowNameInput(false);
-    setShowPreview(true);
+
+    setSaving(true);
+    try {
+      const num = generateCertNumber();
+
+      // Firestore에 발급 기록 저장
+      await addDoc(collection(db, "certificates"), {
+        certNumber: num,
+        userId: user.uid,
+        realName: realName.trim(),
+        email: user.email || "",
+        displayName: user.displayName || "",
+        periodStart: summary.startDate,
+        periodEnd: summary.endDate,
+        totalSessions: summary.totalSessions,
+        totalHours: Math.round(summary.totalHours * 10) / 10,
+        totalDistance: Math.round(summary.totalDistance * 100) / 100,
+        activityName: "환경정화 봉사활동 (플로깅)",
+        organization: "사단법인 국제청년환경연합회",
+        issuedAt: serverTimestamp(),
+      });
+
+      setCertNumber(num);
+      setShowNameInput(false);
+      setShowPreview(true);
+
+      // 발급 내역 갱신
+      const q = query(collection(db, "certificates"), where("userId", "==", user.uid));
+      const snap = await getDocs(q);
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      list.sort((a, b) => (b.issuedAt?.seconds || 0) - (a.issuedAt?.seconds || 0));
+      setIssuedCerts(list);
+    } catch (e) {
+      alert("증명서 발급 실패: " + e.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ─── PDF 다운로드 (브라우저 print) ────────────────────────
@@ -334,6 +412,14 @@ export default function CertificatePage() {
               </div>
             </div>
 
+            {/* ── 중복 경고 ── */}
+            {dupWarning && (
+              <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-700 font-medium">{dupWarning}</p>
+              </div>
+            )}
+
             {/* ── 발급 버튼 ── */}
             {summary.isEligible && !showPreview && !showNameInput && (
               <button onClick={handleRequestIssue}
@@ -369,10 +455,12 @@ export default function CertificatePage() {
                 </p>
 
                 <div className="flex gap-2 mt-4">
-                  <button onClick={() => setShowNameInput(false)}
+                  <button onClick={() => setShowNameInput(false)} disabled={saving}
                     className="flex-1 bg-gray-100 text-gray-500 py-3 rounded-xl font-bold text-sm">취소</button>
-                  <button onClick={handleConfirmIssue}
-                    className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold text-sm active:scale-95 transition-transform">증명서 생성</button>
+                  <button onClick={handleConfirmIssue} disabled={saving}
+                    className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold text-sm active:scale-95 transition-transform disabled:opacity-40">
+                    {saving ? "발급 중..." : "증명서 생성"}
+                  </button>
                 </div>
               </div>
             )}
@@ -489,6 +577,47 @@ export default function CertificatePage() {
               미리보기 닫기
             </button>
           </>
+        )}
+
+        {/* ═══════════ 발급 내역 ═══════════ */}
+        {issuedCerts.length > 0 && (
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <h2 className="font-bold text-gray-700 text-sm mb-3 flex items-center gap-1.5">
+              <History className="w-4 h-4 text-gray-500" /> 발급 내역 ({issuedCerts.length}건)
+            </h2>
+            <div className="space-y-2 max-h-72 overflow-y-auto">
+              {issuedCerts.map((cert) => {
+                const pStart = cert.periodStart?.toDate?.();
+                const pEnd   = cert.periodEnd?.toDate?.();
+                const issued = cert.issuedAt?.toDate?.();
+                const periodStr = pStart && pEnd
+                  ? `${pStart.toLocaleDateString("ko-KR", { year: "numeric", month: "short", day: "numeric" })} ~ ${pEnd.toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}`
+                  : "";
+                const issuedStr = issued
+                  ? issued.toLocaleDateString("ko-KR", { year: "numeric", month: "short", day: "numeric" })
+                  : "";
+
+                return (
+                  <div key={cert.id} className="bg-gray-50 rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-mono font-bold text-green-700">{cert.certNumber}</span>
+                      <span className="text-[10px] text-gray-400">발급일: {issuedStr}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <span>{cert.realName}</span>
+                      <span className="text-gray-300">|</span>
+                      <span>{periodStr}</span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-500">
+                      <span>{cert.totalSessions}회</span>
+                      <span>{cert.totalHours}시간</span>
+                      <span>{cert.totalDistance}km</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
     </div>
