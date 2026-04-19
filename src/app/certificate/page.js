@@ -25,6 +25,14 @@ function formatDuration(sec) {
   return `${m}분`;
 }
 
+function formatHoursMinutes(hours) {
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  if (h > 0 && m > 0) return `${h}시간 ${m}분`;
+  if (h > 0) return `${h}시간`;
+  return `${m}분`;
+}
+
 function formatDate(date) {
   return date.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\. /g, ".").replace(".", ".");
 }
@@ -292,7 +300,7 @@ export default function CertificatePage() {
   const buildCertHTML = ({ certNumber: num, realName: name, email, nickname = "", periodStr, totalSessions, totalHours, totalDistance, dateStr }) => {
     return `
       <div style="max-width:700px;margin:0 auto;border:3px solid #2c5f2d;padding:30px">
-        <div style="border:1px solid #2c5f2d;padding:25px">
+        <div style="border:1px solid #2c5f2d;padding:25px;min-height:900px;display:flex;flex-direction:column">
           <div style="text-align:center;margin-bottom:25px">
             <p style="font-size:24px;font-weight:900;letter-spacing:6px;color:#2c5f2d;margin:0">봉 사 활 동 증 명 서</p>
             <p style="font-size:11px;color:#999;margin-top:4px">Certificate of Volunteer Service</p>
@@ -321,7 +329,7 @@ export default function CertificatePage() {
             </tr>
             <tr>
               <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">봉사 시간</td>
-              <td style="border:1px solid #ccc;padding:8px 12px;font-weight:700;font-size:15px">${totalHours} 시간</td>
+              <td style="border:1px solid #ccc;padding:8px 12px;font-weight:700;font-size:15px">${formatHoursMinutes(totalHours)}</td>
             </tr>
             <tr>
               <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">이동 거리</td>
@@ -337,12 +345,16 @@ export default function CertificatePage() {
             ※ 성명은 본인 신고에 의하며, 허위 기재 시 효력이 인정되지 않습니다.<br/>
             ※ 발급번호를 통해 진위 여부를 확인할 수 있습니다.
           </p>
-          <div style="text-align:center;margin-top:30px">
-            <p style="font-size:14px;color:#333;margin-bottom:20px">${dateStr}</p>
-            <p style="font-size:15px;font-weight:700;color:#2c5f2d;margin-bottom:2px">사단법인 국제청년환경연합회</p>
-            <p style="font-size:13px;font-weight:700;color:#333;margin-bottom:5px">회장 장희재</p>
-            <p style="font-size:12px;color:#666">Global Youth Environmental Association</p>
-            <img src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png" alt="직인" style="width:100px;height:auto;margin-top:15px" />
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:auto;padding-top:40px">
+            <div style="text-align:left">
+              <p style="font-size:14px;color:#333;margin-bottom:12px">${dateStr}</p>
+              <p style="font-size:15px;font-weight:700;color:#2c5f2d;margin-bottom:2px">사단법인 국제청년환경연합회</p>
+              <p style="font-size:13px;font-weight:700;color:#333;margin-bottom:2px">회장 장희재</p>
+              <p style="font-size:12px;color:#666">Global Youth Environmental Association</p>
+            </div>
+            <div style="text-align:right">
+              <img src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png" alt="직인" style="width:100px;height:auto" />
+            </div>
           </div>
         </div>
       </div>`;
@@ -476,8 +488,8 @@ export default function CertificatePage() {
                   <p className="text-[10px] text-green-600 font-medium mt-0.5">인정 횟수</p>
                 </div>
                 <div className="bg-blue-50 rounded-xl p-3 text-center">
-                  <p className="text-xl font-black text-blue-700">{summary.totalHours.toFixed(1)}</p>
-                  <p className="text-[10px] text-blue-600 font-medium mt-0.5">봉사시간(h)</p>
+                  <p className="text-lg font-black text-blue-700">{formatHoursMinutes(summary.totalHours)}</p>
+                  <p className="text-[10px] text-blue-600 font-medium mt-0.5">봉사시간</p>
                 </div>
                 <div className="bg-purple-50 rounded-xl p-3 text-center">
                   <p className="text-xl font-black text-purple-700">{summary.totalDistance.toFixed(1)}</p>
@@ -502,7 +514,7 @@ export default function CertificatePage() {
                       <p>• 참여 횟수 부족: {summary.totalSessions}회 / 최소 {MIN_SESSIONS}회</p>
                     )}
                     {summary.totalHours < MIN_TOTAL_HOURS && (
-                      <p>• 활동 시간 부족: {summary.totalHours.toFixed(1)}시간 / 최소 {MIN_TOTAL_HOURS}시간</p>
+                      <p>• 활동 시간 부족: {formatHoursMinutes(summary.totalHours)} / 최소 {MIN_TOTAL_HOURS}시간</p>
                     )}
                   </div>
                 </div>
@@ -591,7 +603,7 @@ export default function CertificatePage() {
               <div className="p-4 overflow-x-auto">
                 <div ref={certRef}>
                   <div className="cert-container" style={{ maxWidth: 700, margin: "0 auto", border: "3px solid #2c5f2d", padding: 30 }}>
-                    <div style={{ border: "1px solid #2c5f2d", padding: 25 }}>
+                    <div style={{ border: "1px solid #2c5f2d", padding: 25, minHeight: 900, display: "flex", flexDirection: "column" }}>
 
                       {/* 헤더 */}
                       <div style={{ textAlign: "center", marginBottom: 25 }}>
@@ -630,7 +642,7 @@ export default function CertificatePage() {
                             </tr>
                             <tr>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>봉사 시간</td>
-                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontWeight: 700, fontSize: 15 }}>{summary.totalHours.toFixed(1)} 시간</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontWeight: 700, fontSize: 15 }}>{formatHoursMinutes(summary.totalHours)}</td>
                             </tr>
                             <tr>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>이동 거리</td>
@@ -655,17 +667,20 @@ export default function CertificatePage() {
                       </p>
 
                       {/* 하단: 날짜 + 기관 + 직인 */}
-                      <div style={{ textAlign: "center", marginTop: 30 }}>
-                        <p style={{ fontSize: 14, color: "#333", marginBottom: 20 }}>{todayStr}</p>
-                        <p style={{ fontSize: 15, fontWeight: 700, color: "#2c5f2d", marginBottom: 2 }}>사단법인 국제청년환경연합회</p>
-                        <p style={{ fontSize: 13, fontWeight: 700, color: "#333", marginBottom: 5 }}>회장 장희재</p>
-                        <p style={{ fontSize: 12, color: "#666" }}>Global Youth Environmental Association</p>
-                        {/* 직인 이미지 */}
-                        <img
-                          src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png"
-                          alt="국제청년환경연합회 직인"
-                          style={{ width: 100, height: "auto", marginTop: 15 }}
-                        />
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "auto", paddingTop: 40 }}>
+                        <div style={{ textAlign: "left" }}>
+                          <p style={{ fontSize: 14, color: "#333", marginBottom: 12 }}>{todayStr}</p>
+                          <p style={{ fontSize: 15, fontWeight: 700, color: "#2c5f2d", marginBottom: 2 }}>사단법인 국제청년환경연합회</p>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: "#333", marginBottom: 2 }}>회장 장희재</p>
+                          <p style={{ fontSize: 12, color: "#666" }}>Global Youth Environmental Association</p>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <img
+                            src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png"
+                            alt="국제청년환경연합회 직인"
+                            style={{ width: 100, height: "auto" }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -719,7 +734,7 @@ export default function CertificatePage() {
                     <div className="flex items-center justify-between mt-1">
                       <div className="flex items-center gap-3 text-[11px] text-gray-500">
                         <span>{cert.totalSessions}회</span>
-                        <span>{cert.totalHours}시간</span>
+                        <span>{formatHoursMinutes(cert.totalHours)}</span>
                         <span>{cert.totalDistance}km</span>
                       </div>
                       <button
