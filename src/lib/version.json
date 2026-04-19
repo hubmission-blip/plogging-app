@@ -1,7 +1,18 @@
 {
-  "version": "v1.79",
-  "build": 79,
+  "version": "v1.80",
+  "build": 80,
   "changelog": [
+    {
+      "version": "v1.80",
+      "build": 80,
+      "date": "2026-04-20",
+      "emoji": "🛠️",
+      "title": "봉사활동증명서 발급 기능 추가",
+      "items": [
+        "Apple & 네이버 로그인 추가",
+        "UI디자인 수정 및 페이지별 색상테마 구분"
+      ]
+    },
     {
       "version": "v1.79",
       "build": 79,

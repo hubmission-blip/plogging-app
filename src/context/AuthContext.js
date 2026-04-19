@@ -44,9 +44,11 @@ export function AuthProvider({ children }) {
           if (firebaseUser) {
             setUser(firebaseUser);
           } else {
-            // 카카오 로그인 확인
+            // 소셜 로그인 확인 (카카오/네이버/애플)
             try {
               const kakaoUser = localStorage.getItem("kakaoUser");
+              const naverUser = localStorage.getItem("naverUser");
+              const appleUser = localStorage.getItem("appleUser");
               if (kakaoUser) {
                 const parsed = JSON.parse(kakaoUser);
                 setUser({
@@ -54,6 +56,22 @@ export function AuthProvider({ children }) {
                   email: parsed.email,
                   displayName: parsed.nickname,
                   provider: "kakao",
+                });
+              } else if (naverUser) {
+                const parsed = JSON.parse(naverUser);
+                setUser({
+                  uid: parsed.uid,
+                  email: parsed.email,
+                  displayName: parsed.nickname,
+                  provider: "naver",
+                });
+              } else if (appleUser) {
+                const parsed = JSON.parse(appleUser);
+                setUser({
+                  uid: parsed.uid,
+                  email: parsed.email,
+                  displayName: parsed.nickname,
+                  provider: "apple",
                 });
               } else {
                 setUser(null);
