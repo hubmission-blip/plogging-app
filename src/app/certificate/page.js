@@ -278,6 +278,7 @@ export default function CertificatePage() {
       certNumber: cert.certNumber,
       realName: cert.realName,
       email: cert.email,
+      nickname: cert.displayName || "",
       periodStr,
       totalSessions: cert.totalSessions,
       totalHours: cert.totalHours,
@@ -288,7 +289,7 @@ export default function CertificatePage() {
   };
 
   // ─── 증명서 HTML 생성 ────────────────────────────────────
-  const buildCertHTML = ({ certNumber: num, realName: name, email, periodStr, totalSessions, totalHours, totalDistance, dateStr }) => {
+  const buildCertHTML = ({ certNumber: num, realName: name, email, nickname = "", periodStr, totalSessions, totalHours, totalDistance, dateStr }) => {
     return `
       <div style="max-width:700px;margin:0 auto;border:3px solid #2c5f2d;padding:30px">
         <div style="border:1px solid #2c5f2d;padding:25px">
@@ -304,7 +305,7 @@ export default function CertificatePage() {
             </tr>
             <tr>
               <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">아이디</td>
-              <td style="border:1px solid #ccc;padding:8px 12px;font-size:13px;color:#555">${email}</td>
+              <td style="border:1px solid #ccc;padding:8px 12px;font-size:13px;color:#555">${nickname ? `${nickname} / ` : ""}${email}</td>
             </tr>
             <tr>
               <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">활동 기간</td>
@@ -331,7 +332,8 @@ export default function CertificatePage() {
             위 사람은 상기 기간 동안 환경정화 봉사활동(플로깅)에<br/>성실히 참여하였음을 증명합니다.
           </p>
           <p style="font-size:11px;color:#888;line-height:1.6;margin:15px 0">
-            ※ 본 증명서는 GPS 기반 활동 기록을 근거로 자동 발급되었습니다.<br/>
+            ※ 본 증명서는 국제청년환경연합회에서 운영하는 &lsquo;오백원의 행복&rsquo; 앱을 통해 수집된 플로깅 데이터를 근거로 작성되었습니다.<br/>
+            ※ 활동 기록은 GPS 기반으로 자동 수집되며, 발급 기준 충족 시 자동 발급됩니다.<br/>
             ※ 성명은 본인 신고에 의하며, 허위 기재 시 효력이 인정되지 않습니다.<br/>
             ※ 발급번호를 통해 진위 여부를 확인할 수 있습니다.
           </p>
@@ -609,7 +611,7 @@ export default function CertificatePage() {
                             </tr>
                             <tr>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>아이디</td>
-                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontSize: 13, color: "#555" }}>{userEmail}</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontSize: 13, color: "#555" }}>{user?.displayName ? `${user.displayName} / ` : ""}{userEmail}</td>
                             </tr>
                             <tr>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>활동 기간</td>
@@ -645,7 +647,8 @@ export default function CertificatePage() {
 
                       {/* 비고 */}
                       <p style={{ fontSize: 11, color: "#888", lineHeight: 1.6, margin: "15px 0" }}>
-                        ※ 본 증명서는 GPS 기반 활동 기록을 근거로 자동 발급되었습니다.<br />
+                        ※ 본 증명서는 국제청년환경연합회에서 운영하는 '오백원의 행복' 앱을 통해 수집된 플로깅 데이터를 근거로 작성되었습니다.<br />
+                        ※ 활동 기록은 GPS 기반으로 자동 수집되며, 발급 기준 충족 시 자동 발급됩니다.<br />
                         ※ 성명은 본인 신고에 의하며, 허위 기재 시 효력이 인정되지 않습니다.<br />
                         ※ 발급번호를 통해 진위 여부를 확인할 수 있습니다.
                       </p>
