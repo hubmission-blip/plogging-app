@@ -345,8 +345,8 @@ export default function CertificatePage() {
             ※ 성명은 본인 신고에 의하며, 허위 기재 시 효력이 인정되지 않습니다.<br/>
             ※ 발급번호를 통해 진위 여부를 확인할 수 있습니다.
           </p>
-          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:auto;padding-top:40px">
-            <div style="text-align:left">
+          <div style="margin-top:auto;padding-top:40px">
+            <div style="text-align:center;margin-bottom:15px">
               <p style="font-size:14px;color:#333;margin-bottom:12px">${dateStr}</p>
               <p style="font-size:15px;font-weight:700;color:#2c5f2d;margin-bottom:2px">사단법인 국제청년환경연합회</p>
               <p style="font-size:13px;font-weight:700;color:#333;margin-bottom:2px">회장 장희재</p>
@@ -667,8 +667,8 @@ export default function CertificatePage() {
                       </p>
 
                       {/* 하단: 날짜 + 기관 + 직인 */}
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "auto", paddingTop: 40 }}>
-                        <div style={{ textAlign: "left" }}>
+                      <div style={{ marginTop: "auto", paddingTop: 40 }}>
+                        <div style={{ textAlign: "center", marginBottom: 15 }}>
                           <p style={{ fontSize: 14, color: "#333", marginBottom: 12 }}>{todayStr}</p>
                           <p style={{ fontSize: 15, fontWeight: 700, color: "#2c5f2d", marginBottom: 2 }}>사단법인 국제청년환경연합회</p>
                           <p style={{ fontSize: 13, fontWeight: 700, color: "#333", marginBottom: 2 }}>회장 장희재</p>
