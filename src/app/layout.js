@@ -81,6 +81,11 @@ export default function RootLayout({ children }) {
             __html: `
               try {
                 var isCapacitor = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+                if (isCapacitor && "serviceWorker" in navigator) {
+                  navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    regs.forEach(function(r) { r.unregister(); });
+                  });
+                }
                 if (!isCapacitor && "serviceWorker" in navigator) {
                   navigator.serviceWorker.register("/sw.js").then(function(registration) {
                     console.log("SW 등록:", registration.scope);

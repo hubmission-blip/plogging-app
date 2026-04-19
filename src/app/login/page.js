@@ -157,7 +157,10 @@ export default function LoginPage() {
     if (isNative) {
       try {
         const { Browser } = await import("@capacitor/browser");
+        // iPad WKWebView에서 Browser.open이 실패할 수 있으므로 타임아웃 설정
+        const timeout = setTimeout(() => { window.location.href = url; }, 3000);
         await Browser.open({ url });
+        clearTimeout(timeout);
       } catch {
         window.location.href = url;
       }

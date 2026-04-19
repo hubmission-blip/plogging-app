@@ -442,7 +442,7 @@ export default function AdminPage() {
 
   // ── 탭 전환 시 데이터 로드 ─────────────────────────────
   useEffect(() => {
-    if (!user || !isAdmin) return;
+    if (!user || !emailLoaded || !isAdmin) return;
     if (activeTab === "dashboard")   fetchDashboard();
     if (activeTab === "users")       fetchUsers();
     if (activeTab === "rewards")     fetchRewards();
@@ -452,7 +452,7 @@ export default function AdminPage() {
     if (activeTab === "ecospots")    fetchEcoSpots();
     if (activeTab === "shop")        fetchProducts();
     if (activeTab === "purchases")   fetchPurchases();
-  }, [activeTab, user, isAdmin]);
+  }, [activeTab, user, isAdmin, emailLoaded]);
 
   useEffect(() => {
     if (!user) { router.push("/login"); return; }

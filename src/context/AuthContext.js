@@ -19,19 +19,40 @@ const isCapacitorNative = () => {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [timedOut, setTimedOut] = useState(false);
 
-  useEffect(() => {
+  const initAuth = () => {
+    setLoading(true);
+    setTimedOut(false);
+
     const isNative = isCapacitorNative();
-    // 시뮬레이터/네이티브 환경에서는 타임아웃을 8초로 넉넉하게 설정
-    const timeoutMs = isNative ? 8000 : 5000;
+    // iPad/시뮬레이터 환경에서 Firebase 초기화가 느릴 수 있으므로 넉넉하게
+    const timeoutMs = isNative ? 12000 : 5000;
 
     if (isNative) {
-      console.log("[AuthContext] 🍎 Capacitor 네이티브(iOS) 환경 감지");
+      console.log("[AuthContext] Capacitor 네이티브(iOS) 환경 감지");
     }
 
     const timeout = setTimeout(() => {
       console.warn(`[AuthContext] Firebase auth timeout (${timeoutMs}ms) — 앱 진입 허용`);
+      // 타임아웃 시 localStorage 소셜 로그인 체크 후 진입
+      try {
+        const kakaoUser = localStorage.getItem("kakaoUser");
+        const appleUser = localStorage.getItem("appleUser");
+        if (kakaoUser) {
+          const parsed = JSON.parse(kakaoUser);
+          setUser({ uid: parsed.uid, email: parsed.email, displayName: parsed.nickname, provider: "kakao" });
+        } else if (appleUser) {
+          const parsed = JSON.parse(appleUser);
+          setUser({ uid: parsed.uid, email: parsed.email, displayName: parsed.nickname, provider: "apple" });
+        } else {
+          setUser(null);
+        }
+      } catch {
+        setUser(null);
+      }
       setLoading(false);
+      setTimedOut(true);
     }, timeoutMs);
 
     let unsubscribe = () => {};
@@ -50,20 +71,10 @@ export function AuthProvider({ children }) {
               const appleUser = localStorage.getItem("appleUser");
               if (kakaoUser) {
                 const parsed = JSON.parse(kakaoUser);
-                setUser({
-                  uid: parsed.uid,
-                  email: parsed.email,
-                  displayName: parsed.nickname,
-                  provider: "kakao",
-                });
+                setUser({ uid: parsed.uid, email: parsed.email, displayName: parsed.nickname, provider: "kakao" });
               } else if (appleUser) {
                 const parsed = JSON.parse(appleUser);
-                setUser({
-                  uid: parsed.uid,
-                  email: parsed.email,
-                  displayName: parsed.nickname,
-                  provider: "apple",
-                });
+                setUser({ uid: parsed.uid, email: parsed.email, displayName: parsed.nickname, provider: "apple" });
               } else {
                 setUser(null);
               }
@@ -74,14 +85,12 @@ export function AuthProvider({ children }) {
           setLoading(false);
         },
         (error) => {
-          // Firebase Auth 자체 오류 시에도 앱 진입 허용
           clearTimeout(timeout);
           console.error("[AuthContext] onAuthStateChanged error:", error.code, error.message);
           setLoading(false);
         }
       );
     } catch (initError) {
-      // Firebase 자체가 초기화 안 된 경우 (WKWebView 극단적 오류)
       clearTimeout(timeout);
       console.error("[AuthContext] Firebase 초기화 실패:", initError);
       setLoading(false);
@@ -91,6 +100,11 @@ export function AuthProvider({ children }) {
       clearTimeout(timeout);
       unsubscribe();
     };
+  };
+
+  useEffect(() => {
+    const cleanup = initAuth();
+    return cleanup;
   }, []);
 
   if (loading) {
@@ -105,6 +119,7 @@ export function AuthProvider({ children }) {
           <span className="w-2 h-2 rounded-full bg-green-500 animate-bounce" style={{ animationDelay: "150ms" }} />
           <span className="w-2 h-2 rounded-full bg-teal-500 animate-bounce" style={{ animationDelay: "300ms" }} />
         </div>
+        <p className="text-[10px] text-gray-300 mt-4">인증 확인 중...</p>
       </div>
     );
   }
