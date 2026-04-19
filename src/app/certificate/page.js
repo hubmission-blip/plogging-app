@@ -59,6 +59,10 @@ export default function CertificatePage() {
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState("");
 
+  // 실명 입력
+  const [realName, setRealName]             = useState("");
+  const [showNameInput, setShowNameInput]   = useState(false);
+
   // 미리보기
   const [showPreview, setShowPreview] = useState(false);
   const [certNumber, setCertNumber]   = useState("");
@@ -155,10 +159,18 @@ export default function CertificatePage() {
     }
   };
 
-  // ─── 증명서 발급 ──────────────────────────────────────────
-  const handleIssue = () => {
+  // ─── 증명서 발급: 실명 입력 단계 ────────────────────────────
+  const handleRequestIssue = () => {
+    setRealName("");
+    setShowNameInput(true);
+  };
+
+  const handleConfirmIssue = () => {
+    if (!realName.trim()) { alert("실명을 입력해주세요."); return; }
+    if (realName.trim().length < 2) { alert("성명은 2자 이상 입력해주세요."); return; }
     const num = generateCertNumber();
     setCertNumber(num);
+    setShowNameInput(false);
     setShowPreview(true);
   };
 
@@ -209,7 +221,8 @@ export default function CertificatePage() {
     </div>
   );
 
-  const displayName = user.displayName || user.email?.split("@")[0] || "사용자";
+  const displayName = realName.trim() || user.displayName || user.email?.split("@")[0] || "사용자";
+  const userEmail = user?.email || "";
   const today = new Date();
   const todayStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
 
@@ -322,11 +335,46 @@ export default function CertificatePage() {
             </div>
 
             {/* ── 발급 버튼 ── */}
-            {summary.isEligible && !showPreview && (
-              <button onClick={handleIssue}
+            {summary.isEligible && !showPreview && !showNameInput && (
+              <button onClick={handleRequestIssue}
                 className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-base shadow-md active:scale-95 transition-transform flex items-center justify-center gap-2">
-                <FileCheck className="w-5 h-5" /> 증명서 미리보기
+                <FileCheck className="w-5 h-5" /> 증명서 발급하기
               </button>
+            )}
+
+            {/* ── 실명 입력 단계 ── */}
+            {showNameInput && (
+              <div className="bg-white rounded-2xl p-5 shadow-sm border-2 border-green-300">
+                <h2 className="font-bold text-gray-800 text-sm mb-1">✍️ 실명 입력</h2>
+                <p className="text-xs text-gray-400 mb-4">증명서에 표기될 본인 실명을 정확히 입력해주세요.</p>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1 block">성명 (실명)</label>
+                    <input value={realName} onChange={(e) => setRealName(e.target.value)}
+                      placeholder="홍길동" maxLength={20}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-base font-bold focus:outline-none focus:border-green-400" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1 block">이메일 / 아이디</label>
+                    <p className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-gray-500">
+                      {user?.email || "이메일 없음"}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-gray-300 mt-3 leading-relaxed">
+                  ※ 입력하신 성명은 증명서에만 사용되며, 본인 신고에 의합니다.<br />
+                  ※ 허위 기재 시 증명서의 효력이 인정되지 않을 수 있습니다.
+                </p>
+
+                <div className="flex gap-2 mt-4">
+                  <button onClick={() => setShowNameInput(false)}
+                    className="flex-1 bg-gray-100 text-gray-500 py-3 rounded-xl font-bold text-sm">취소</button>
+                  <button onClick={handleConfirmIssue}
+                    className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold text-sm active:scale-95 transition-transform">증명서 생성</button>
+                </div>
+              </div>
             )}
           </>
         )}
@@ -357,6 +405,10 @@ export default function CertificatePage() {
                             <tr>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", width: "25%", textAlign: "center" }}>성 명</td>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontSize: 15, fontWeight: 700 }}>{displayName}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>아이디</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontSize: 13, color: "#555" }}>{userEmail}</td>
                             </tr>
                             <tr>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>활동 기간</td>
@@ -393,6 +445,7 @@ export default function CertificatePage() {
                       {/* 비고 */}
                       <p style={{ fontSize: 11, color: "#888", lineHeight: 1.6, margin: "15px 0" }}>
                         ※ 본 증명서는 GPS 기반 활동 기록을 근거로 자동 발급되었습니다.<br />
+                        ※ 성명은 본인 신고에 의하며, 허위 기재 시 효력이 인정되지 않습니다.<br />
                         ※ 발급번호를 통해 진위 여부를 확인할 수 있습니다.
                       </p>
 
