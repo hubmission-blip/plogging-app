@@ -280,7 +280,7 @@ export default function CertificatePage() {
           .cert-footer { text-align: center; margin-top: 35px; }
           .cert-date { font-size: 15px; color: #333; margin-bottom: 25px; }
           .cert-org { font-size: 16px; font-weight: 700; color: #2c5f2d; }
-          .cert-stamp { display: inline-block; border: 3px solid #c0392b; border-radius: 50%; width: 80px; height: 80px; line-height: 80px; text-align: center; font-size: 14px; font-weight: 900; color: #c0392b; margin-top: 15px; transform: rotate(-15deg); }
+          .cert-stamp-img { width: 100px; height: auto; margin-top: 15px; }
           @media print { body { padding: 0; } }
         </style>
       </head><body>${content}
@@ -542,22 +542,12 @@ export default function CertificatePage() {
                         <p style={{ fontSize: 14, color: "#333", marginBottom: 20 }}>{todayStr}</p>
                         <p style={{ fontSize: 15, fontWeight: 700, color: "#2c5f2d", marginBottom: 5 }}>사단법인 국제청년환경연합회</p>
                         <p style={{ fontSize: 12, color: "#666" }}>Global Youth Environmental Association</p>
-                        {/* 임시 직인 (추후 이미지로 교체) */}
-                        <div style={{
-                          display: "inline-block",
-                          border: "3px solid #c0392b",
-                          borderRadius: "50%",
-                          width: 80, height: 80,
-                          lineHeight: "76px",
-                          textAlign: "center",
-                          fontSize: 12,
-                          fontWeight: 900,
-                          color: "#c0392b",
-                          marginTop: 15,
-                          transform: "rotate(-15deg)",
-                        }}>
-                          국제청년<br style={{ lineHeight: 0 }} />환경연합회
-                        </div>
+                        {/* 직인 이미지 */}
+                        <img
+                          src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png"
+                          alt="국제청년환경연합회 직인"
+                          style={{ width: 100, height: "auto", marginTop: 15 }}
+                        />
                       </div>
                     </div>
                   </div>
