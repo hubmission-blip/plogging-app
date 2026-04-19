@@ -36,12 +36,22 @@ function toDateStr(date) {
   return `${y}-${m}-${d}`;
 }
 
-function generateCertNumber() {
+async function generateCertNumber(db) {
   const now = new Date();
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
-  const seq = String(Math.floor(Math.random() * 9000) + 1000);
+
+  // 해당 연도의 기존 발급 건수를 조회하여 순번 결정
+  const { collection, query, where, getDocs } = await import("firebase/firestore");
+  const prefix = `GYEA-${y}-`;
+  const q = query(
+    collection(db, "certificates"),
+    where("certNumber", ">=", prefix),
+    where("certNumber", "<=", prefix + "\uf8ff"),
+  );
+  const snap = await getDocs(q);
+  const seq = String(snap.size + 1).padStart(4, "0");
   return `GYEA-${y}-${m}${d}-${seq}`;
 }
 
@@ -216,7 +226,7 @@ export default function CertificatePage() {
 
     setSaving(true);
     try {
-      const num = generateCertNumber();
+      const num = await generateCertNumber(db);
 
       // Firestore에 발급 기록 저장
       await addDoc(collection(db, "certificates"), {
