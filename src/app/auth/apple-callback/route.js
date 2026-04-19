@@ -13,11 +13,11 @@ export async function POST(request) {
 
     // /auth/apple/page.js(클라이언트)로 리다이렉트
     return Response.redirect(
-      `https://happy500.kr/auth/apple?${params.toString()}`,
+      `https://www.happy500.kr/auth/apple?${params.toString()}`,
       303
     );
   } catch (e) {
     console.error("Apple POST callback 오류:", e);
-    return Response.redirect("https://happy500.kr/login", 303);
+    return Response.redirect("https://www.happy500.kr/login", 303);
   }
 }

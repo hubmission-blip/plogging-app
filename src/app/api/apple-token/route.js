@@ -53,7 +53,7 @@ export async function POST(request) {
         code,
         client_id: process.env.APPLE_SERVICE_ID,
         client_secret: clientSecret,
-        redirect_uri: "https://happy500.kr/auth/apple-callback",
+        redirect_uri: "https://www.happy500.kr/auth/apple-callback",
       }),
     });
 

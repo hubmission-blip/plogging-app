@@ -185,7 +185,7 @@ export default function LoginPage() {
   // Apple 로그인
   const handleAppleLogin = () => {
     const SERVICE_ID = "kr.happy500.auth";
-    const REDIRECT_URI = "https://happy500.kr/auth/apple-callback";
+    const REDIRECT_URI = "https://www.happy500.kr/auth/apple-callback";
     const STATE = Math.random().toString(36).slice(2);
     localStorage.setItem("apple_auth_state", STATE);
     window.location.href =
