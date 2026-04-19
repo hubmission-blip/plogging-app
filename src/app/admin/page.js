@@ -47,6 +47,7 @@ export default function AdminPage() {
   const router   = useRouter();
 
   const [firestoreEmail, setFirestoreEmail] = useState("");
+  const [emailLoaded, setEmailLoaded] = useState(false);
   const isAdmin = user && (ADMIN_EMAILS.includes(user.email) || ADMIN_EMAILS.includes(firestoreEmail));
 
   // Firestore에서 실제 이메일 조회 (카카오/애플 등 소셜 로그인 대응)
@@ -54,7 +55,7 @@ export default function AdminPage() {
     if (!user) return;
     getDoc(doc(db, "users", user.uid)).then(snap => {
       if (snap.exists()) setFirestoreEmail(snap.data().email || "");
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setEmailLoaded(true));
   }, [user]);
 
   // ── 공통 상태 ──────────────────────────────────────────
@@ -455,8 +456,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
-    if (user && !isAdmin) { router.push("/"); return; }
-  }, [user, isAdmin, router]);
+    if (user && emailLoaded && !isAdmin) { router.push("/"); return; }
+  }, [user, isAdmin, emailLoaded, router]);
 
   // ──────────────────────────────────────────────────────
   //  Action: 포인트 조정
@@ -863,9 +864,9 @@ export default function AdminPage() {
   // ──────────────────────────────────────────────────────
   //  Guard
   // ──────────────────────────────────────────────────────
-  if (!user || !isAdmin) return (
+  if (!user || (!isAdmin && !emailLoaded)) return (
     <div className="flex items-center justify-center h-screen">
-      <p className="text-gray-400">접근 권한이 없습니다.</p>
+      <p className="text-gray-400">{emailLoaded ? "접근 권한이 없습니다." : "권한 확인 중..."}</p>
     </div>
   );
 
