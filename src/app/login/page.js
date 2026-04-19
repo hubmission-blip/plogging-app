@@ -182,23 +182,6 @@ export default function LoginPage() {
   };
 
   // 네이버 로그인
-  const handleNaverLogin = () => {
-    const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID;
-    if (!NAVER_CLIENT_ID) {
-      alert("네이버 Client ID가 설정되지 않았습니다.");
-      return;
-    }
-    const REDIRECT_URI = `${window.location.origin}/auth/naver`;
-    const STATE = Math.random().toString(36).slice(2);
-    localStorage.setItem("naver_auth_state", STATE);
-    window.location.href =
-      `https://nid.naver.com/oauth2.0/authorize` +
-      `?response_type=code` +
-      `&client_id=${NAVER_CLIENT_ID}` +
-      `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-      `&state=${STATE}`;
-  };
-
   // Apple 로그인
   const handleAppleLogin = () => {
     const SERVICE_ID = "kr.happy500.auth";
@@ -318,17 +301,6 @@ export default function LoginPage() {
             카카오로 시작하기
           </button>
 
-          <button
-            onClick={handleNaverLogin}
-            disabled={loading}
-            className="w-full h-10 rounded-xl font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform disabled:opacity-50"
-            style={{ backgroundColor: "#03C75A", color: "#fff" }}
-          >
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-              <path d="M13.5 10.56L6.26 0H0v20h6.5V9.44L13.74 20H20V0h-6.5v10.56z" fill="#fff"/>
-            </svg>
-            네이버로 시작하기
-          </button>
         </div>
 
         <div className="flex items-center gap-3 mb-4">
