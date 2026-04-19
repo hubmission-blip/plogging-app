@@ -8,7 +8,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 
 export default function KakaoCallbackPage() {
   const router = useRouter();
@@ -120,6 +120,13 @@ export default function KakaoCallbackPage() {
               refCode:       firebaseUser.uid.slice(0, 8).toUpperCase(),
             });
             console.log("📌 users 컬렉션 문서 생성 완료");
+          } else {
+            // 기존 사용자: 이메일이 갱신되었으면 업데이트
+            const realEmail = kakaoUser.email || "";
+            if (realEmail && !realEmail.match(/^kakao_\d+@kakao\.com$/)) {
+              await updateDoc(userRef, { email: realEmail });
+              console.log("📌 이메일 갱신:", realEmail);
+            }
           }
         } catch (fsErr) {
           // Firestore 저장 실패해도 인증은 됐으므로 홈으로 이동

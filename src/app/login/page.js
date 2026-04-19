@@ -178,7 +178,8 @@ export default function LoginPage() {
       `https://kauth.kakao.com/oauth/authorize` +
       `?client_id=${KAKAO_CLIENT_ID}` +
       `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-      `&response_type=code`;
+      `&response_type=code` +
+      `&scope=account_email`;
   };
 
   // 네이버 로그인
