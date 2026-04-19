@@ -701,25 +701,23 @@ export default function HomePage() {
                   const appStoreId = "6744194047";
                   window.open(`https://apps.apple.com/app/id${appStoreId}?action=write-review`, "_blank");
                 }}
-                className="text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
-                style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
+                className="bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
               >
                 <Star className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
                 <div className="text-right flex-1">
                   <p className="font-black text-sm leading-tight">앱 평가하기</p>
-                  <p className="text-[11px] text-yellow-100 mt-0.5 leading-relaxed">리뷰를 남겨주세요!</p>
+                  <p className="text-[11px] text-indigo-100 mt-0.5 leading-relaxed">리뷰를 남겨주세요!</p>
                 </div>
               </button>
             ) : (
               <button
                 onClick={handleInstallClick}
-                className="text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
-                style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
+                className="bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
               >
                 <Smartphone className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
                 <div className="text-right flex-1">
                   <p className="font-black text-sm leading-tight">홈 화면에 추가</p>
-                  <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">앱처럼 빠르게 접근</p>
+                  <p className="text-[11px] text-indigo-100 mt-0.5 leading-relaxed">앱처럼 빠르게 접근</p>
                 </div>
               </button>
             )}
@@ -739,7 +737,8 @@ export default function HomePage() {
           <div className="grid grid-cols-2 gap-2">
             <Link
               href="/certificate"
-              className="bg-gradient-to-br from-green-600 to-emerald-600 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+              className="text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+              style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
             >
               <FileCheck className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
               <div className="text-right flex-1">
@@ -751,12 +750,12 @@ export default function HomePage() {
               href="https://www.1365.go.kr"
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+              className="bg-gradient-to-br from-orange-400 to-orange-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
             >
               <HeartHandshake className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
               <div className="text-right flex-1">
                 <p className="font-black text-sm leading-tight">1365 자원봉사</p>
-                <p className="text-[11px] text-blue-100 mt-0.5 leading-relaxed">자원봉사 포털 →</p>
+                <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">자원봉사 포털 →</p>
               </div>
             </a>
           </div>
