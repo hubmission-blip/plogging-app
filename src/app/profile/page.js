@@ -262,7 +262,7 @@ export default function ProfilePage() {
 
           {/* 계정 정보 — 완전 흰색 인터박스 */}
           <div className="mt-3 bg-white/80 rounded-xl px-3 py-3 space-y-2">
-            {user?.email && !user.email.includes("kakao-auth") && (
+            {user?.email && !user.email.includes("kakao-auth") && !user.email.includes("apple-auth") && !user.email.includes("naver-auth") && (
               <div className="flex items-center gap-2">
                 <p className="text-[11px] text-green-600 font-medium w-14 flex-shrink-0">이메일</p>
                 <p className="text-[11px] text-gray-700 truncate flex-1">{user.email}</p>
