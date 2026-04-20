@@ -197,14 +197,21 @@ export default function ProfilePage() {
         }
       } catch (e) { console.warn("routes 익명화 실패 (무시):", e.message); }
 
-      // 2) 누적 사용자 카운트 보존: stats/community에 탈퇴자 수 +1
+      // 2) 누적 사용자 카운트 + 이동거리 보존: stats/community에 반영
       try {
+        const userDist = stats?.totalDistance || 0;
         const statsRef = doc(db, "stats", "community");
         const statsSnap = await getDoc(statsRef);
         if (statsSnap.exists()) {
-          await updateDoc(statsRef, { deletedUsersCount: increment(1) });
+          await updateDoc(statsRef, {
+            deletedUsersCount: increment(1),
+            deletedUsersDistance: increment(userDist),
+          });
         } else {
-          await setDoc(statsRef, { deletedUsersCount: 1 });
+          await setDoc(statsRef, {
+            deletedUsersCount: 1,
+            deletedUsersDistance: userDist,
+          });
         }
       } catch (e) { console.warn("stats 업데이트 실패 (무시):", e.message); }
 

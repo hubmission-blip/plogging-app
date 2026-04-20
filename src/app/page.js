@@ -253,23 +253,26 @@ export default function HomePage() {
         console.warn("가입자 수 로드 실패:", e.message);
       }
 
+      let deletedDistance = 0;
       try {
-        // 탈퇴한 사용자 수 (누적 카운트 보존용)
+        // 탈퇴한 사용자 수 + 탈퇴자 누적 이동거리
         const statsSnap = await getDoc(doc(db, "stats", "community"));
         if (statsSnap.exists()) {
           deletedUsers = statsSnap.data().deletedUsersCount || 0;
+          deletedDistance = statsSnap.data().deletedUsersDistance || 0;
         }
       } catch (e) {
-        console.warn("탈퇴자 수 로드 실패:", e.message);
+        console.warn("탈퇴자 통계 로드 실패:", e.message);
       }
 
       try {
-        // 총 이동 거리 (탈퇴자 경로 포함 — userId가 "deleted"인 것도 합산)
-        const routesSnap = await getDocs(collection(db, "routes"));
-        routesSnap.forEach((d) => {
-          const data = d.data();
-          totalDistance += data.distance || 0;
+        // 현재 가입자들의 총 이동거리 (각 유저의 totalDistance 합산)
+        const usersSnap = await getDocs(collection(db, "users"));
+        usersSnap.forEach((d) => {
+          totalDistance += d.data().totalDistance || 0;
         });
+        // 탈퇴자 이동거리 합산
+        totalDistance += deletedDistance;
       } catch (e) {
         console.warn("이동 거리 로드 실패:", e.message);
       }
