@@ -10,7 +10,7 @@ import {
   collection, query, where, getDocs,
   serverTimestamp, increment,
 } from "firebase/firestore";
-import { signOut, deleteUser } from "firebase/auth";
+import { signOut, deleteUser, reauthenticateWithCredential, EmailAuthProvider, GoogleAuthProvider, reauthenticateWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getWeekLabel } from "@/lib/routeUtils";
 import Link from "next/link";
@@ -185,42 +185,52 @@ export default function ProfilePage() {
     setDeleteStep(3); // 처리 중
     try {
       // 1) 플로깅 경로 데이터: 보존하되 개인정보·사진만 제거
-      const routesQ = query(collection(db, "routes"), where("userId", "==", user.uid));
-      const routesSnap = await getDocs(routesQ);
-      for (const d of routesSnap.docs) {
-        await updateDoc(d.ref, {
-          userId: "deleted",
-          photoUrl: null,         // 인증 사진 삭제 (개인정보)
-          verified: false,
-        });
-      }
+      try {
+        const routesQ = query(collection(db, "routes"), where("userId", "==", user.uid));
+        const routesSnap = await getDocs(routesQ);
+        for (const d of routesSnap.docs) {
+          await updateDoc(d.ref, {
+            userId: "deleted",
+            photoUrl: null,
+            verified: false,
+          });
+        }
+      } catch (e) { console.warn("routes 익명화 실패 (무시):", e.message); }
 
       // 2) 누적 사용자 카운트 보존: stats/community에 탈퇴자 수 +1
-      const statsRef = doc(db, "stats", "community");
-      const statsSnap = await getDoc(statsRef);
-      if (statsSnap.exists()) {
-        await updateDoc(statsRef, { deletedUsersCount: increment(1) });
-      } else {
-        await setDoc(statsRef, { deletedUsersCount: 1 });
-      }
+      try {
+        const statsRef = doc(db, "stats", "community");
+        const statsSnap = await getDoc(statsRef);
+        if (statsSnap.exists()) {
+          await updateDoc(statsRef, { deletedUsersCount: increment(1) });
+        } else {
+          await setDoc(statsRef, { deletedUsersCount: 1 });
+        }
+      } catch (e) { console.warn("stats 업데이트 실패 (무시):", e.message); }
 
-      // 3) 리워드 교환 내역 — 익명화 (내역은 관리용으로 보존)
-      const rewardQ = query(collection(db, "reward_history"), where("userId", "==", user.uid));
-      const rewardSnap = await getDocs(rewardQ);
-      for (const d of rewardSnap.docs) {
-        await updateDoc(d.ref, { userId: "deleted", userName: "탈퇴회원" });
-      }
+      // 3) 리워드 교환 내역 — 익명화
+      try {
+        const rewardQ = query(collection(db, "reward_history"), where("userId", "==", user.uid));
+        const rewardSnap = await getDocs(rewardQ);
+        for (const d of rewardSnap.docs) {
+          await updateDoc(d.ref, { userId: "deleted", userName: "탈퇴회원" });
+        }
+      } catch (e) { console.warn("reward_history 익명화 실패 (무시):", e.message); }
 
       // 4) 쇼핑 클릭/구매 로그 — 익명화
-      const clickQ = query(collection(db, "shopClicks"), where("userId", "==", user.uid));
-      const clickSnap = await getDocs(clickQ);
-      for (const d of clickSnap.docs) {
-        await updateDoc(d.ref, { userId: "deleted" });
-      }
+      try {
+        const clickQ = query(collection(db, "shopClicks"), where("userId", "==", user.uid));
+        const clickSnap = await getDocs(clickQ);
+        for (const d of clickSnap.docs) {
+          await updateDoc(d.ref, { userId: "deleted" });
+        }
+      } catch (e) { console.warn("shopClicks 익명화 실패 (무시):", e.message); }
 
       // 5) 탈퇴 이메일 해시 저장 (재가입 시 환영포인트 어뷰징 방지)
-      const emailForHash = stats?.realEmail || user?.email || "";
-      await markAccountDeleted(emailForHash);
+      try {
+        const emailForHash = stats?.realEmail || user?.email || "";
+        if (emailForHash) await markAccountDeleted(emailForHash);
+      } catch (e) { console.warn("이메일 해시 저장 실패 (무시):", e.message); }
 
       // 6) 사용자 문서 삭제 (개인정보 완전 삭제)
       await deleteDoc(doc(db, "users", user.uid));
@@ -240,16 +250,16 @@ export default function ProfilePage() {
           await deleteUser(auth.currentUser);
         }
       } catch (authErr) {
-        console.warn("Firebase Auth 삭제 실패 (소셜 로그인):", authErr);
-        // 소셜 로그인(카카오/애플)은 Firebase Auth에 없을 수 있음
-        await signOut(auth);
+        // requires-recent-login: 재인증 없이는 삭제 불가 → signOut으로 대체
+        console.warn("Firebase Auth 삭제 실패:", authErr.code, authErr.message);
+        try { await signOut(auth); } catch {}
       }
 
       alert("회원 탈퇴가 완료되었습니다. 그동안 이용해 주셔서 감사합니다.");
       router.push("/login");
     } catch (e) {
       console.error("회원 탈퇴 실패:", e);
-      alert("탈퇴 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+      alert("탈퇴 처리 중 오류가 발생했습니다:\n" + (e.code || "") + " " + e.message);
       setDeleteStep(0);
     }
   };

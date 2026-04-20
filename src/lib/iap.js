@@ -3,11 +3,11 @@
 // 소모성(Consumable) 상품 전용 — 후원/기부용
 
 const IAP_PRODUCTS = [
-  { id: "donate_1100",  label: "₩1,100 후원",  price: 1100  },
-  { id: "donate_3900",  label: "₩3,900 후원",  price: 3900  },
-  { id: "donate_11000", label: "₩11,000 후원", price: 11000 },
-  { id: "donate_29000", label: "₩29,000 후원", price: 29000 },
-  { id: "donate_49000", label: "₩49,000 후원", price: 49000 },
+  { id: "donate_500",   label: "₩500 후원",    price: 500   },
+  { id: "donate_5000",  label: "₩5,000 후원",  price: 5000  },
+  { id: "donate_10000", label: "₩10,000 후원", price: 10000 },
+  { id: "donate_30000", label: "₩30,000 후원", price: 30000 },
+  { id: "donate_50000", label: "₩50,000 후원", price: 50000 },
 ];
 
 // Capacitor 네이티브 iOS 환경인지 확인

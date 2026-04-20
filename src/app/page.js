@@ -268,9 +268,7 @@ export default function HomePage() {
         const routesSnap = await getDocs(collection(db, "routes"));
         routesSnap.forEach((d) => {
           const data = d.data();
-          if ((data.points || 0) > 0) {
-            totalDistance += data.distance || 0;
-          }
+          totalDistance += data.distance || 0;
         });
       } catch (e) {
         console.warn("이동 거리 로드 실패:", e.message);
@@ -466,7 +464,7 @@ export default function HomePage() {
                   <span className="text-lg font-black block" style={{ color: "#6ba030" }}>
                     {communityStats.users === null ? "…" : `${communityStats.users.toLocaleString()}명`}
                   </span>
-                  <span className="text-[10px] text-gray-500 font-bold mt-1 block">총 가입자</span>
+                  <span className="text-[10px] text-gray-500 font-bold mt-1 block">총 누적 가입자</span>
                 </div>
               </div>
               <div className="bg-white rounded-xl py-3 px-3 flex items-center justify-center gap-2.5" style={{ border: "1px solid #8dc63f30" }}>

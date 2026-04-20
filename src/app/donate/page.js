@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { CalendarDays, Leaf, Monitor, Cloud, Lightbulb, Medal, Star, Megaphone, Mail, UserRound, Coins, Landmark, Smartphone, Apple, Info, PenLine } from "lucide-react";
+import { CalendarDays, Leaf, Monitor, Cloud, Lightbulb, Medal, Star, Megaphone, Mail, UserRound, Coins, Landmark, Smartphone, Info, PenLine } from "lucide-react";
 import { isNativeIOS, initIAP, getIAPProducts, purchaseIAP, onIAPApproved, onIAPError, IAP_PRODUCTS } from "@/lib/iap";
 import { db } from "@/lib/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
@@ -13,7 +13,7 @@ const ACCOUNTS = [
   { bank: "우리은행", number: "1005-504-709367", holder: "(사)국제청년환경연합회", color: "bg-blue-600", icon: "🔵" },
 ];
 
-// ── 후원 금액 프리셋 (계좌이체용) ─────────────────────────────
+// ── 후원 금액 프리셋 ─────────────────────────────────────────
 const AMOUNTS = [
   { label: "500원",    value: 500 },
   { label: "5,000원",  value: 5000 },
@@ -22,6 +22,15 @@ const AMOUNTS = [
   { label: "50,000원", value: 50000 },
   { label: "직접입력", value: 0 },
 ];
+
+// ── IAP 금액 → 상품 ID 매핑 ──────────────────────────────────
+const AMOUNT_TO_IAP = {
+  500:   "donate_500",
+  5000:  "donate_5000",
+  10000: "donate_10000",
+  30000: "donate_30000",
+  50000: "donate_50000",
+};
 
 // ── 후원자 혜택 ────────────────────────────────────────────────
 const BENEFITS = [
@@ -54,14 +63,12 @@ export default function DonatePage() {
   // ── IAP 관련 상태 ──
   const [isIOS,        setIsIOS]        = useState(false);
   const [iapReady,     setIapReady]     = useState(false);
-  const [iapProducts,  setIapProducts]  = useState([]);
   const [iapLoading,   setIapLoading]   = useState(false);
 
   // ── IAP 초기화 (iOS 네이티브에서만) ──
   useEffect(() => {
     const native = isNativeIOS();
     setIsIOS(native);
-
     if (!native) return;
 
     const setup = async () => {
@@ -69,11 +76,7 @@ export default function DonatePage() {
         const ok = await initIAP();
         if (ok) {
           setIapReady(true);
-          setIapProducts(getIAPProducts());
-
-          // 구매 완료 콜백
           onIAPApproved(async (transaction) => {
-            // Firestore에 후원 기록
             try {
               await addDoc(collection(db, "donations"), {
                 userId:    user?.uid || "anonymous",
@@ -90,11 +93,7 @@ export default function DonatePage() {
             setThanksMsg("Apple을 통한 후원이 완료되었습니다!");
             setShowThanks(true);
           });
-
-          // 에러 콜백
-          onIAPError(() => {
-            setIapLoading(false);
-          });
+          onIAPError(() => setIapLoading(false));
         }
       } catch (e) {
         console.warn("[IAP] 초기화 실패:", e);
@@ -121,13 +120,30 @@ export default function DonatePage() {
     }
   };
 
-  // ── Apple IAP 구매 ──
-  const handleIAPPurchase = async (productId) => {
+  // ── 외부 링크 열기 ──
+  const openExternal = async (url) => {
+    if (isIOS) {
+      try {
+        const { Browser } = await import("@capacitor/browser");
+        await Browser.open({ url });
+      } catch { window.location.href = url; }
+    } else {
+      window.open(url, "_blank");
+    }
+  };
+
+  // ── Apple IAP 결제 ──
+  const handleApplePay = async () => {
+    if (!finalAmount) { alert("후원 금액을 먼저 선택해주세요."); return; }
+    const productId = AMOUNT_TO_IAP[finalAmount];
+    if (!productId) {
+      alert(`Apple 결제는 ${Object.keys(AMOUNT_TO_IAP).map(v => Number(v).toLocaleString() + "원").join(", ")} 금액만 가능합니다.\n해당 금액을 선택해주세요.`);
+      return;
+    }
     if (iapLoading) return;
     setIapLoading(true);
     try {
       await purchaseIAP(productId);
-      // 결과는 onIAPApproved 콜백에서 처리
     } catch (e) {
       console.error("[IAP] 구매 실패:", e);
       alert("구매에 실패했습니다. 다시 시도해주세요.");
@@ -135,26 +151,13 @@ export default function DonatePage() {
     }
   };
 
-  // ── 외부 링크 열기 (iOS 네이티브: Capacitor Browser, 웹: window.open) ──
-  const openExternal = async (url) => {
-    if (isIOS) {
-      try {
-        const { Browser } = await import("@capacitor/browser");
-        await Browser.open({ url });
-      } catch {
-        window.location.href = url;
-      }
-    } else {
-      window.open(url, "_blank");
-    }
-  };
-
-  // ── 토스/카카오페이 송금 ──
+  // ── 토스 송금 ──
   const handleToss = async () => {
+    if (!finalAmount) { alert("후원 금액을 먼저 선택해주세요."); return; }
     try {
       await addDoc(collection(db, "donations"), {
         userId: user?.uid || "anonymous",
-        method: "toss", amount: finalAmount || 0,
+        method: "toss", amount: finalAmount,
         platform: isIOS ? "ios" : "web", status: "pending",
         createdAt: serverTimestamp(),
       });
@@ -162,11 +165,13 @@ export default function DonatePage() {
     openExternal(TOSS_LINK);
   };
 
+  // ── 카카오페이 송금 ──
   const handleKakaoPay = async () => {
+    if (!finalAmount) { alert("후원 금액을 먼저 선택해주세요."); return; }
     try {
       await addDoc(collection(db, "donations"), {
         userId: user?.uid || "anonymous",
-        method: "kakaopay", amount: finalAmount || 0,
+        method: "kakaopay", amount: finalAmount,
         platform: isIOS ? "ios" : "web", status: "pending",
         createdAt: serverTimestamp(),
       });
@@ -183,20 +188,11 @@ export default function DonatePage() {
       <div className="bg-gradient-to-b from-orange-400 to-orange-500 px-4 pt-12 pb-8 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-10 translate-x-10" />
         <div className="absolute bottom-0 left-0 w-28 h-28 bg-white/5 rounded-full translate-y-8 -translate-x-8" />
-
-        <Link href="/" className="flex items-center gap-1.5 text-orange-100 text-sm mb-6 relative">
-          ← 홈으로
-        </Link>
-
+        <Link href="/" className="flex items-center gap-1.5 text-orange-100 text-sm mb-6 relative">← 홈으로</Link>
         <span className="absolute top-4 right-4 text-7xl opacity-80">🧡</span>
         <div className="relative mt-8">
-          <h1 className="text-2xl font-black leading-tight mb-2">
-            오백원의 행복을<br />응원해주세요
-          </h1>
-          <p className="text-sm text-orange-100 leading-relaxed">
-            플로깅으로 지구를 지키는 이 프로젝트는<br />
-            여러분의 후원으로 계속될 수 있습니다
-          </p>
+          <h1 className="text-2xl font-black leading-tight mb-2">오백원의 행복을<br />응원해주세요</h1>
+          <p className="text-sm text-orange-100 leading-relaxed">플로깅으로 지구를 지키는 이 프로젝트는<br />여러분의 후원으로 계속될 수 있습니다</p>
         </div>
       </div>
 
@@ -237,10 +233,7 @@ export default function DonatePage() {
                   <span className="text-xs font-bold text-gray-700">{item.pct}%</span>
                 </div>
                 <div className="h-2 bg-white rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${item.color} rounded-full`}
-                    style={{ width: `${item.pct}%` }}
-                  />
+                  <div className={`h-full ${item.color} rounded-full`} style={{ width: `${item.pct}%` }} />
                 </div>
               </div>
             ))}
@@ -261,90 +254,12 @@ export default function DonatePage() {
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-gray-400 mt-3 text-center">
-            ※ 혜택 적용은 입금 확인 후 1~3일 내 처리됩니다
-          </p>
+          <p className="text-[11px] text-gray-400 mt-3 text-center">※ 혜택 적용은 입금 확인 후 1~3일 내 처리됩니다</p>
         </div>
 
         {/* ══════════════════════════════════════════════════════
-            Apple In-App Purchase 후원 (iOS 네이티브에서만 표시)
+            ① 후원 금액 선택
             ══════════════════════════════════════════════════════ */}
-        {isIOS && (
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <p className="text-sm font-bold text-gray-700 mb-1 flex items-center gap-1.5">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-gray-700">
-                <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-              </svg>
-              Apple로 후원하기
-            </p>
-            <p className="text-xs text-gray-400 mb-3">App Store 결제로 안전하게 후원</p>
-
-            <div className="space-y-2">
-              {(iapReady ? iapProducts : IAP_PRODUCTS).map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => handleIAPPurchase(p.id)}
-                  disabled={iapLoading}
-                  className="w-full flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 active:bg-gray-100 transition-colors disabled:opacity-50"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-                        <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-                      </svg>
-                    </div>
-                    <span className="text-sm font-bold text-gray-700">
-                      {p.applePrice || p.label}
-                    </span>
-                  </div>
-                  <span className="text-xs font-bold text-white bg-black px-3 py-1.5 rounded-lg">
-                    {iapLoading ? "처리 중..." : "후원"}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            <p className="text-[10px] text-gray-400 mt-3 text-center leading-relaxed">
-              Apple의 인앱결제를 통해 진행되며, 결제 금액의 일부(수수료)가 Apple에 지급됩니다.
-            </p>
-          </div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════
-            간편 후원 (토스 + 카카오페이) — 모든 플랫폼에서 표시
-            ══════════════════════════════════════════════════════ */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-sm font-bold text-gray-700 mb-1 flex items-center gap-1.5">
-            <Smartphone className="w-4 h-4 text-gray-600" strokeWidth={2} /> 간편 후원
-          </p>
-          <p className="text-xs text-gray-400 mb-3">토스 또는 카카오페이로 간편하게 후원</p>
-
-          <div className="grid grid-cols-2 gap-2">
-            {/* 토스 */}
-            <button
-              onClick={handleToss}
-              className="bg-[#0064FF] rounded-xl py-3.5 flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
-            >
-              <span className="text-white text-lg font-black">toss</span>
-              <p className="text-xs font-bold text-blue-100">토스로 후원</p>
-            </button>
-
-            {/* 카카오페이 */}
-            <button
-              onClick={handleKakaoPay}
-              className="bg-[#FEE500] rounded-xl py-3.5 flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
-            >
-              <span className="text-[#3C1E1E] text-lg font-black">kakao</span>
-              <p className="text-xs font-bold text-[#3C1E1E99]">카카오페이로 후원</p>
-            </button>
-          </div>
-
-          <p className="text-[10px] text-gray-400 mt-3 text-center leading-relaxed">
-            버튼을 누르면 각 앱이 열리며, 원하시는 금액을 직접 입력하여 송금할 수 있습니다.
-          </p>
-        </div>
-
-        {/* ── 후원 금액 선택 (계좌이체용) ── */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <p className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5"><Coins className="w-4 h-4 text-gray-600" strokeWidth={2} /> 후원 금액 선택</p>
           <div className="grid grid-cols-3 gap-2 mb-3">
@@ -362,7 +277,6 @@ export default function DonatePage() {
             ))}
           </div>
 
-          {/* 직접 입력 */}
           {selectedAmount?.value === 0 && (
             <div className="flex items-center gap-2 bg-orange-50 rounded-xl px-3 py-2.5 mb-3">
               <input
@@ -376,26 +290,24 @@ export default function DonatePage() {
             </div>
           )}
 
-          {/* 선택된 금액 표시 */}
           {finalAmount > 0 && (
-            <div className="bg-orange-50 rounded-xl px-4 py-3 text-center mb-1">
-              <p className="text-xl font-black text-orange-600">
+            <div className="bg-orange-50 rounded-xl px-4 py-3 text-center">
+              <p className="text-2xl font-black text-orange-600">
                 {finalAmount.toLocaleString()}원
               </p>
-              <p className="text-xs text-orange-400 mt-0.5">아래 계좌로 입금해주세요</p>
+              <p className="text-xs text-orange-400 mt-0.5">아래 방법 중 하나를 선택하여 후원해주세요</p>
             </div>
           )}
         </div>
 
-        {/* ── 계좌 정보 ── */}
+        {/* ══════════════════════════════════════════════════════
+            ② 후원 계좌 (계좌이체)
+            ══════════════════════════════════════════════════════ */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <p className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5"><Landmark className="w-4 h-4 text-gray-600" strokeWidth={2} /> 후원 계좌</p>
           <div className="space-y-2">
             {ACCOUNTS.map((acc) => (
-              <div
-                key={acc.bank}
-                className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3"
-              >
+              <div key={acc.bank} className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
                 <div className={`w-9 h-9 ${acc.color} rounded-full flex items-center justify-center text-white font-black text-xs flex-shrink-0`}>
                   {acc.bank.slice(0, 2)}
                 </div>
@@ -423,21 +335,87 @@ export default function DonatePage() {
             ))}
           </div>
 
-          {/* 복사 안내 */}
           <div className="mt-3 bg-orange-50 rounded-xl px-3 py-2.5 flex items-start gap-2">
             <Info className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" strokeWidth={2} />
             <p className="text-[11px] text-orange-700 leading-relaxed">
               <strong>금액을 먼저 선택</strong>하고 복사 버튼을 누르면
               <strong> 계좌번호 + 예금주 + 후원금액</strong>이 한 번에 복사돼요.
-              인터넷뱅킹 메모란에 그대로 붙여넣기 하시면 편리합니다.
             </p>
           </div>
-          {/* 입금자명 안내 */}
           <div className="mt-2 bg-yellow-50 rounded-xl px-3 py-2.5 flex items-start gap-2">
             <PenLine className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
             <p className="text-[11px] text-yellow-700 leading-relaxed">
               입금 시 <strong>입금자명에 닉네임 또는 연락처</strong>를 남겨주시면 후원자 혜택 적용이 빨라져요.
               혜택 문의: <strong>hubmission@gmail.com</strong>
+            </p>
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════
+            ③ 간편 후원 (Apple · 토스 · 카카오페이)
+            ══════════════════════════════════════════════════════ */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <p className="text-sm font-bold text-gray-700 mb-1 flex items-center gap-1.5">
+            <Smartphone className="w-4 h-4 text-gray-600" strokeWidth={2} /> 간편 후원
+          </p>
+          <p className="text-xs text-gray-400 mb-3">
+            {finalAmount > 0
+              ? `${finalAmount.toLocaleString()}원을 간편하게 후원하세요`
+              : "위에서 금액을 먼저 선택해주세요"}
+          </p>
+
+          {/* 선택 금액 표시 */}
+          {finalAmount > 0 && (
+            <div className="bg-gray-50 rounded-xl px-4 py-2.5 text-center mb-3">
+              <p className="text-lg font-black text-gray-800">{finalAmount.toLocaleString()}원</p>
+            </div>
+          )}
+
+          <div className={`grid gap-2 ${isIOS ? "grid-cols-3" : "grid-cols-2"}`}>
+            {/* Apple (iOS에서만) */}
+            {isIOS && (
+              <button
+                onClick={handleApplePay}
+                disabled={iapLoading || !finalAmount}
+                className="bg-black rounded-xl py-3.5 flex flex-col items-center gap-1 active:scale-95 transition-transform disabled:opacity-40"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                  <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                </svg>
+                <p className="text-xs font-bold text-white">{iapLoading ? "처리 중..." : "Apple"}</p>
+              </button>
+            )}
+
+            {/* 토스 */}
+            <button
+              onClick={handleToss}
+              disabled={!finalAmount}
+              className="bg-[#0064FF] rounded-xl py-3.5 flex flex-col items-center gap-1 active:scale-95 transition-transform disabled:opacity-40"
+            >
+              <span className="text-white text-base font-black">toss</span>
+              <p className="text-xs font-bold text-blue-100">토스</p>
+            </button>
+
+            {/* 카카오페이 */}
+            <button
+              onClick={handleKakaoPay}
+              disabled={!finalAmount}
+              className="bg-[#FEE500] rounded-xl py-3.5 flex flex-col items-center gap-1 active:scale-95 transition-transform disabled:opacity-40"
+            >
+              <span className="text-[#3C1E1E] text-base font-black">kakao</span>
+              <p className="text-xs font-bold text-[#3C1E1E99]">카카오페이</p>
+            </button>
+          </div>
+
+          {/* 안내 문구 */}
+          <div className="mt-3 space-y-1">
+            {isIOS && (
+              <p className="text-[10px] text-gray-400 text-center leading-relaxed">
+                Apple 결제는 프리셋 금액(500원~50,000원)만 가능하며, 수수료 일부가 Apple에 지급됩니다.
+              </p>
+            )}
+            <p className="text-[10px] text-gray-400 text-center leading-relaxed">
+              토스·카카오페이 버튼을 누르면 해당 앱이 열립니다. 선택한 금액을 확인 후 송금해주세요.
             </p>
           </div>
         </div>
@@ -452,34 +430,15 @@ export default function DonatePage() {
 
         {/* ── 감사 메시지 모달 ── */}
         {showThanks && (
-          <div
-            className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-6"
-            onClick={() => setShowThanks(false)}
-          >
-            <div
-              className="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-6" onClick={() => setShowThanks(false)}>
+            <div className="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <p className="text-5xl mb-3">🧡</p>
               <h2 className="text-lg font-black text-gray-800 mb-2">감사합니다!</h2>
               <p className="text-sm text-gray-500 leading-relaxed mb-4">
-                {thanksMsg || (
-                  <>
-                    후원해 주셔서 진심으로 감사드립니다.<br />
-                    입금 확인 후 1~3일 내에 혜택이 적용됩니다.<br />
-                    문의: <strong>hubmission@gmail.com</strong>
-                  </>
-                )}
+                {thanksMsg || (<>후원해 주셔서 진심으로 감사드립니다.<br />입금 확인 후 1~3일 내에 혜택이 적용됩니다.<br />문의: <strong>hubmission@gmail.com</strong></>)}
               </p>
-              <p className="text-xs text-gray-400 mb-4">
-                오백원의 행복은 여러분의 응원 덕분에 계속됩니다 🌿
-              </p>
-              <button
-                onClick={() => setShowThanks(false)}
-                className="w-full bg-orange-500 text-white py-3 rounded-2xl font-bold text-sm"
-              >
-                확인
-              </button>
+              <p className="text-xs text-gray-400 mb-4">오백원의 행복은 여러분의 응원 덕분에 계속됩니다 🌿</p>
+              <button onClick={() => setShowThanks(false)} className="w-full bg-orange-500 text-white py-3 rounded-2xl font-bold text-sm">확인</button>
             </div>
           </div>
         )}

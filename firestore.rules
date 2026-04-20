@@ -26,13 +26,13 @@ service cloud.firestore {
 
     // ════════════════════════════════════════════════════════════
     //  1. users — 사용자 프로필
-    //  읽기: 전체 공개 | 생성: 로그인 | 수정: 본인 또는 관리자 | 삭제: 관리자
+    //  읽기: 전체 공개 | 생성: 로그인 | 수정: 본인 또는 관리자 | 삭제: 본인 또는 관리자
     // ════════════════════════════════════════════════════════════
     match /users/{userId} {
       allow read: if true;
       allow create: if isAuth();
       allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
     // ════════════════════════════════════════════════════════════
@@ -146,14 +146,16 @@ service cloud.firestore {
 
     // ════════════════════════════════════════════════════════════
     //  9. reward_history — 리워드 사용 내역
-    //  읽기: 본인 또는 관리자 | 생성: 본인만 | 수정/삭제: 관리자
+    //  읽기: 본인 또는 관리자 | 생성: 본인만 | 수정: 본인 또는 관리자 | 삭제: 관리자
     // ════════════════════════════════════════════════════════════
     match /reward_history/{docId} {
       allow read: if isAuth() &&
         (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isAuth() &&
         request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAdmin();
+      allow update: if isAuth() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
     }
 
     // ════════════════════════════════════════════════════════════
@@ -227,6 +229,10 @@ service cloud.firestore {
     // ════════════════════════════════════════════════════════════
     match /shopClicks/{docId} {
       allow create: if true;
+      allow read: if isAuth() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isAuth() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     // ════════════════════════════════════════════════════════════
@@ -239,7 +245,36 @@ service cloud.firestore {
     }
 
     // ════════════════════════════════════════════════════════════
-    //  19. certificates — 봉사활동 증명서 발급 기록
+    //  19. stats — 커뮤니티 통계 (누적 사용자 수 등)
+    //  읽기: 전체 공개 | 쓰기: 로그인 (탈퇴 시 카운트 증가용)
+    // ════════════════════════════════════════════════════════════
+    match /stats/{docId} {
+      allow read: if true;
+      allow create, update: if isAuth();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  20. deletedAccounts — 탈퇴 계정 해시 (재가입 포인트 어뷰징 방지)
+    //  읽기/생성: 로그인 | 수정/삭제: 관리자
+    // ════════════════════════════════════════════════════════════
+    match /deletedAccounts/{hashId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update, delete: if isAdmin();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  21. donations — 후원 기록
+    //  읽기: 본인 또는 관리자 | 생성: 로그인
+    // ════════════════════════════════════════════════════════════
+    match /donations/{docId} {
+      allow read: if isAuth() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuth();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  22. certificates — 봉사활동 증명서 발급 기록
     //  읽기: 본인 또는 관리자 | 생성: 본인만 (userId 일치)
     //  수정/삭제: 관리자만 (발급 후 변경 불가)
     //  ※ 발급번호로 진위 확인 시 별도 공개 조회 함수 필요
