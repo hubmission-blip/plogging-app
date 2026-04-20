@@ -9,6 +9,7 @@ import {
 } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { getWelcomePoints } from "@/lib/accountUtils";
 
 export default function AppleCallbackPage() {
   const router = useRouter();
@@ -108,6 +109,7 @@ export default function AppleCallbackPage() {
           const userRef  = doc(db, "users", firebaseUser.uid);
           const userSnap = await getDoc(userRef);
           if (!userSnap.exists()) {
+            const welcomeP = await getWelcomePoints(appleUser.email || "", 100);
             await setDoc(userRef, {
               uid:           firebaseUser.uid,
               appleUid,
@@ -115,7 +117,7 @@ export default function AppleCallbackPage() {
               nickname:      displayName,
               displayName,
               provider:      "apple",
-              totalPoints:   100,
+              totalPoints:   welcomeP,
               totalDistance:  0,
               ploggingCount: 0,
               createdAt:     serverTimestamp(),

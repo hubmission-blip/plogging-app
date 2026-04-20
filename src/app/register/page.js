@@ -9,6 +9,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc, increment, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { getWelcomePoints } from "@/lib/accountUtils";
 import { Recycle } from "lucide-react";
 
 // 추천인 코드(8자리)로 추천인 UID 조회
@@ -99,7 +100,8 @@ export default function RegisterPage() {
       const myUid    = cred.user.uid;
       const myRef    = myUid.slice(0, 8).toUpperCase(); // 내 추천 코드
       const BONUS    = referrerUid ? 50 : 0;            // 추천 가입 보너스 +50P
-      const welcomeP = 100 + BONUS;
+      const baseP    = 100 + BONUS;
+      const welcomeP = await getWelcomePoints(form.email, baseP);
 
       // Firestore 유저 문서 생성
       await setDoc(doc(db, "users", myUid), {

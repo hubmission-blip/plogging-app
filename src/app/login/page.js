@@ -11,6 +11,7 @@ import {
 } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, getDoc, updateDoc, increment, collection, query, where, getDocs, serverTimestamp } from "firebase/firestore";
+import { getWelcomePoints } from "@/lib/accountUtils";
 
 // Capacitor 네이티브 환경 감지
 const isCapacitorNative = () => {
@@ -52,7 +53,8 @@ async function ensureGoogleUserDoc(user) {
   if (refCode) referrerUid = await resolveReferrer(refCode);
 
   const myRef = user.uid.slice(0, 8).toUpperCase();
-  const welcome = referrerUid ? 150 : 100;
+  const baseWelcome = referrerUid ? 150 : 100;
+  const welcome = await getWelcomePoints(user.email, baseWelcome);
 
   await setDoc(userRef, {
     uid: user.uid,
@@ -216,11 +218,12 @@ export default function LoginPage() {
         }
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(cred.user, { displayName: nickname });
+        const welcomeP = await getWelcomePoints(cred.user.email, 100);
         await setDoc(doc(db, "users", cred.user.uid), {
           uid: cred.user.uid,
           email: cred.user.email,
           displayName: nickname,
-          totalPoints: 100,
+          totalPoints: welcomeP,
           totalDistance: 0,
           ploggingCount: 0,
           provider: "email",

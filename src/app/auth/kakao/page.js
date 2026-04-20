@@ -9,6 +9,7 @@ import {
 } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { getWelcomePoints } from "@/lib/accountUtils";
 
 export default function KakaoCallbackPage() {
   const router = useRouter();
@@ -106,6 +107,7 @@ export default function KakaoCallbackPage() {
           const userRef  = doc(db, "users", firebaseUser.uid);
           const userSnap = await getDoc(userRef);
           if (!userSnap.exists()) {
+            const welcomeP = await getWelcomePoints(kakaoUser.email || "", 100);
             await setDoc(userRef, {
               uid:           firebaseUser.uid,
               kakaoUid,
@@ -113,7 +115,7 @@ export default function KakaoCallbackPage() {
               nickname:      displayName,
               displayName,
               provider:      "kakao",
-              totalPoints:   100,
+              totalPoints:   welcomeP,
               totalDistance: 0,
               ploggingCount: 0,
               createdAt:     serverTimestamp(),

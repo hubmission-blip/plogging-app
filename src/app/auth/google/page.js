@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signInWithCredential, GoogleAuthProvider } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, getDoc, updateDoc, increment, collection, query, where, getDocs, serverTimestamp } from "firebase/firestore";
+import { getWelcomePoints } from "@/lib/accountUtils";
 
 // 추천인 코드로 추천인 UID 조회
 async function resolveReferrer(refCode) {
@@ -78,8 +79,9 @@ export default function GoogleCallbackPage() {
             } catch {}
             if (refCode) referrerUid = await resolveReferrer(refCode);
 
-            const myRef   = user.uid.slice(0, 8).toUpperCase();
-            const welcome = referrerUid ? 150 : 100;
+            const myRef       = user.uid.slice(0, 8).toUpperCase();
+            const baseWelcome = referrerUid ? 150 : 100;
+            const welcome     = await getWelcomePoints(user.email, baseWelcome);
 
             await setDoc(userRef, {
               uid: user.uid,

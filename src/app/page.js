@@ -9,7 +9,7 @@ import CharacterGuide from "@/components/CharacterGuide";
 import NotificationBell from "@/components/NotificationBell";
 import versionData from "@/lib/version.json";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, getDocs, getCountFromServer } from "firebase/firestore";
+import { collection, query, where, orderBy, getDocs, getCountFromServer, doc, getDoc } from "firebase/firestore";
 
 // Capacitor 네이티브 환경 감지
 const isCapacitorNative = () => {
@@ -236,14 +236,17 @@ export default function HomePage() {
     fetchNotices();
   }, []);
 
-  // 커뮤니티 통계 (총 가입자 수 + 총 이동 거리)
+  // 커뮤니티 통계 (누적 사용자 수 + 누적 이동 거리)
+  // ※ 탈퇴자도 누적 사용자에 포함 (stats/community.deletedUsersCount 합산)
+  // ※ 탈퇴자의 경로 데이터도 보존되어 누적 이동거리 유지
   useEffect(() => {
     const fetchCommunityStats = async () => {
       let totalUsers = 0;
+      let deletedUsers = 0;
       let totalDistance = 0;
 
       try {
-        // 총 가입자 수
+        // 현재 가입자 수
         const usersSnap = await getCountFromServer(collection(db, "users"));
         totalUsers = usersSnap.data().count;
       } catch (e) {
@@ -251,7 +254,17 @@ export default function HomePage() {
       }
 
       try {
-        // 총 이동 거리 (전체 routes에서 클라이언트 필터링)
+        // 탈퇴한 사용자 수 (누적 카운트 보존용)
+        const statsSnap = await getDoc(doc(db, "stats", "community"));
+        if (statsSnap.exists()) {
+          deletedUsers = statsSnap.data().deletedUsersCount || 0;
+        }
+      } catch (e) {
+        console.warn("탈퇴자 수 로드 실패:", e.message);
+      }
+
+      try {
+        // 총 이동 거리 (탈퇴자 경로 포함 — userId가 "deleted"인 것도 합산)
         const routesSnap = await getDocs(collection(db, "routes"));
         routesSnap.forEach((d) => {
           const data = d.data();
@@ -264,7 +277,7 @@ export default function HomePage() {
       }
 
       setCommunityStats({
-        users: totalUsers,
+        users: totalUsers + deletedUsers,  // 누적 사용자 = 현재 가입자 + 탈퇴자
         distance: totalDistance,
       });
     };

@@ -1,15 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { CalendarDays, Leaf, Monitor, Cloud, Lightbulb, Medal, Star, Megaphone, Mail, UserRound, Coins, Landmark, Info, PenLine } from "lucide-react";
+import { CalendarDays, Leaf, Monitor, Cloud, Lightbulb, Medal, Star, Megaphone, Mail, UserRound, Coins, Landmark, Smartphone, Apple, Info, PenLine } from "lucide-react";
+import { isNativeIOS, initIAP, getIAPProducts, purchaseIAP, onIAPApproved, onIAPError, IAP_PRODUCTS } from "@/lib/iap";
+import { db } from "@/lib/firebase";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { useAuth } from "@/context/AuthContext";
 
 // ── 후원 계좌 정보 ─────────────────────────────────────────────
 const ACCOUNTS = [
   { bank: "우리은행", number: "1005-504-709367", holder: "(사)국제청년환경연합회", color: "bg-blue-600", icon: "🔵" },
 ];
 
-// ── 후원 금액 프리셋 ──────────────────────────────────────────
+// ── 후원 금액 프리셋 (계좌이체용) ─────────────────────────────
 const AMOUNTS = [
   { label: "500원",    value: 500 },
   { label: "5,000원",  value: 5000 },
@@ -35,18 +39,76 @@ const PROJECT_STATS = [
   { Icon: Cloud,        label: "서버 비용",    value: "월 약 5만원" },
 ];
 
+// ── 토스/카카오페이 링크 ──────────────────────────────────────
+const TOSS_LINK     = "https://toss.me/국제청년환경연합회";
+const KAKAOPAY_LINK = "https://qr.kakaopay.com/Ej8bSSejz";
+
 export default function DonatePage() {
+  const { user } = useAuth();
   const [selectedAmount, setSelectedAmount] = useState(null);
   const [customAmount,   setCustomAmount]   = useState("");
   const [copiedBank,     setCopiedBank]     = useState(null);
   const [showThanks,     setShowThanks]     = useState(false);
+  const [thanksMsg,      setThanksMsg]      = useState("");
+
+  // ── IAP 관련 상태 ──
+  const [isIOS,        setIsIOS]        = useState(false);
+  const [iapReady,     setIapReady]     = useState(false);
+  const [iapProducts,  setIapProducts]  = useState([]);
+  const [iapLoading,   setIapLoading]   = useState(false);
+
+  // ── IAP 초기화 (iOS 네이티브에서만) ──
+  useEffect(() => {
+    const native = isNativeIOS();
+    setIsIOS(native);
+
+    if (!native) return;
+
+    const setup = async () => {
+      try {
+        const ok = await initIAP();
+        if (ok) {
+          setIapReady(true);
+          setIapProducts(getIAPProducts());
+
+          // 구매 완료 콜백
+          onIAPApproved(async (transaction) => {
+            // Firestore에 후원 기록
+            try {
+              await addDoc(collection(db, "donations"), {
+                userId:    user?.uid || "anonymous",
+                method:    "apple_iap",
+                productId: transaction.products?.[0]?.id || "",
+                amount:    transaction.products?.[0]?.id?.replace("donate_", "") || "",
+                platform:  "ios",
+                status:    "completed",
+                transactionId: transaction.transactionId || "",
+                createdAt: serverTimestamp(),
+              });
+            } catch {}
+            setIapLoading(false);
+            setThanksMsg("Apple을 통한 후원이 완료되었습니다!");
+            setShowThanks(true);
+          });
+
+          // 에러 콜백
+          onIAPError(() => {
+            setIapLoading(false);
+          });
+        }
+      } catch (e) {
+        console.warn("[IAP] 초기화 실패:", e);
+      }
+    };
+    setup();
+  }, [user]);
 
   const finalAmount = selectedAmount?.value === 0
     ? parseInt(customAmount.replace(/,/g, ""), 10) || 0
     : selectedAmount?.value || 0;
 
+  // ── 계좌 복사 ──
   const handleCopy = async (account) => {
-    // 금액이 선택된 경우 계좌 + 금액 + 예금주 통합 복사
     const copyText = finalAmount > 0
       ? `${account.bank} ${account.number}\n예금주: ${account.holder}\n후원금액: ${finalAmount.toLocaleString()}원`
       : `${account.bank} ${account.number}\n예금주: ${account.holder}`;
@@ -59,6 +121,59 @@ export default function DonatePage() {
     }
   };
 
+  // ── Apple IAP 구매 ──
+  const handleIAPPurchase = async (productId) => {
+    if (iapLoading) return;
+    setIapLoading(true);
+    try {
+      await purchaseIAP(productId);
+      // 결과는 onIAPApproved 콜백에서 처리
+    } catch (e) {
+      console.error("[IAP] 구매 실패:", e);
+      alert("구매에 실패했습니다. 다시 시도해주세요.");
+      setIapLoading(false);
+    }
+  };
+
+  // ── 외부 링크 열기 (iOS 네이티브: Capacitor Browser, 웹: window.open) ──
+  const openExternal = async (url) => {
+    if (isIOS) {
+      try {
+        const { Browser } = await import("@capacitor/browser");
+        await Browser.open({ url });
+      } catch {
+        window.location.href = url;
+      }
+    } else {
+      window.open(url, "_blank");
+    }
+  };
+
+  // ── 토스/카카오페이 송금 ──
+  const handleToss = async () => {
+    try {
+      await addDoc(collection(db, "donations"), {
+        userId: user?.uid || "anonymous",
+        method: "toss", amount: finalAmount || 0,
+        platform: isIOS ? "ios" : "web", status: "pending",
+        createdAt: serverTimestamp(),
+      });
+    } catch {}
+    openExternal(TOSS_LINK);
+  };
+
+  const handleKakaoPay = async () => {
+    try {
+      await addDoc(collection(db, "donations"), {
+        userId: user?.uid || "anonymous",
+        method: "kakaopay", amount: finalAmount || 0,
+        platform: isIOS ? "ios" : "web", status: "pending",
+        createdAt: serverTimestamp(),
+      });
+    } catch {}
+    openExternal(KAKAOPAY_LINK);
+  };
+
   return (
     <div
       className="min-h-screen bg-gray-50"
@@ -66,7 +181,6 @@ export default function DonatePage() {
     >
       {/* ── 헤더 ── */}
       <div className="bg-gradient-to-b from-orange-400 to-orange-500 px-4 pt-12 pb-8 text-white relative overflow-hidden">
-        {/* 배경 장식 */}
         <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-10 translate-x-10" />
         <div className="absolute bottom-0 left-0 w-28 h-28 bg-white/5 rounded-full translate-y-8 -translate-x-8" />
 
@@ -152,7 +266,85 @@ export default function DonatePage() {
           </p>
         </div>
 
-        {/* ── 후원 금액 선택 ── */}
+        {/* ══════════════════════════════════════════════════════
+            Apple In-App Purchase 후원 (iOS 네이티브에서만 표시)
+            ══════════════════════════════════════════════════════ */}
+        {isIOS && (
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <p className="text-sm font-bold text-gray-700 mb-1 flex items-center gap-1.5">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-gray-700">
+                <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+              </svg>
+              Apple로 후원하기
+            </p>
+            <p className="text-xs text-gray-400 mb-3">App Store 결제로 안전하게 후원</p>
+
+            <div className="space-y-2">
+              {(iapReady ? iapProducts : IAP_PRODUCTS).map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => handleIAPPurchase(p.id)}
+                  disabled={iapLoading}
+                  className="w-full flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 active:bg-gray-100 transition-colors disabled:opacity-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                        <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                      </svg>
+                    </div>
+                    <span className="text-sm font-bold text-gray-700">
+                      {p.applePrice || p.label}
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-white bg-black px-3 py-1.5 rounded-lg">
+                    {iapLoading ? "처리 중..." : "후원"}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <p className="text-[10px] text-gray-400 mt-3 text-center leading-relaxed">
+              Apple의 인앱결제를 통해 진행되며, 결제 금액의 일부(수수료)가 Apple에 지급됩니다.
+            </p>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════
+            간편 후원 (토스 + 카카오페이) — 모든 플랫폼에서 표시
+            ══════════════════════════════════════════════════════ */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <p className="text-sm font-bold text-gray-700 mb-1 flex items-center gap-1.5">
+            <Smartphone className="w-4 h-4 text-gray-600" strokeWidth={2} /> 간편 후원
+          </p>
+          <p className="text-xs text-gray-400 mb-3">토스 또는 카카오페이로 간편하게 후원</p>
+
+          <div className="grid grid-cols-2 gap-2">
+            {/* 토스 */}
+            <button
+              onClick={handleToss}
+              className="bg-[#0064FF] rounded-xl py-3.5 flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
+            >
+              <span className="text-white text-lg font-black">toss</span>
+              <p className="text-xs font-bold text-blue-100">토스로 후원</p>
+            </button>
+
+            {/* 카카오페이 */}
+            <button
+              onClick={handleKakaoPay}
+              className="bg-[#FEE500] rounded-xl py-3.5 flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
+            >
+              <span className="text-[#3C1E1E] text-lg font-black">kakao</span>
+              <p className="text-xs font-bold text-[#3C1E1E99]">카카오페이로 후원</p>
+            </button>
+          </div>
+
+          <p className="text-[10px] text-gray-400 mt-3 text-center leading-relaxed">
+            버튼을 누르면 각 앱이 열리며, 원하시는 금액을 직접 입력하여 송금할 수 있습니다.
+          </p>
+        </div>
+
+        {/* ── 후원 금액 선택 (계좌이체용) ── */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <p className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5"><Coins className="w-4 h-4 text-gray-600" strokeWidth={2} /> 후원 금액 선택</p>
           <div className="grid grid-cols-3 gap-2 mb-3">
@@ -252,7 +444,7 @@ export default function DonatePage() {
 
         {/* ── 후원 완료 버튼 ── */}
         <button
-          onClick={() => setShowThanks(true)}
+          onClick={() => { setThanksMsg(""); setShowThanks(true); }}
           className="w-full bg-gradient-to-r from-orange-400 to-orange-500 text-white py-4 rounded-2xl font-black text-base shadow-sm active:scale-95 transition-transform"
         >
           🧡 입금했어요! (후원 완료 알림)
@@ -271,9 +463,13 @@ export default function DonatePage() {
               <p className="text-5xl mb-3">🧡</p>
               <h2 className="text-lg font-black text-gray-800 mb-2">감사합니다!</h2>
               <p className="text-sm text-gray-500 leading-relaxed mb-4">
-                후원해 주셔서 진심으로 감사드립니다.<br />
-                입금 확인 후 1~3일 내에 혜택이 적용됩니다.<br />
-                문의: <strong>hubmission@gmail.com</strong>
+                {thanksMsg || (
+                  <>
+                    후원해 주셔서 진심으로 감사드립니다.<br />
+                    입금 확인 후 1~3일 내에 혜택이 적용됩니다.<br />
+                    문의: <strong>hubmission@gmail.com</strong>
+                  </>
+                )}
               </p>
               <p className="text-xs text-gray-400 mb-4">
                 오백원의 행복은 여러분의 응원 덕분에 계속됩니다 🌿
