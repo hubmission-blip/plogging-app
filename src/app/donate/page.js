@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { CalendarDays, Leaf, Monitor, Cloud, Lightbulb, Medal, Star, Megaphone, Mail, UserRound, Coins, Landmark, Smartphone, Info, PenLine } from "lucide-react";
+import { CalendarDays, Leaf, Monitor, Cloud, Lightbulb, Medal, Gift, Megaphone, Mail, UserRound, Coins, Landmark, Smartphone, Info, PenLine } from "lucide-react";
 import { isNativeIOS, initIAP, getIAPProducts, purchaseIAP, onIAPApproved, onIAPError, IAP_PRODUCTS } from "@/lib/iap";
 import { db } from "@/lib/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
@@ -35,7 +35,7 @@ const AMOUNT_TO_IAP = {
 // ── 후원자 혜택 ────────────────────────────────────────────────
 const BENEFITS = [
   { Icon: Medal,     title: "후원자 배지",     desc: "프로필에 특별 배지가\n표시돼요" },
-  { Icon: Star,      title: "포인트 보너스",   desc: "월 300P 추가 적립\n(정기 후원자)" },
+  { Icon: Gift,      title: "감사 선물",       desc: "누적·정기 후원자에게\n특별 선물을 드려요" },
   { Icon: Megaphone, title: "개발 참여",       desc: "신기능 우선 체험 및\n의견 반영" },
   { Icon: Mail,      title: "감사 메시지",     desc: "후원자 명단에\n이름을 올려드려요" },
 ];
@@ -242,7 +242,7 @@ export default function DonatePage() {
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-gray-400 mt-3 text-center">※ 혜택 적용은 입금 확인 후 1~3일 내 처리됩니다</p>
+          <p className="text-[11px] text-gray-400 mt-3 text-center">※ 후원 확인 후 개별 연락드립니다 (hubmission@gmail.com)</p>
         </div>
 
         {/* ══════════════════════════════════════════════════════
