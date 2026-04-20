@@ -48,9 +48,8 @@ const PROJECT_STATS = [
   { Icon: Cloud,        label: "서버 비용",    value: "월 약 5만원" },
 ];
 
-// ── 토스/카카오페이 링크 ──────────────────────────────────────
-const TOSS_LINK     = "https://toss.me/국제청년환경연합회";
-const KAKAOPAY_LINK = "https://qr.kakaopay.com/Ej8bSSejz";
+// ── 카카오페이 링크 ──────────────────────────────────────────
+const KAKAOPAY_LINK = "https://qr.kakaopay.com/Ej75gssdD";
 
 export default function DonatePage() {
   const { user } = useAuth();
@@ -149,20 +148,6 @@ export default function DonatePage() {
       alert("구매에 실패했습니다. 다시 시도해주세요.");
       setIapLoading(false);
     }
-  };
-
-  // ── 토스 송금 ──
-  const handleToss = async () => {
-    if (!finalAmount) { alert("후원 금액을 먼저 선택해주세요."); return; }
-    try {
-      await addDoc(collection(db, "donations"), {
-        userId: user?.uid || "anonymous",
-        method: "toss", amount: finalAmount,
-        platform: isIOS ? "ios" : "web", status: "pending",
-        createdAt: serverTimestamp(),
-      });
-    } catch {}
-    openExternal(TOSS_LINK);
   };
 
   // ── 카카오페이 송금 ──
@@ -371,7 +356,7 @@ export default function DonatePage() {
             </div>
           )}
 
-          <div className={`grid gap-2 ${isIOS ? "grid-cols-3" : "grid-cols-2"}`}>
+          <div className={`grid gap-2 ${isIOS ? "grid-cols-2" : "grid-cols-1"}`}>
             {/* Apple (iOS에서만) */}
             {isIOS && (
               <button
@@ -385,16 +370,6 @@ export default function DonatePage() {
                 <p className="text-xs font-bold text-white">{iapLoading ? "처리 중..." : "Apple"}</p>
               </button>
             )}
-
-            {/* 토스 */}
-            <button
-              onClick={handleToss}
-              disabled={!finalAmount}
-              className="bg-[#0064FF] rounded-xl py-3.5 flex flex-col items-center gap-1 active:scale-95 transition-transform disabled:opacity-40"
-            >
-              <span className="text-white text-base font-black">toss</span>
-              <p className="text-xs font-bold text-blue-100">토스</p>
-            </button>
 
             {/* 카카오페이 */}
             <button
@@ -415,7 +390,7 @@ export default function DonatePage() {
               </p>
             )}
             <p className="text-[10px] text-gray-400 text-center leading-relaxed">
-              토스·카카오페이 버튼을 누르면 해당 앱이 열립니다. 선택한 금액을 확인 후 송금해주세요.
+              카카오페이 버튼을 누르면 카카오페이 앱이 열립니다. 선택한 금액을 확인 후 송금해주세요.
             </p>
           </div>
         </div>
