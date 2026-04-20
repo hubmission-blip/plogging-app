@@ -552,19 +552,19 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* ── 로그아웃 & 회원탈퇴 ── */}
-        <div className="flex gap-2">
-          <button onClick={handleLogout}
-            className="flex-1 bg-white text-gray-500 py-4 rounded-2xl shadow-sm font-medium text-sm flex items-center justify-center gap-1.5">
-            <LogOut className="w-4 h-4" strokeWidth={1.8} />
-            로그아웃
-          </button>
-          <button onClick={() => setDeleteStep(1)}
-            className="flex-1 bg-white text-gray-400 py-4 rounded-2xl shadow-sm font-medium text-sm flex items-center justify-center gap-1.5">
-            <UserX className="w-4 h-4" strokeWidth={1.8} />
-            회원탈퇴
-          </button>
-        </div>
+        {/* ── 로그아웃 ── */}
+        <button onClick={handleLogout}
+          className="w-full bg-white text-gray-500 py-4 rounded-2xl shadow-sm font-medium text-sm flex items-center justify-center gap-1.5">
+          <LogOut className="w-4 h-4" strokeWidth={1.8} />
+          로그아웃
+        </button>
+
+        {/* ── 회원탈퇴 ── */}
+        <button onClick={() => setDeleteStep(1)}
+          className="w-full bg-white text-gray-400 py-3 rounded-2xl shadow-sm font-medium text-xs flex items-center justify-center gap-1.5">
+          <UserX className="w-3.5 h-3.5" strokeWidth={1.8} />
+          회원탈퇴
+        </button>
       </div>
 
       {/* ── 회원탈퇴 확인 모달 ── */}
