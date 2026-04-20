@@ -1,7 +1,18 @@
 {
-  "version": "v1.83",
-  "build": 83,
+  "version": "v1.84",
+  "build": 84,
   "changelog": [
+    {
+      "version": "v1.84",
+      "build": 84,
+      "date": "2026-04-21",
+      "emoji": "🔧",
+      "title": "Apple & 카카오페이 간편후원 기능",
+      "items": [
+        "Apple 로그인 추가",
+        "회원 안전 탈퇴 기능 추가"
+      ]
+    },
     {
       "version": "v1.83",
       "build": 83,
