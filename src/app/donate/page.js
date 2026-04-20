@@ -153,6 +153,9 @@ export default function DonatePage() {
   // ── 카카오페이 송금 ──
   const handleKakaoPay = async () => {
     if (!finalAmount) { alert("후원 금액을 먼저 선택해주세요."); return; }
+    // 금액 안내 후 카카오페이 열기
+    const ok = confirm(`카카오페이로 이동합니다.\n\n송금 금액: ${finalAmount.toLocaleString()}원\n\n카카오페이에서 위 금액을 직접 입력해주세요.`);
+    if (!ok) return;
     try {
       await addDoc(collection(db, "donations"), {
         userId: user?.uid || "anonymous",
