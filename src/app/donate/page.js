@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { CalendarDays, Leaf, Monitor, Cloud, Lightbulb, Medal, Gift, Megaphone, Mail, UserRound, Coins, Landmark, Smartphone, Info, PenLine } from "lucide-react";
+import { CalendarDays, Leaf, Monitor, Cloud, Lightbulb, Heart, TreePine, Server, HandHeart, UserRound, Coins, Landmark, Smartphone, Info, PenLine } from "lucide-react";
 import { isNativeIOS, initIAP, getIAPProducts, purchaseIAP, onIAPApproved, onIAPError, IAP_PRODUCTS } from "@/lib/iap";
 import { db } from "@/lib/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
@@ -32,12 +32,12 @@ const AMOUNT_TO_IAP = {
   50000: "donate_50000",
 };
 
-// ── 후원자 혜택 ────────────────────────────────────────────────
+// ── 후원이 만드는 변화 ─────────────────────────────────────────
 const BENEFITS = [
-  { Icon: Medal,     title: "후원자 배지",     desc: "프로필에 특별 배지가\n표시돼요" },
-  { Icon: Gift,      title: "감사 선물",       desc: "누적·정기 후원자에게\n특별 선물을 드려요" },
-  { Icon: Megaphone, title: "개발 참여",       desc: "신기능 우선 체험 및\n의견 반영" },
-  { Icon: Mail,      title: "감사 메시지",     desc: "후원자 명단에\n이름을 올려드려요" },
+  { Icon: Server,    title: "서비스 유지",     desc: "앱 서버와 인프라를\n안정적으로 운영해요" },
+  { Icon: TreePine,  title: "환경 보호",       desc: "더 많은 사람들이\n플로깅에 참여할 수 있어요" },
+  { Icon: HandHeart, title: "환경 단체 기부",  desc: "수익의 일부를\n환경 단체에 기부해요" },
+  { Icon: Heart,     title: "따뜻한 마음",     desc: "여러분의 응원이\n큰 힘이 됩니다" },
 ];
 
 // ── 프로젝트 현황 ──────────────────────────────────────────────
@@ -210,10 +210,10 @@ export default function DonatePage() {
           <p className="text-sm font-bold text-orange-700 mb-2 flex items-center gap-1.5"><Lightbulb className="w-4 h-4" strokeWidth={2} /> 후원금은 이렇게 쓰여요</p>
           <div className="space-y-2">
             {[
-              { pct: 50, label: "서버·인프라 비용",  color: "bg-orange-500" },
+              { pct: 30, label: "환경 활동 지원",    color: "bg-green-500"  },
               { pct: 25, label: "앱 기능 개발",      color: "bg-amber-400" },
-              { pct: 15, label: "환경 단체 기부",    color: "bg-green-500"  },
-              { pct: 10, label: "운영·홍보",         color: "bg-blue-400"   },
+              { pct: 25, label: "서버·인프라 운영",  color: "bg-orange-500" },
+              { pct: 20, label: "운영·홍보",         color: "bg-blue-400"   },
             ].map((item) => (
               <div key={item.label}>
                 <div className="flex justify-between mb-1">
@@ -228,9 +228,9 @@ export default function DonatePage() {
           </div>
         </div>
 
-        {/* ── 후원자 혜택 ── */}
+        {/* ── 후원이 만드는 변화 ── */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5"><UserRound className="w-4 h-4 text-gray-600" strokeWidth={2} /> 후원자 혜택</p>
+          <p className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5"><UserRound className="w-4 h-4 text-gray-600" strokeWidth={2} /> 후원이 만드는 변화</p>
           <div className="grid grid-cols-2 gap-2">
             {BENEFITS.map((b) => (
               <div key={b.title} className="bg-gray-50 rounded-xl p-3 flex items-start gap-2.5">
@@ -242,7 +242,7 @@ export default function DonatePage() {
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-gray-400 mt-3 text-center">※ 후원 확인 후 개별 연락드립니다 (hubmission@gmail.com)</p>
+          <p className="text-[11px] text-gray-400 mt-3 text-center">※ 모든 후원금은 환경 보호 활동에 사용됩니다</p>
         </div>
 
         {/* ══════════════════════════════════════════════════════
@@ -333,14 +333,14 @@ export default function DonatePage() {
           <div className="mt-2 bg-yellow-50 rounded-xl px-3 py-2.5 flex items-start gap-2">
             <PenLine className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
             <p className="text-[11px] text-yellow-700 leading-relaxed">
-              입금 시 <strong>입금자명에 닉네임 또는 연락처</strong>를 남겨주시면 후원자 혜택 적용이 빨라져요.
-              혜택 문의: <strong>hubmission@gmail.com</strong>
+              입금 시 <strong>입금자명에 닉네임 또는 연락처</strong>를 남겨주시면 감사 인사를 전해드려요.
+              문의: <strong>hubmission@gmail.com</strong>
             </p>
           </div>
         </div>
 
         {/* ══════════════════════════════════════════════════════
-            ③ 간편 후원 (Apple · 토스 · 카카오페이)
+            ③ 간편 후원 (Apple · 카카오페이)
             ══════════════════════════════════════════════════════ */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <p className="text-sm font-bold text-gray-700 mb-1 flex items-center gap-1.5">
@@ -360,7 +360,7 @@ export default function DonatePage() {
           )}
 
           <div className={`grid gap-2 ${isIOS ? "grid-cols-2" : "grid-cols-1"}`}>
-            {/* Apple (iOS에서만) */}
+            {/* Apple IAP (iOS에서만) */}
             {isIOS && (
               <button
                 onClick={handleApplePay}
@@ -389,7 +389,7 @@ export default function DonatePage() {
           <div className="mt-3 space-y-1">
             {isIOS && (
               <p className="text-[10px] text-gray-400 text-center leading-relaxed">
-                Apple 결제는 프리셋 금액(500원~50,000원)만 가능하며, 수수료 일부가 Apple에 지급됩니다.
+                Apple 결제는 프리셋 금액(500원~50,000원)만 가능합니다.
               </p>
             )}
             <p className="text-[10px] text-gray-400 text-center leading-relaxed">
