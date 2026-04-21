@@ -16,7 +16,7 @@ import {
   increment, serverTimestamp, query,
   where, getDocs, deleteDoc, limit,
 } from "firebase/firestore";
-import { calculatePoints, TRASH_CATEGORIES, TUMBLER_BONUS, CUP_RETURN_PER_CUP, REUSABLE_CONTAINER_BONUS, EV_RENTAL_BONUS, SHARED_BIKE_BONUS } from "@/lib/pointCalc";
+import { calculatePoints, TRASH_CATEGORIES, TUMBLER_BONUS, CUP_RETURN_PER_CUP, REUSABLE_CONTAINER_BONUS, EV_RENTAL_BONUS, SHARED_BIKE_BONUS, E_RECEIPT_BONUS, FUTURE_GEN_BONUS, ZERO_WASTE_BONUS, ECO_BAG_BONUS, OWN_CONTAINER_BONUS, RECYCLED_PRODUCT_BONUS } from "@/lib/pointCalc";
 import { getWeekNumber, getExpiresAt, isExpired, getRouteColor } from "@/lib/routeUtils";
 
 // ─── 인증 조건 상수 ───────────────────────────────────────
@@ -1640,6 +1640,240 @@ function SharedBikeCertModal({ onConfirm, onClose }) {
   );
 }
 
+// ─── 범용 녹색생활 인증 모달 (사진+선택캡처) ──────────────
+const GENERIC_ECO_CONFIG = {
+  ereceipt: {
+    icon: "🧾", title: "전자영수증 발급 인증", color: "cyan",
+    guide: "종이 영수증 대신 전자영수증을 발급받으세요",
+    steps: [
+      "매장에서 결제 시 <span class='font-bold'>전자영수증 발급을 요청</span>",
+      "스마트폰에 수신된 <span class='font-bold'>전자영수증 화면을 캡처</span>",
+      "캡처한 화면을 <span class='font-bold'>업로드하면 인증 완료!</span>",
+    ],
+    tip: "편의점, 마트, 카페 등 <span class='font-bold'>전자영수증 발급이 가능한 매장</span>에서 이용하세요. 카카오톡, 네이버 전자영수증 모두 인정됩니다.",
+    photoLabel: "전자영수증 캡처", photoIcon: "🧾", points: E_RECEIPT_BONUS,
+    photoRequired: "전자영수증 캡처를 올려주세요", btnText: "🧾 전자영수증 인증 완료",
+    allowGallery: true, // 전자영수증은 캡처 이미지이므로 갤러리 허용
+  },
+  futuregen: {
+    icon: "🌱", title: "미래세대 실천행동 인증", color: "emerald",
+    guide: "환경 교육·캠페인·봉사활동에 참여하세요",
+    steps: [
+      "<span class='font-bold'>환경 관련 교육, 캠페인, 봉사활동</span>에 참여",
+      "참여 현장 또는 <span class='font-bold'>수료증·인증서를 촬영</span>",
+      "사진을 <span class='font-bold'>업로드하면 인증 완료!</span>",
+    ],
+    tip: "환경 교육, 기후행동 캠페인, 생태체험, 환경 봉사활동 등이 해당됩니다. <span class='font-bold'>참여 증빙 사진</span>을 찍어주세요.",
+    photoLabel: "참여 인증사진", photoIcon: "📸", points: FUTURE_GEN_BONUS,
+    photoRequired: "참여 인증사진을 올려주세요", btnText: "🌱 실천행동 인증 완료",
+    receiptLabel: "수료증/인증서", receiptIcon: "📄",
+    allowGallery: false,
+  },
+  zerowaste: {
+    icon: "🍽️", title: "잔반제로 실천 인증", color: "orange",
+    guide: "음식을 남기지 않고 깨끗이 비워주세요",
+    steps: [
+      "식사 후 <span class='font-bold'>음식을 남기지 않고 깨끗이 비우기</span>",
+      "깨끗이 비운 <span class='font-bold'>식판·그릇을 촬영</span>",
+      "사진을 <span class='font-bold'>업로드하면 인증 완료!</span>",
+    ],
+    tip: "구내식당, 식당, 가정식 등 <span class='font-bold'>어디서든 실천 가능</span>합니다. 깨끗이 비운 접시·식판을 찍어주세요.",
+    photoLabel: "빈 식판/그릇", photoIcon: "📸", points: ZERO_WASTE_BONUS,
+    photoRequired: "빈 식판/그릇 사진을 촬영해주세요", btnText: "🍽️ 잔반제로 인증 완료",
+    allowGallery: false,
+  },
+  ecobag: {
+    icon: "🛍️", title: "개인장바구니 이용 인증", color: "pink",
+    guide: "장보기 시 일회용 비닐 대신 개인장바구니를 사용하세요",
+    steps: [
+      "마트·시장에서 <span class='font-bold'>개인장바구니에 물건 담기</span>",
+      "장바구니에 물건이 담긴 <span class='font-bold'>모습을 촬영</span>",
+      "사진을 <span class='font-bold'>업로드하면 인증 완료!</span>",
+    ],
+    tip: "마트, 전통시장, 편의점 등에서 <span class='font-bold'>비닐봉투 대신 장바구니</span>를 사용해주세요.",
+    photoLabel: "장바구니 사진", photoIcon: "📸", points: ECO_BAG_BONUS,
+    photoRequired: "장바구니 사진을 촬영해주세요", btnText: "🛍️ 장바구니 인증 완료",
+    allowGallery: false,
+  },
+  owncontainer: {
+    icon: "🥡", title: "개인용기 식품포장 인증", color: "violet",
+    guide: "개인용기를 가져가 식품을 포장받으세요",
+    steps: [
+      "매장 방문 시 <span class='font-bold'>개인용기를 가져가세요</span>",
+      "개인용기에 <span class='font-bold'>식품을 담아 포장</span>받기",
+      "포장된 <span class='font-bold'>개인용기를 촬영하면 인증 완료!</span>",
+    ],
+    tip: "반찬가게, 식당 포장, 베이커리 등에서 <span class='font-bold'>일회용 용기 대신 개인용기</span>를 사용해주세요.",
+    photoLabel: "개인용기 사진", photoIcon: "📸", points: OWN_CONTAINER_BONUS,
+    photoRequired: "개인용기 사진을 촬영해주세요", btnText: "🥡 개인용기 인증 완료",
+    allowGallery: false,
+  },
+  recycledproduct: {
+    icon: "♻️", title: "재생원료 제품구매 인증", color: "green",
+    guide: "재생원료로 만든 친환경 제품을 구매하세요",
+    steps: [
+      "재생원료 인증마크가 있는 <span class='font-bold'>제품을 구매</span>",
+      "제품 또는 <span class='font-bold'>인증마크를 촬영</span>",
+      "구매내역 캡처와 <span class='font-bold'>함께 올리면 인증 완료!</span>",
+    ],
+    tip: "재생지, 재생플라스틱, 업사이클링 제품 등 <span class='font-bold'>GR마크·환경마크</span>가 있는 제품이 해당됩니다.",
+    photoLabel: "제품/인증마크", photoIcon: "📸", points: RECYCLED_PRODUCT_BONUS,
+    photoRequired: "제품 또는 인증마크 사진을 올려주세요", btnText: "♻️ 재생제품 인증 완료",
+    receiptLabel: "구매내역", receiptIcon: "🧾",
+    allowGallery: false,
+  },
+};
+
+const COLOR_MAP = {
+  cyan:    { bg: "bg-cyan-50", border: "border-cyan-200", text: "text-cyan-700", text2: "text-cyan-500", stepNum: "text-cyan-400", grad: "from-cyan-500 to-blue-500", btn: "bg-cyan-500 text-white border-cyan-500" },
+  emerald: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", text2: "text-emerald-500", stepNum: "text-emerald-400", grad: "from-emerald-500 to-green-500", btn: "bg-emerald-500 text-white border-emerald-500" },
+  orange:  { bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-700", text2: "text-orange-500", stepNum: "text-orange-400", grad: "from-orange-500 to-red-500", btn: "bg-orange-500 text-white border-orange-500" },
+  pink:    { bg: "bg-pink-50", border: "border-pink-200", text: "text-pink-700", text2: "text-pink-500", stepNum: "text-pink-400", grad: "from-pink-500 to-rose-500", btn: "bg-pink-500 text-white border-pink-500" },
+  violet:  { bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-700", text2: "text-violet-500", stepNum: "text-violet-400", grad: "from-violet-500 to-purple-500", btn: "bg-violet-500 text-white border-violet-500" },
+  green:   { bg: "bg-green-50", border: "border-green-200", text: "text-green-700", text2: "text-green-500", stepNum: "text-green-400", grad: "from-green-500 to-teal-500", btn: "bg-green-500 text-white border-green-500" },
+};
+
+function GenericEcoCertModal({ ecoType, onConfirm, onClose }) {
+  const cfg = GENERIC_ECO_CONFIG[ecoType];
+  const clr = COLOR_MAP[cfg.color];
+  const [step, setStep]       = useState("guide");
+  const [photo, setPhoto]     = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [receipt, setReceipt] = useState(null);
+  const [receiptPrev, setReceiptPrev] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const photoRef   = useRef(null);
+  const receiptRef = useRef(null);
+
+  const handlePhoto = (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    if (cfg.allowGallery) {
+      if ((Date.now() - f.lastModified) / 60000 > 120) { e.target.value = ""; alert("2시간 이내의 캡처만 인증이 가능합니다."); return; }
+    } else {
+      if ((Date.now() - f.lastModified) / 60000 > 10) { e.target.value = ""; alert("방금 찍은 사진만 인증이 가능합니다."); return; }
+    }
+    setPhoto(f); setPreview(URL.createObjectURL(f));
+  };
+  const handleReceipt = (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    if ((Date.now() - f.lastModified) / 60000 > 120) { e.target.value = ""; alert("2시간 이내의 이미지만 인증이 가능합니다."); return; }
+    setReceipt(f); setReceiptPrev(URL.createObjectURL(f));
+  };
+  const handleSubmit = async () => {
+    if (!photo) { alert(cfg.photoRequired); return; }
+    setUploading(true);
+    try {
+      const photoUrl = await uploadToCloudinary(photo);
+      let receiptUrl = null;
+      if (receipt) receiptUrl = await uploadToCloudinary(receipt);
+      onConfirm({ photoUrl, receiptUrl, certifiedAt: new Date().toISOString() });
+    } catch (e) { alert("사진 업로드 실패: " + e.message); }
+    finally { setUploading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[210]">
+      <div className="bg-white rounded-t-3xl w-full shadow-2xl overflow-hidden" style={{ maxHeight: "85vh" }}>
+        <div className="pt-3 pb-1 flex justify-center"><div className="w-10 h-1 bg-gray-200 rounded-full" /></div>
+        <div className="px-5 pt-2 pb-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 2rem)", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 16px))" }}>
+
+          {step === "guide" && (
+            <>
+              <div className="text-center mb-4">
+                <div className="text-4xl mb-2">{cfg.icon}</div>
+                <h2 className="text-lg font-black text-gray-800">{cfg.title}</h2>
+                <p className="text-gray-500 text-sm mt-1">{cfg.guide}</p>
+              </div>
+              <div className="space-y-2.5 mb-4">
+                <div className={`${clr.bg} border ${clr.border} rounded-2xl p-3.5`}>
+                  <h3 className={`text-sm font-black ${clr.text} mb-2`}>인증 방법</h3>
+                  <div className="space-y-1.5 text-xs leading-relaxed" style={{ color: "inherit" }}>
+                    {cfg.steps.map((s, i) => (
+                      <div key={i} className={`flex items-start gap-1.5 ${clr.text}`}>
+                        <span className={`font-black ${clr.stepNum} mt-px`}>{i + 1}</span>
+                        <span dangerouslySetInnerHTML={{ __html: s }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl mt-0.5">💡</span>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-black text-gray-700 mb-1">알아두세요</h3>
+                      <p className="text-xs text-gray-500 leading-relaxed" dangerouslySetInnerHTML={{ __html: cfg.tip }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className={`${clr.bg} border ${clr.border} rounded-2xl p-3 mb-4 text-center`}>
+                <span className={`text-xs font-bold ${clr.text}`}>
+                  {cfg.icon} 인증 시 <span className={clr.text2}>+{cfg.points} 포인트</span> 적립!
+                </span>
+                <p className={`text-[10px] ${clr.text2} mt-1`}>탄소중립포인트 녹색생활 실천 연계 항목</p>
+              </div>
+              <div className="space-y-2">
+                <button onClick={() => setStep("cert")} className={`w-full py-4 rounded-2xl font-black text-base bg-gradient-to-r ${clr.grad} text-white shadow-md active:scale-95 transition-all`}>인증 시작하기</button>
+                <button onClick={onClose} className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">취소</button>
+              </div>
+            </>
+          )}
+
+          {step === "cert" && (
+            <>
+              <div className="text-center mb-4">
+                <h2 className="text-lg font-black text-gray-800">{cfg.title.replace(" 인증", "")} 인증하기</h2>
+                <p className="text-gray-400 text-xs mt-1">{cfg.photoLabel}을 올려주세요</p>
+              </div>
+              <div className={`${cfg.receiptLabel ? "grid grid-cols-2 gap-2" : ""} mb-3`}>
+                <div>
+                  <label className={`text-xs font-bold ${clr.text} mb-1 block`}>{cfg.photoLabel} <span className="text-red-400">*</span></label>
+                  {preview ? (
+                    <div className="relative">
+                      <img src={preview} alt="인증" className="w-full h-32 object-cover rounded-xl" />
+                      <button onClick={() => { setPhoto(null); setPreview(null); }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => photoRef.current?.click()} className={`w-full h-32 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-1 ${clr.border} ${clr.bg}`}>
+                      <span className="text-2xl">{cfg.photoIcon}</span>
+                      <span className={`text-[10px] font-bold ${clr.text}`}>{cfg.photoLabel}</span>
+                    </button>
+                  )}
+                  <input ref={photoRef} type="file" accept="image/*" {...(cfg.allowGallery ? {} : { capture: "environment" })} onChange={handlePhoto} className="hidden" />
+                </div>
+                {cfg.receiptLabel && (
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1 block">{cfg.receiptLabel} <span className="text-gray-300">(선택)</span></label>
+                    {receiptPrev ? (
+                      <div className="relative">
+                        <img src={receiptPrev} alt="증빙" className="w-full h-32 object-cover rounded-xl" />
+                        <button onClick={() => { setReceipt(null); setReceiptPrev(null); }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => receiptRef.current?.click()} className="w-full h-32 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 bg-gray-50/30">
+                        <span className="text-2xl">{cfg.receiptIcon}</span>
+                        <span className="text-[10px] text-gray-500 font-bold">{cfg.receiptLabel}</span>
+                      </button>
+                    )}
+                    <input ref={receiptRef} type="file" accept="image/*" onChange={handleReceipt} className="hidden" />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <button onClick={handleSubmit} disabled={uploading || !photo}
+                  className={`w-full py-4 rounded-2xl font-black text-base transition-all ${uploading ? "bg-gray-100 text-gray-400" : photo ? `bg-gradient-to-r ${clr.grad} text-white shadow-md active:scale-95` : "bg-gray-100 text-gray-300 cursor-not-allowed"}`}>
+                  {uploading ? "인증 중... ⏳" : cfg.btnText}
+                </button>
+                <button onClick={() => setStep("guide")} className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">이전으로</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── B. 제휴 상점 상세 팝업 ──────────────────────────────
 const ECO_CAT_STYLE = {
   eco_store:   { label: "🌿 친환경매장",   bg: "bg-green-100",  text: "text-green-700",  headerBg: "from-green-400 to-emerald-500" },
@@ -1792,15 +2026,24 @@ function MapPageInner() {
   // ── 공유자전거 이용 인증 ──────────────────────────────────
   const [showSharedBikeModal, setShowSharedBikeModal] = useState(false);
 
+  // ── 범용 녹색생활 인증 (전자영수증, 미래세대, 잔반제로, 장바구니, 개인용기, 재생제품)
+  const [genericEcoType, setGenericEcoType] = useState(null);
+
   // 녹색생활 페이지에서 진입 시 자동 오픈
   useEffect(() => {
     if (!user || loading) return;
     const modals = {
-      tumbler:   () => setShowTumblerModal(true),
-      cupreturn: () => setShowCupReturnModal(true),
-      container: () => setShowContainerModal(true),
-      evrental:  () => setShowEvRentalModal(true),
-      sharedbike:() => setShowSharedBikeModal(true),
+      tumbler:    () => setShowTumblerModal(true),
+      cupreturn:  () => setShowCupReturnModal(true),
+      container:  () => setShowContainerModal(true),
+      evrental:   () => setShowEvRentalModal(true),
+      sharedbike: () => setShowSharedBikeModal(true),
+      ereceipt:   () => setGenericEcoType("ereceipt"),
+      futuregen:  () => setGenericEcoType("futuregen"),
+      zerowaste:  () => setGenericEcoType("zerowaste"),
+      ecobag:     () => setGenericEcoType("ecobag"),
+      owncontainer:    () => setGenericEcoType("owncontainer"),
+      recycledproduct: () => setGenericEcoType("recycledproduct"),
     };
     if (ecoAction && modals[ecoAction]) modals[ecoAction]();
   }, [ecoAction, user, loading]);
@@ -2386,6 +2629,38 @@ function MapPageInner() {
     } catch (e) { alert("저장 실패: " + e.message); }
   };
 
+  // ─── 범용 녹색생활 인증 처리 ──────────────────────────
+  const GENERIC_TYPE_MAP = {
+    ereceipt: { dbType: "e_receipt", bonus: E_RECEIPT_BONUS, icon: "🧾", name: "전자영수증" },
+    futuregen: { dbType: "future_gen", bonus: FUTURE_GEN_BONUS, icon: "🌱", name: "미래세대 실천행동" },
+    zerowaste: { dbType: "zero_waste", bonus: ZERO_WASTE_BONUS, icon: "🍽️", name: "잔반제로" },
+    ecobag: { dbType: "eco_bag", bonus: ECO_BAG_BONUS, icon: "🛍️", name: "개인장바구니" },
+    owncontainer: { dbType: "own_container", bonus: OWN_CONTAINER_BONUS, icon: "🥡", name: "개인용기 식품포장" },
+    recycledproduct: { dbType: "recycled_product", bonus: RECYCLED_PRODUCT_BONUS, icon: "♻️", name: "재생원료 제품구매" },
+  };
+
+  const handleGenericEcoConfirm = async (certData) => {
+    const info = GENERIC_TYPE_MAP[genericEcoType];
+    if (!info) return;
+    try {
+      await addDoc(collection(db, "ecoActions"), {
+        userId: user?.uid || "anonymous",
+        type: info.dbType,
+        photoUrl: certData.photoUrl,
+        receiptUrl: certData.receiptUrl || null,
+        points: info.bonus,
+        certifiedAt: certData.certifiedAt,
+        createdAt: serverTimestamp(),
+      });
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, { totalPoints: increment(info.bonus) }).catch(() => {});
+      }
+      setGenericEcoType(null);
+      alert(`${info.icon} ${info.name} 인증 완료!\n+${info.bonus} 포인트가 적립되었습니다.`);
+    } catch (e) { alert("저장 실패: " + e.message); }
+  };
+
   const handleRetryPlogging = () => {
     setShowValidationFail(false);
     startTracking(false); // false = 거리·시간·줍기 횟수 유지하고 재개
@@ -2703,7 +2978,7 @@ function MapPageInner() {
         />
       )}
 
-      {/* ── 다회용기 배달 이용 인증 모달 ────────────��────── */}
+      {/* ── 다회용기 배달 이용 인증 모달 ─────────────────── */}
       {showContainerModal && (
         <ReusableContainerCertModal
           onConfirm={handleContainerConfirm}
@@ -2719,7 +2994,7 @@ function MapPageInner() {
         />
       )}
 
-      {/* ── 공유자전거 이용 인�� 모달 ───────────────────── */}
+      {/* ── 공유자전거 이용 인증 모달 ───────────────────── */}
       {showSharedBikeModal && (
         <SharedBikeCertModal
           onConfirm={handleSharedBikeConfirm}
@@ -2727,7 +3002,16 @@ function MapPageInner() {
         />
       )}
 
-      {/* ── B. 제휴 상점 ��업 (플로깅 중에도 표시) ──────── */}
+      {/* ── 범용 녹색생활 인증 모달 ─────────────────────── */}
+      {genericEcoType && GENERIC_ECO_CONFIG[genericEcoType] && (
+        <GenericEcoCertModal
+          ecoType={genericEcoType}
+          onConfirm={handleGenericEcoConfirm}
+          onClose={() => setGenericEcoType(null)}
+        />
+      )}
+
+      {/* ── B. 제휴 상점 팝업 (플로깅 중에도 표시) ──────── */}
       {selectedPartner && (
         <PartnerDetailSheet
           partner={selectedPartner}

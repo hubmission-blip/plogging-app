@@ -69,13 +69,84 @@ const ECO_ACTIONS = [
     textColor: "text-lime-700",
     href: "/map?eco=sharedbike",
   },
+  {
+    id: "ereceipt",
+    icon: "🧾",
+    title: "전자영수증 발급",
+    desc: "종이 영수증 대신 전자영수증을 받고 인증하세요",
+    points: "+20P",
+    color: "from-cyan-400 to-blue-400",
+    bg: "bg-cyan-50",
+    border: "border-cyan-200",
+    textColor: "text-cyan-700",
+    href: "/map?eco=ereceipt",
+  },
+  {
+    id: "futuregen",
+    icon: "🌱",
+    title: "미래세대 실천행동",
+    desc: "환경 교육·캠페인 참여를 인증하세요",
+    points: "+30P",
+    color: "from-emerald-400 to-green-400",
+    bg: "bg-emerald-50",
+    border: "border-emerald-200",
+    textColor: "text-emerald-700",
+    href: "/map?eco=futuregen",
+  },
+  {
+    id: "zerowaste",
+    icon: "🍽️",
+    title: "잔반제로 실천",
+    desc: "음식을 남기지 않고 깨끗이 비운 후 인증하세요",
+    points: "+20P",
+    color: "from-orange-400 to-red-400",
+    bg: "bg-orange-50",
+    border: "border-orange-200",
+    textColor: "text-orange-700",
+    href: "/map?eco=zerowaste",
+  },
+  {
+    id: "ecobag",
+    icon: "🛍️",
+    title: "개인장바구니 이용",
+    desc: "장보기 시 개인장바구니를 사용하고 인증하세요",
+    points: "+20P",
+    color: "from-pink-400 to-rose-400",
+    bg: "bg-pink-50",
+    border: "border-pink-200",
+    textColor: "text-pink-700",
+    href: "/map?eco=ecobag",
+  },
+  {
+    id: "owncontainer",
+    icon: "🥡",
+    title: "개인용기 식품포장",
+    desc: "개인용기로 식품을 포장받고 인증하세요",
+    points: "+20P",
+    color: "from-violet-400 to-purple-400",
+    bg: "bg-violet-50",
+    border: "border-violet-200",
+    textColor: "text-violet-700",
+    href: "/map?eco=owncontainer",
+  },
+  {
+    id: "recycledproduct",
+    icon: "♻️",
+    title: "재생원료 제품구매",
+    desc: "재생원료로 만든 제품을 구매하고 인증하세요",
+    points: "+30P",
+    color: "from-green-400 to-teal-400",
+    bg: "bg-green-50",
+    border: "border-green-200",
+    textColor: "text-green-700",
+    href: "/map?eco=recycledproduct",
+  },
 ];
 
 // 앞으로 추가될 녹색생활 실천 항목 (비활성)
 const COMING_SOON = [
   { icon: "🚿", title: "샤워 절약", desc: "5분 이내 샤워 실천" },
   { icon: "🌡️", title: "적정 냉난방", desc: "실내 적정온도 유지" },
-  { icon: "🛍️", title: "장바구니 사용", desc: "일회용 비닐 대신 장바구니" },
 ];
 
 export default function EcoLifePage() {
@@ -188,16 +259,11 @@ export default function EcoLifePage() {
                 <div key={action.id}
                   className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? "border-t border-gray-50" : ""}`}>
                   <span className="text-xl">
-                    {action.type === "tumbler" ? "☕" : action.type === "cup_return" ? "♻️" : action.type === "reusable_container" ? "🍱" : action.type === "ev_rental" ? "🚗" : action.type === "shared_bike" ? "🚲" : "🌿"}
+                    {{ tumbler:"☕", cup_return:"♻️", reusable_container:"🍱", ev_rental:"🚗", shared_bike:"🚲", e_receipt:"🧾", future_gen:"🌱", zero_waste:"🍽️", eco_bag:"🛍️", own_container:"🥡", recycled_product:"♻️" }[action.type] || "🌿"}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-700">
-                      {action.type === "tumbler" ? "텀블러 사용" :
-                       action.type === "cup_return" ? `일회용컵 반환 (${action.cupCount || 1}개)` :
-                       action.type === "reusable_container" ? "다회용기 배달" :
-                       action.type === "ev_rental" ? "무공해차 대여" :
-                       action.type === "shared_bike" ? "공유자전거 이용" :
-                       "녹색생활 실천"}
+                      {{ tumbler:"텀블러 사용", reusable_container:"다회용기 배달", ev_rental:"무공해차 대여", shared_bike:"공유자전거 이용", e_receipt:"전자영수증 발급", future_gen:"미래세대 실천행동", zero_waste:"잔반제로 실천", eco_bag:"개인장바구니 이용", own_container:"개인용기 식품포장", recycled_product:"재생원료 제품구매" }[action.type] || (action.type === "cup_return" ? `일회용컵 반환 (${action.cupCount || 1}개)` : "녹색생활 실천")}
                     </p>
                     <p className="text-[11px] text-gray-400">
                       {action.certifiedAt ? new Date(action.certifiedAt).toLocaleDateString("ko-KR") : ""}

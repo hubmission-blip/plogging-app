@@ -30,6 +30,12 @@ export const CUP_RETURN_PER_CUP = 10; // 일회용컵 반환 보너스 (컵당)
 export const REUSABLE_CONTAINER_BONUS = 30; // 다회용기 배달 이용 보너스
 export const EV_RENTAL_BONUS = 50; // 무공해차 대여 보너스
 export const SHARED_BIKE_BONUS = 30; // 공유자전거 이용 보너스
+export const E_RECEIPT_BONUS = 20; // 전자영수증 발급 보너스
+export const FUTURE_GEN_BONUS = 30; // 미래세대 실천행동 보너스
+export const ZERO_WASTE_BONUS = 20; // 잔반제로 실천 보너스
+export const ECO_BAG_BONUS = 20; // 개인장바구니 이용 보너스
+export const OWN_CONTAINER_BONUS = 20; // 개인용기 식품포장 보너스
+export const RECYCLED_PRODUCT_BONUS = 30; // 재생원료 제품구매 보너스
 
 export function calculatePoints({ distanceKm, groupSize = 1, ecomileageLinked = false, trashCategories = [], tumblerUsed = false }) {
   let points = 0;
