@@ -16,7 +16,7 @@ import {
   increment, serverTimestamp, query,
   where, getDocs, deleteDoc, limit,
 } from "firebase/firestore";
-import { calculatePoints, TRASH_CATEGORIES, TUMBLER_BONUS, CUP_RETURN_PER_CUP, REUSABLE_CONTAINER_BONUS } from "@/lib/pointCalc";
+import { calculatePoints, TRASH_CATEGORIES, TUMBLER_BONUS, CUP_RETURN_PER_CUP, REUSABLE_CONTAINER_BONUS, EV_RENTAL_BONUS, SHARED_BIKE_BONUS } from "@/lib/pointCalc";
 import { getWeekNumber, getExpiresAt, isExpired, getRouteColor } from "@/lib/routeUtils";
 
 // ─── 인증 조건 상수 ───────────────────────────────────────
@@ -1328,6 +1328,318 @@ function ReusableContainerCertModal({ onConfirm, onClose }) {
   );
 }
 
+// ─── 무공해차 대여 인증 모달 ────────────────────────────
+function EvRentalCertModal({ onConfirm, onClose }) {
+  const [step, setStep]       = useState("guide");
+  const [photo, setPhoto]     = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [receipt, setReceipt] = useState(null);
+  const [receiptPreview, setReceiptPreview] = useState(null);
+  const [service, setService] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const photoRef   = useRef(null);
+  const receiptRef = useRef(null);
+
+  const handlePhoto = (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    if ((Date.now() - f.lastModified) / 60000 > 10) { e.target.value = ""; alert("방금 찍은 사진만 인증이 가능합니다."); return; }
+    setPhoto(f); setPreview(URL.createObjectURL(f));
+  };
+  const handleReceipt = (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    if ((Date.now() - f.lastModified) / 60000 > 120) { e.target.value = ""; alert("2시간 이내의 이용내역만 인증이 가능합니다."); return; }
+    setReceipt(f); setReceiptPreview(URL.createObjectURL(f));
+  };
+  const handleSubmit = async () => {
+    if (!photo) { alert("차량 사진을 촬영해주세요"); return; }
+    setUploading(true);
+    try {
+      const photoUrl = await uploadToCloudinary(photo);
+      let receiptUrl = null;
+      if (receipt) receiptUrl = await uploadToCloudinary(receipt);
+      onConfirm({ photoUrl, receiptUrl, service, certifiedAt: new Date().toISOString() });
+    } catch (e) { alert("사진 업로드 실패: " + e.message); }
+    finally { setUploading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[210]">
+      <div className="bg-white rounded-t-3xl w-full shadow-2xl overflow-hidden" style={{ maxHeight: "85vh" }}>
+        <div className="pt-3 pb-1 flex justify-center"><div className="w-10 h-1 bg-gray-200 rounded-full" /></div>
+        <div className="px-5 pt-2 pb-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 2rem)", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 16px))" }}>
+
+          {step === "guide" && (
+            <>
+              <div className="text-center mb-4">
+                <div className="text-4xl mb-2">🚗</div>
+                <h2 className="text-lg font-black text-gray-800">무공해차 대여 인증</h2>
+                <p className="text-gray-500 text-sm mt-1">전기차·수소차를 대여하고 인증해주세요!</p>
+              </div>
+              <div className="space-y-2.5 mb-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl mt-0.5">⚡</span>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-black text-blue-800 mb-1.5">이용 방법</h3>
+                      <div className="space-y-1.5 text-xs text-blue-700 leading-relaxed">
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-blue-400 mt-px">1</span>
+                          <span>카셰어링 앱에서 <span className="font-bold">전기차·수소차를 대여</span></span>
+                        </div>
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-blue-400 mt-px">2</span>
+                          <span>대여한 <span className="font-bold">차량을 촬영</span>해주세요</span>
+                        </div>
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-blue-400 mt-px">3</span>
+                          <span>대여앱 이용내역 캡처를 <span className="font-bold">함께 올리면 인증 완료!</span></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl mt-0.5">💡</span>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-black text-gray-700 mb-1">대상 차량</h3>
+                      <p className="text-xs text-gray-500 leading-relaxed">
+                        <span className="font-bold">전기차, 수소차</span> 등 무공해 차량이 대상입니다.
+                        쏘카, 그린카, 피플카 등 카셰어링 서비스의 <span className="font-bold">전기차 대여</span>가 해당돼요.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3 mb-4 text-center">
+                <span className="text-xs font-bold text-blue-700">🚗 무공해차 대여 시 <span className="text-blue-500">+50 포인트</span> 적립!</span>
+                <p className="text-[10px] text-blue-500 mt-1">탄소중립포인트 녹색생활 실천 연계 항목</p>
+              </div>
+              <div className="space-y-2">
+                <button onClick={() => setStep("cert")} className="w-full py-4 rounded-2xl font-black text-base bg-gradient-to-r from-blue-500 to-sky-500 text-white shadow-md active:scale-95 transition-all">인증 시작하기</button>
+                <button onClick={onClose} className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">취소</button>
+              </div>
+            </>
+          )}
+
+          {step === "cert" && (
+            <>
+              <div className="text-center mb-4">
+                <h2 className="text-lg font-black text-gray-800">무공해차 인증하기</h2>
+                <p className="text-gray-400 text-xs mt-1">차량 사진(필수)과 이용내역(선택)을 올려주세요</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                  <label className="text-xs font-bold text-blue-700 mb-1 block">차량 사진 <span className="text-red-400">*</span></label>
+                  {preview ? (
+                    <div className="relative">
+                      <img src={preview} alt="차량" className="w-full h-32 object-cover rounded-xl" />
+                      <button onClick={() => { setPhoto(null); setPreview(null); }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => photoRef.current?.click()} className="w-full h-32 border-2 border-dashed border-blue-300 rounded-xl flex flex-col items-center justify-center gap-1 active:bg-blue-50 bg-blue-50/30">
+                      <span className="text-2xl">📸</span><span className="text-[10px] text-blue-600 font-bold">차량 촬영</span>
+                    </button>
+                  )}
+                  <input ref={photoRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 mb-1 block">이용내역 <span className="text-gray-300">(선택)</span></label>
+                  {receiptPreview ? (
+                    <div className="relative">
+                      <img src={receiptPreview} alt="이용내역" className="w-full h-32 object-cover rounded-xl" />
+                      <button onClick={() => { setReceipt(null); setReceiptPreview(null); }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => receiptRef.current?.click()} className="w-full h-32 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 active:bg-gray-50 bg-gray-50/30">
+                      <span className="text-2xl">🧾</span><span className="text-[10px] text-gray-500 font-bold">이용내역 캡처</span>
+                    </button>
+                  )}
+                  <input ref={receiptRef} type="file" accept="image/*" onChange={handleReceipt} className="hidden" />
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="text-xs font-bold text-gray-600 mb-1.5 block">대여 서비스</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {["쏘카", "그린카", "피플카", "카카오T", "기타"].map(s => (
+                    <button key={s} onClick={() => setService(s)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${service === s ? "bg-blue-500 text-white border-blue-500" : "bg-white text-gray-500 border-gray-200 active:bg-gray-50"}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <button onClick={handleSubmit} disabled={uploading || !photo}
+                  className={`w-full py-4 rounded-2xl font-black text-base transition-all ${uploading ? "bg-gray-100 text-gray-400" : photo ? "bg-gradient-to-r from-blue-500 to-sky-500 text-white shadow-md active:scale-95" : "bg-gray-100 text-gray-300 cursor-not-allowed"}`}>
+                  {uploading ? "인증 중... ⏳" : "🚗 무공해차 인증 완료"}
+                </button>
+                <button onClick={() => setStep("guide")} className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">이전으로</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── 공유자전거 이용 인증 모달 ──────────────────────────
+function SharedBikeCertModal({ onConfirm, onClose }) {
+  const [step, setStep]       = useState("guide");
+  const [photo, setPhoto]     = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [receipt, setReceipt] = useState(null);
+  const [receiptPreview, setReceiptPreview] = useState(null);
+  const [service, setService] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const photoRef   = useRef(null);
+  const receiptRef = useRef(null);
+
+  const handlePhoto = (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    if ((Date.now() - f.lastModified) / 60000 > 10) { e.target.value = ""; alert("방금 찍은 사진만 인증이 가능합니다."); return; }
+    setPhoto(f); setPreview(URL.createObjectURL(f));
+  };
+  const handleReceipt = (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    if ((Date.now() - f.lastModified) / 60000 > 120) { e.target.value = ""; alert("2시간 이내의 이용내역만 인증이 가능합니다."); return; }
+    setReceipt(f); setReceiptPreview(URL.createObjectURL(f));
+  };
+  const handleSubmit = async () => {
+    if (!photo) { alert("자전거 사진을 촬영해주세요"); return; }
+    setUploading(true);
+    try {
+      const photoUrl = await uploadToCloudinary(photo);
+      let receiptUrl = null;
+      if (receipt) receiptUrl = await uploadToCloudinary(receipt);
+      onConfirm({ photoUrl, receiptUrl, service, certifiedAt: new Date().toISOString() });
+    } catch (e) { alert("사진 업로드 실패: " + e.message); }
+    finally { setUploading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[210]">
+      <div className="bg-white rounded-t-3xl w-full shadow-2xl overflow-hidden" style={{ maxHeight: "85vh" }}>
+        <div className="pt-3 pb-1 flex justify-center"><div className="w-10 h-1 bg-gray-200 rounded-full" /></div>
+        <div className="px-5 pt-2 pb-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 2rem)", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 16px))" }}>
+
+          {step === "guide" && (
+            <>
+              <div className="text-center mb-4">
+                <div className="text-4xl mb-2">🚲</div>
+                <h2 className="text-lg font-black text-gray-800">공유자전거 이용 인증</h2>
+                <p className="text-gray-500 text-sm mt-1">공유자전거를 이용하고 인증해주세요!</p>
+              </div>
+              <div className="space-y-2.5 mb-4">
+                <div className="bg-lime-50 border border-lime-200 rounded-2xl p-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl mt-0.5">🌱</span>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-black text-lime-800 mb-1.5">이용 방법</h3>
+                      <div className="space-y-1.5 text-xs text-lime-700 leading-relaxed">
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-lime-400 mt-px">1</span>
+                          <span>공유자전거 앱에서 <span className="font-bold">자전거를 대여</span>해주세요</span>
+                        </div>
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-lime-400 mt-px">2</span>
+                          <span>이용 중인 <span className="font-bold">자전거를 촬영</span>해주세요</span>
+                        </div>
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-lime-400 mt-px">3</span>
+                          <span>앱의 이용내역 캡처를 <span className="font-bold">함께 올리면 인증 완료!</span></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl mt-0.5">💡</span>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-black text-gray-700 mb-1">대상 서비스</h3>
+                      <p className="text-xs text-gray-500 leading-relaxed">
+                        <span className="font-bold">따릉이, 카카오T바이크, 일레클, 지쿠</span> 등
+                        공유자전거·전동킥보드 서비스가 모두 해당됩니다.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-lime-50 border border-lime-200 rounded-2xl p-3 mb-4 text-center">
+                <span className="text-xs font-bold text-lime-700">🚲 공유자전거 이용 시 <span className="text-lime-600">+30 포인트</span> 적립!</span>
+                <p className="text-[10px] text-lime-600 mt-1">탄소중립포인트 녹색생활 실천 연계 항목</p>
+              </div>
+              <div className="space-y-2">
+                <button onClick={() => setStep("cert")} className="w-full py-4 rounded-2xl font-black text-base bg-gradient-to-r from-lime-500 to-green-500 text-white shadow-md active:scale-95 transition-all">인증 시작하기</button>
+                <button onClick={onClose} className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">취소</button>
+              </div>
+            </>
+          )}
+
+          {step === "cert" && (
+            <>
+              <div className="text-center mb-4">
+                <h2 className="text-lg font-black text-gray-800">공유자전거 인증하기</h2>
+                <p className="text-gray-400 text-xs mt-1">자전거 사진(필수)과 이용내역(선택)을 올려주세요</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                  <label className="text-xs font-bold text-lime-700 mb-1 block">자전거 사진 <span className="text-red-400">*</span></label>
+                  {preview ? (
+                    <div className="relative">
+                      <img src={preview} alt="자전거" className="w-full h-32 object-cover rounded-xl" />
+                      <button onClick={() => { setPhoto(null); setPreview(null); }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => photoRef.current?.click()} className="w-full h-32 border-2 border-dashed border-lime-300 rounded-xl flex flex-col items-center justify-center gap-1 active:bg-lime-50 bg-lime-50/30">
+                      <span className="text-2xl">📸</span><span className="text-[10px] text-lime-600 font-bold">자전거 촬영</span>
+                    </button>
+                  )}
+                  <input ref={photoRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 mb-1 block">이용내역 <span className="text-gray-300">(선택)</span></label>
+                  {receiptPreview ? (
+                    <div className="relative">
+                      <img src={receiptPreview} alt="이용내역" className="w-full h-32 object-cover rounded-xl" />
+                      <button onClick={() => { setReceipt(null); setReceiptPreview(null); }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => receiptRef.current?.click()} className="w-full h-32 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 active:bg-gray-50 bg-gray-50/30">
+                      <span className="text-2xl">🧾</span><span className="text-[10px] text-gray-500 font-bold">이용내역 캡처</span>
+                    </button>
+                  )}
+                  <input ref={receiptRef} type="file" accept="image/*" onChange={handleReceipt} className="hidden" />
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="text-xs font-bold text-gray-600 mb-1.5 block">이용 서비스</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {["따릉이", "카카오T바이크", "일레클", "지쿠", "기타"].map(s => (
+                    <button key={s} onClick={() => setService(s)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${service === s ? "bg-lime-500 text-white border-lime-500" : "bg-white text-gray-500 border-gray-200 active:bg-gray-50"}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <button onClick={handleSubmit} disabled={uploading || !photo}
+                  className={`w-full py-4 rounded-2xl font-black text-base transition-all ${uploading ? "bg-gray-100 text-gray-400" : photo ? "bg-gradient-to-r from-lime-500 to-green-500 text-white shadow-md active:scale-95" : "bg-gray-100 text-gray-300 cursor-not-allowed"}`}>
+                  {uploading ? "인증 중... ⏳" : "🚲 공유자전거 인증 완료"}
+                </button>
+                <button onClick={() => setStep("guide")} className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">이전으로</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── B. 제휴 상점 상세 팝업 ──────────────────────────────
 const ECO_CAT_STYLE = {
   eco_store:   { label: "🌿 친환경매장",   bg: "bg-green-100",  text: "text-green-700",  headerBg: "from-green-400 to-emerald-500" },
@@ -1474,15 +1786,23 @@ function MapPageInner() {
   // ── 다회용기 배달 이용 인증 ──────────────────────────────
   const [showContainerModal, setShowContainerModal] = useState(false);
 
+  // ── 무공해차 대여 인증 ──────────────────────────────────
+  const [showEvRentalModal, setShowEvRentalModal] = useState(false);
+
+  // ── 공유자전거 이용 인증 ──────────────────────────────────
+  const [showSharedBikeModal, setShowSharedBikeModal] = useState(false);
+
   // 녹색생활 페이지에서 진입 시 자동 오픈
   useEffect(() => {
-    if (ecoAction === "tumbler" && user && !loading) {
-      setShowTumblerModal(true);
-    } else if (ecoAction === "cupreturn" && user && !loading) {
-      setShowCupReturnModal(true);
-    } else if (ecoAction === "container" && user && !loading) {
-      setShowContainerModal(true);
-    }
+    if (!user || loading) return;
+    const modals = {
+      tumbler:   () => setShowTumblerModal(true),
+      cupreturn: () => setShowCupReturnModal(true),
+      container: () => setShowContainerModal(true),
+      evrental:  () => setShowEvRentalModal(true),
+      sharedbike:() => setShowSharedBikeModal(true),
+    };
+    if (ecoAction && modals[ecoAction]) modals[ecoAction]();
   }, [ecoAction, user, loading]);
 
   // ── 앱 설정 (Firestore settings/app) ────────────────────
@@ -2022,6 +2342,50 @@ function MapPageInner() {
     }
   };
 
+  // ─── 무공해차 대여 인증 처리 ──────────────────────────
+  const handleEvRentalConfirm = async (certData) => {
+    try {
+      await addDoc(collection(db, "ecoActions"), {
+        userId: user?.uid || "anonymous",
+        type: "ev_rental",
+        service: certData.service || "",
+        photoUrl: certData.photoUrl,
+        receiptUrl: certData.receiptUrl || null,
+        points: EV_RENTAL_BONUS,
+        certifiedAt: certData.certifiedAt,
+        createdAt: serverTimestamp(),
+      });
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, { totalPoints: increment(EV_RENTAL_BONUS) }).catch(() => {});
+      }
+      setShowEvRentalModal(false);
+      alert(`🚗 무공해차 인증 완료!\n+${EV_RENTAL_BONUS} 포인트가 적립되었습니다.`);
+    } catch (e) { alert("저장 실패: " + e.message); }
+  };
+
+  // ─── 공유자전거 이용 인증 처리 ──────────────────────────
+  const handleSharedBikeConfirm = async (certData) => {
+    try {
+      await addDoc(collection(db, "ecoActions"), {
+        userId: user?.uid || "anonymous",
+        type: "shared_bike",
+        service: certData.service || "",
+        photoUrl: certData.photoUrl,
+        receiptUrl: certData.receiptUrl || null,
+        points: SHARED_BIKE_BONUS,
+        certifiedAt: certData.certifiedAt,
+        createdAt: serverTimestamp(),
+      });
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, { totalPoints: increment(SHARED_BIKE_BONUS) }).catch(() => {});
+      }
+      setShowSharedBikeModal(false);
+      alert(`🚲 공유자전거 인증 완료!\n+${SHARED_BIKE_BONUS} 포인트가 적립되었습니다.`);
+    } catch (e) { alert("저장 실패: " + e.message); }
+  };
+
   const handleRetryPlogging = () => {
     setShowValidationFail(false);
     startTracking(false); // false = 거리·시간·줍기 횟수 유지하고 재개
@@ -2339,7 +2703,7 @@ function MapPageInner() {
         />
       )}
 
-      {/* ── 다회용기 배달 이용 인증 모달 ─────────────────── */}
+      {/* ── 다회용기 배달 이용 인증 모달 ────────────��────── */}
       {showContainerModal && (
         <ReusableContainerCertModal
           onConfirm={handleContainerConfirm}
@@ -2347,7 +2711,23 @@ function MapPageInner() {
         />
       )}
 
-      {/* ── B. 제휴 상점 팝업 (플로깅 중에도 표시) ──────── */}
+      {/* ── 무공해차 대여 인증 모달 ─────────────────────── */}
+      {showEvRentalModal && (
+        <EvRentalCertModal
+          onConfirm={handleEvRentalConfirm}
+          onClose={() => setShowEvRentalModal(false)}
+        />
+      )}
+
+      {/* ── 공유자전거 이용 인�� 모달 ───────────────────── */}
+      {showSharedBikeModal && (
+        <SharedBikeCertModal
+          onConfirm={handleSharedBikeConfirm}
+          onClose={() => setShowSharedBikeModal(false)}
+        />
+      )}
+
+      {/* ── B. 제휴 상점 ��업 (플로깅 중에도 표시) ──────── */}
       {selectedPartner && (
         <PartnerDetailSheet
           partner={selectedPartner}

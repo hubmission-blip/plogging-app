@@ -45,6 +45,30 @@ const ECO_ACTIONS = [
     textColor: "text-indigo-700",
     href: "/map?eco=container",
   },
+  {
+    id: "evrental",
+    icon: "🚗",
+    title: "무공해차 대여",
+    desc: "전기차·수소차를 대여하고 인증하세요",
+    points: "+50P",
+    color: "from-blue-400 to-sky-400",
+    bg: "bg-blue-50",
+    border: "border-blue-200",
+    textColor: "text-blue-700",
+    href: "/map?eco=evrental",
+  },
+  {
+    id: "sharedbike",
+    icon: "🚲",
+    title: "공유자전거 이용",
+    desc: "공유자전거를 이용하고 인증하세요",
+    points: "+30P",
+    color: "from-lime-400 to-green-400",
+    bg: "bg-lime-50",
+    border: "border-lime-200",
+    textColor: "text-lime-700",
+    href: "/map?eco=sharedbike",
+  },
 ];
 
 // 앞으로 추가될 녹색생활 실천 항목 (비활성)
@@ -52,7 +76,6 @@ const COMING_SOON = [
   { icon: "🚿", title: "샤워 절약", desc: "5분 이내 샤워 실천" },
   { icon: "🌡️", title: "적정 냉난방", desc: "실내 적정온도 유지" },
   { icon: "🛍️", title: "장바구니 사용", desc: "일회용 비닐 대신 장바구니" },
-  { icon: "🚶", title: "대중교통 이용", desc: "자가용 대신 대중교통·도보" },
 ];
 
 export default function EcoLifePage() {
@@ -165,13 +188,15 @@ export default function EcoLifePage() {
                 <div key={action.id}
                   className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? "border-t border-gray-50" : ""}`}>
                   <span className="text-xl">
-                    {action.type === "tumbler" ? "☕" : action.type === "cup_return" ? "♻️" : action.type === "reusable_container" ? "🍱" : "🌿"}
+                    {action.type === "tumbler" ? "☕" : action.type === "cup_return" ? "♻️" : action.type === "reusable_container" ? "🍱" : action.type === "ev_rental" ? "🚗" : action.type === "shared_bike" ? "🚲" : "🌿"}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-700">
                       {action.type === "tumbler" ? "텀블러 사용" :
                        action.type === "cup_return" ? `일회용컵 반환 (${action.cupCount || 1}개)` :
                        action.type === "reusable_container" ? "다회용기 배달" :
+                       action.type === "ev_rental" ? "무공해차 대여" :
+                       action.type === "shared_bike" ? "공유자전거 이용" :
                        "녹색생활 실천"}
                     </p>
                     <p className="text-[11px] text-gray-400">

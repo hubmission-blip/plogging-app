@@ -28,6 +28,8 @@ export const ECOMILEAGE_BONUS_RATE = 0.20; // 20% 추가
 export const TUMBLER_BONUS = 30; // 텀블러/다회용컵 사용 보너스
 export const CUP_RETURN_PER_CUP = 10; // 일회용컵 반환 보너스 (컵당)
 export const REUSABLE_CONTAINER_BONUS = 30; // 다회용기 배달 이용 보너스
+export const EV_RENTAL_BONUS = 50; // 무공해차 대여 보너스
+export const SHARED_BIKE_BONUS = 30; // 공유자전거 이용 보너스
 
 export function calculatePoints({ distanceKm, groupSize = 1, ecomileageLinked = false, trashCategories = [], tumblerUsed = false }) {
   let points = 0;
