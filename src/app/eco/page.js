@@ -262,7 +262,12 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
       } : {};
       await onConfirm({ ecoId, photoUrl, receiptUrl, service, cupCount: cfg.hasCupCount ? cupCount : undefined, points: totalPoints, certifiedAt: new Date().toISOString(), ...ocrData });
     } catch (e) {
-      alert("저장 실패: " + e.message);
+      const msg = e.message || "";
+      if (msg.includes("permission") || msg.includes("Permission") || e.code === "permission-denied") {
+        alert("권한 오류가 발생했습니다.\n홈으로 돌아가서 다시 로그인 후 시도해주세요.");
+      } else {
+        alert("저장 실패: " + msg);
+      }
     } finally { setUploading(false); }
   };
 
@@ -481,18 +486,31 @@ export default function EcoLifePage() {
 
   // Firebase Auth 세션 확인 및 재인증
   const ensureFirebaseAuth = async () => {
-    if (auth.currentUser) return; // 이미 인증됨
-    // localStorage에 저장된 카카오/애플 정보로 재인증 시도
+    // 1단계: 기존 세션이 있으면 토큰 강제 갱신 시도
+    if (auth.currentUser) {
+      try {
+        await auth.currentUser.getIdToken(true); // 토큰 강제 갱신
+        console.log("[Eco] Firebase 토큰 갱신 성공, uid:", auth.currentUser.uid);
+        return;
+      } catch (e) {
+        console.warn("[Eco] 토큰 갱신 실패, 재인증 시도:", e.message);
+        // 토큰 갱신 실패 → 아래 재인증으로 이동
+      }
+    }
+
+    // 2단계: localStorage 정보로 재인증
+    console.log("[Eco] Firebase 세션 없음, 재인증 시도...");
+    const kakaoUser = localStorage.getItem("kakaoUser");
+    const appleUser = localStorage.getItem("appleUser");
+
     try {
-      const kakaoUser = localStorage.getItem("kakaoUser");
-      const appleUser = localStorage.getItem("appleUser");
       if (kakaoUser) {
         const parsed = JSON.parse(kakaoUser);
         const kakaoUid = parsed.kakaoUid || parsed.uid;
         const fakeEmail = `kakao_${kakaoUid}@kakao-auth.plogging.app`;
         const fakePassword = `kakao_${kakaoUid}_plogging2024!`;
         await signInWithEmailAndPassword(auth, fakeEmail, fakePassword);
-        console.log("[Eco] 카카오 Firebase 재인증 성공");
+        console.log("[Eco] 카카오 Firebase 재인증 성공, uid:", auth.currentUser?.uid);
       } else if (appleUser) {
         const parsed = JSON.parse(appleUser);
         const appleUid = parsed.appleUid || parsed.uid;
@@ -500,11 +518,18 @@ export default function EcoLifePage() {
         const fakeEmail = `apple_${uidShort}@apple-auth.plogging.app`;
         const fakePassword = `apple_${uidShort}_plogging2024!`;
         await signInWithEmailAndPassword(auth, fakeEmail, fakePassword);
-        console.log("[Eco] 애플 Firebase 재인증 성공");
+        console.log("[Eco] 애플 Firebase 재인증 성공, uid:", auth.currentUser?.uid);
+      } else {
+        // 카카오/애플 정보 없음 → Google 등 다른 로그인일 수 있음
+        console.warn("[Eco] localStorage에 소셜 로그인 정보 없음");
+        if (!auth.currentUser) {
+          throw new Error("로그인 세션이 만료되었습니다.\n홈으로 돌아가서 다시 로그인해주세요.");
+        }
       }
     } catch (e) {
-      console.warn("[Eco] Firebase 재인증 실패:", e.message);
-      throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
+      if (e.message.includes("로그인 세션")) throw e;
+      console.error("[Eco] Firebase 재인증 실패:", e.code, e.message);
+      throw new Error("인증이 만료되었습니다.\n홈으로 돌아가서 다시 로그인해주세요.");
     }
   };
 
