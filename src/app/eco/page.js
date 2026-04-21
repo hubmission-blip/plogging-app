@@ -33,6 +33,18 @@ const ECO_ACTIONS = [
     textColor: "text-teal-700",
     href: "/map?eco=cupreturn",
   },
+  {
+    id: "container",
+    icon: "🍱",
+    title: "다회용기 배달 이용",
+    desc: "배달 주문 시 다회용기를 선택하고 인증하세요",
+    points: "+30P",
+    color: "from-indigo-400 to-violet-400",
+    bg: "bg-indigo-50",
+    border: "border-indigo-200",
+    textColor: "text-indigo-700",
+    href: "/map?eco=container",
+  },
 ];
 
 // 앞으로 추가될 녹색생활 실천 항목 (비활성)
@@ -153,12 +165,13 @@ export default function EcoLifePage() {
                 <div key={action.id}
                   className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? "border-t border-gray-50" : ""}`}>
                   <span className="text-xl">
-                    {action.type === "tumbler" ? "☕" : action.type === "cup_return" ? "♻️" : "🌿"}
+                    {action.type === "tumbler" ? "☕" : action.type === "cup_return" ? "♻️" : action.type === "reusable_container" ? "🍱" : "🌿"}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-700">
                       {action.type === "tumbler" ? "텀블러 사용" :
                        action.type === "cup_return" ? `일회용컵 반환 (${action.cupCount || 1}개)` :
+                       action.type === "reusable_container" ? "다회용기 배달" :
                        "녹색생활 실천"}
                     </p>
                     <p className="text-[11px] text-gray-400">

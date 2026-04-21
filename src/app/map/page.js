@@ -16,7 +16,7 @@ import {
   increment, serverTimestamp, query,
   where, getDocs, deleteDoc, limit,
 } from "firebase/firestore";
-import { calculatePoints, TRASH_CATEGORIES, TUMBLER_BONUS, CUP_RETURN_PER_CUP } from "@/lib/pointCalc";
+import { calculatePoints, TRASH_CATEGORIES, TUMBLER_BONUS, CUP_RETURN_PER_CUP, REUSABLE_CONTAINER_BONUS } from "@/lib/pointCalc";
 import { getWeekNumber, getExpiresAt, isExpired, getRouteColor } from "@/lib/routeUtils";
 
 // ─── 인증 조건 상수 ───────────────────────────────────────
@@ -1104,6 +1104,230 @@ function CupReturnCertModal({ onConfirm, onClose, isPlogging }) {
   );
 }
 
+// ─── 다회용기 배달 이용 인증 모달 ──────────────────────────
+function ReusableContainerCertModal({ onConfirm, onClose }) {
+  const [step, setStep]           = useState("guide"); // guide | cert
+  const [containerPhoto, setContainerPhoto] = useState(null);
+  const [containerPreview, setContainerPreview] = useState(null);
+  const [receiptPhoto, setReceiptPhoto]     = useState(null);
+  const [receiptPreview, setReceiptPreview] = useState(null);
+  const [deliveryApp, setDeliveryApp]       = useState("");
+  const [uploading, setUploading]           = useState(false);
+  const containerRef = useRef(null);
+  const receiptRef   = useRef(null);
+
+  const handleContainerPhoto = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const ageMin = (Date.now() - f.lastModified) / 60000;
+    if (ageMin > 10) {
+      e.target.value = "";
+      alert("방금 찍은 사진만 인증이 가능합니다.\n갤러리 사진은 사용할 수 없어요.");
+      return;
+    }
+    setContainerPhoto(f);
+    setContainerPreview(URL.createObjectURL(f));
+  };
+
+  const handleReceiptPhoto = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const ageMin = (Date.now() - f.lastModified) / 60000;
+    if (ageMin > 120) {
+      e.target.value = "";
+      alert("2시간 이내의 주문내역만 인증이 가능합니다.");
+      return;
+    }
+    setReceiptPhoto(f);
+    setReceiptPreview(URL.createObjectURL(f));
+  };
+
+  const handleSubmit = async () => {
+    if (!containerPhoto) { alert("다회용기 사진을 촬영해주세요"); return; }
+    setUploading(true);
+    try {
+      const photoUrl = await uploadToCloudinary(containerPhoto);
+      let receiptUrl = null;
+      if (receiptPhoto) receiptUrl = await uploadToCloudinary(receiptPhoto);
+      onConfirm({ photoUrl, receiptUrl, deliveryApp, certifiedAt: new Date().toISOString() });
+    } catch (e) { alert("사진 업로드 실패: " + e.message); }
+    finally { setUploading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[210]">
+      <div className="bg-white rounded-t-3xl w-full shadow-2xl overflow-hidden" style={{ maxHeight: "85vh" }}>
+        <div className="pt-3 pb-1 flex justify-center">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
+        <div className="px-5 pt-2 pb-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 2rem)", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 16px))" }}>
+
+          {/* ══ STEP 1: 안내 가이드 ══ */}
+          {step === "guide" && (
+            <>
+              <div className="text-center mb-4">
+                <div className="text-4xl mb-2">🍱</div>
+                <h2 className="text-lg font-black text-gray-800">다회용기 배달 이용 인증</h2>
+                <p className="text-gray-500 text-sm mt-1">
+                  배달 주문 시 다회용기를 선택하고 인증해주세요!
+                </p>
+              </div>
+
+              <div className="space-y-2.5 mb-4">
+                <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl mt-0.5">📱</span>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-black text-indigo-800 mb-1.5">배달앱에서 다회용기 선택</h3>
+                      <div className="space-y-1.5 text-xs text-indigo-700 leading-relaxed">
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-indigo-400 mt-px">1</span>
+                          <span>배달앱(배민, 쿠팡이츠, 요기요 등)에서 <span className="font-bold">주문 시 다회용기 선택</span></span>
+                        </div>
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-indigo-400 mt-px">2</span>
+                          <span>배달 도착 후 <span className="font-bold">다회용기에 담긴 음식을 촬영</span></span>
+                        </div>
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-indigo-400 mt-px">3</span>
+                          <span>배달앱 주문내역 캡처를 <span className="font-bold">함께 올리면 인증 완료!</span></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl mt-0.5">💡</span>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-black text-gray-700 mb-1">인증 팁</h3>
+                      <p className="text-xs text-gray-500 leading-relaxed">
+                        다회용기 사진은 <span className="font-bold">음식이 담긴 상태</span>로 촬영해주세요.
+                        주문내역 캡처에 <span className="font-bold">"다회용기" 선택 표시</span>가 보이면 더 좋아요!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-3 mb-4 text-center">
+                <span className="text-xs font-bold text-indigo-700">
+                  🍱 다회용기 배달 이용 시 <span className="text-indigo-500">+30 포인트</span> 적립!
+                </span>
+                <p className="text-[10px] text-indigo-500 mt-1">탄소중립포인트 녹색생활 실천 연계 항목</p>
+              </div>
+
+              <div className="space-y-2">
+                <button onClick={() => setStep("cert")}
+                  className="w-full py-4 rounded-2xl font-black text-base bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-md active:scale-95 transition-all">
+                  인증 시작하기
+                </button>
+                <button onClick={onClose}
+                  className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">
+                  취소
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ══ STEP 2: 인증 입력 ══ */}
+          {step === "cert" && (
+            <>
+              <div className="text-center mb-4">
+                <h2 className="text-lg font-black text-gray-800">다회용기 인증하기</h2>
+                <p className="text-gray-400 text-xs mt-1">다회용기 사진(필수)과 주문내역(선택)을 올려주세요</p>
+              </div>
+
+              {/* 2장 사진 나란히 */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {/* 다회용기 사진 (필수) */}
+                <div>
+                  <label className="text-xs font-bold text-indigo-700 mb-1 block">다회용기 사진 <span className="text-red-400">*</span></label>
+                  {containerPreview ? (
+                    <div className="relative">
+                      <img src={containerPreview} alt="다회용기" className="w-full h-32 object-cover rounded-xl" />
+                      <button onClick={() => { setContainerPhoto(null); setContainerPreview(null); }}
+                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => containerRef.current?.click()}
+                      className="w-full h-32 border-2 border-dashed border-indigo-300 rounded-xl flex flex-col items-center justify-center gap-1 active:bg-indigo-50 bg-indigo-50/30">
+                      <span className="text-2xl">📸</span>
+                      <span className="text-[10px] text-indigo-600 font-bold">다회용기 촬영</span>
+                    </button>
+                  )}
+                  <input ref={containerRef} type="file" accept="image/*" capture="environment"
+                    onChange={handleContainerPhoto} className="hidden" />
+                </div>
+
+                {/* 주문내역 캡처 (선택) */}
+                <div>
+                  <label className="text-xs font-bold text-gray-500 mb-1 block">주문내역 <span className="text-gray-300">(선택)</span></label>
+                  {receiptPreview ? (
+                    <div className="relative">
+                      <img src={receiptPreview} alt="주문내역" className="w-full h-32 object-cover rounded-xl" />
+                      <button onClick={() => { setReceiptPhoto(null); setReceiptPreview(null); }}
+                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => receiptRef.current?.click()}
+                      className="w-full h-32 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 active:bg-gray-50 bg-gray-50/30">
+                      <span className="text-2xl">🧾</span>
+                      <span className="text-[10px] text-gray-500 font-bold">주문내역 캡처</span>
+                    </button>
+                  )}
+                  <input ref={receiptRef} type="file" accept="image/*"
+                    onChange={handleReceiptPhoto} className="hidden" />
+                </div>
+              </div>
+
+              {/* 배달앱 이름 */}
+              <div className="mb-4">
+                <label className="text-xs font-bold text-gray-600 mb-1.5 block">배달앱 이름</label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {["배달의민족", "쿠팡이츠", "요기요", "기타"].map(app => (
+                    <button key={app} onClick={() => setDeliveryApp(app)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                        deliveryApp === app
+                          ? "bg-indigo-500 text-white border-indigo-500"
+                          : "bg-white text-gray-500 border-gray-200 active:bg-gray-50"
+                      }`}>
+                      {app}
+                    </button>
+                  ))}
+                </div>
+                {deliveryApp === "기타" && (
+                  <input type="text" placeholder="배달앱 이름 입력"
+                    value={deliveryApp === "기타" ? "" : deliveryApp}
+                    onChange={e => setDeliveryApp(e.target.value || "기타")}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+                )}
+              </div>
+
+              {/* 버튼 */}
+              <div className="space-y-2">
+                <button onClick={handleSubmit} disabled={uploading || !containerPhoto}
+                  className={`w-full py-4 rounded-2xl font-black text-base transition-all
+                    ${uploading ? "bg-gray-100 text-gray-400"
+                      : containerPhoto ? "bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-md active:scale-95"
+                      : "bg-gray-100 text-gray-300 cursor-not-allowed"}`}>
+                  {uploading ? "인증 중... ⏳" : "🍱 다회용기 인증 완료"}
+                </button>
+                <button onClick={() => setStep("guide")}
+                  className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">
+                  이전으로
+                </button>
+              </div>
+            </>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── B. 제휴 상점 상세 팝업 ──────────────────────────────
 const ECO_CAT_STYLE = {
   eco_store:   { label: "🌿 친환경매장",   bg: "bg-green-100",  text: "text-green-700",  headerBg: "from-green-400 to-emerald-500" },
@@ -1247,12 +1471,17 @@ function MapPageInner() {
   const [showCupReturnModal, setShowCupReturnModal]     = useState(false);
   const [sessionCupReturnCerts, setSessionCupReturnCerts] = useState([]); // 플로깅 중 컵 반환 인증 기록
 
-  // 메인 퀵메뉴에서 녹색생활 → 텀블러/컵반환 인증으로 진입 시 자동 오픈
+  // ── 다회용기 배달 이용 인증 ──────────────────────────────
+  const [showContainerModal, setShowContainerModal] = useState(false);
+
+  // 녹색생활 페이지에서 진입 시 자동 오픈
   useEffect(() => {
     if (ecoAction === "tumbler" && user && !loading) {
       setShowTumblerModal(true);
     } else if (ecoAction === "cupreturn" && user && !loading) {
       setShowCupReturnModal(true);
+    } else if (ecoAction === "container" && user && !loading) {
+      setShowContainerModal(true);
     }
   }, [ecoAction, user, loading]);
 
@@ -1767,6 +1996,32 @@ function MapPageInner() {
     }
   };
 
+  // ─── 다회용기 배달 인증 처리 (독립 인증 전용) ──────────
+  const handleContainerConfirm = async (certData) => {
+    try {
+      await addDoc(collection(db, "ecoActions"), {
+        userId: user?.uid || "anonymous",
+        type: "reusable_container",
+        deliveryApp: certData.deliveryApp || "",
+        photoUrl: certData.photoUrl,
+        receiptUrl: certData.receiptUrl || null,
+        points: REUSABLE_CONTAINER_BONUS,
+        certifiedAt: certData.certifiedAt,
+        createdAt: serverTimestamp(),
+      });
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, {
+          totalPoints: increment(REUSABLE_CONTAINER_BONUS),
+        }).catch(() => {});
+      }
+      setShowContainerModal(false);
+      alert(`🍱 다회용기 인증 완료!\n+${REUSABLE_CONTAINER_BONUS} 포인트가 적립되었습니다.`);
+    } catch (e) {
+      alert("저장 실패: " + e.message);
+    }
+  };
+
   const handleRetryPlogging = () => {
     setShowValidationFail(false);
     startTracking(false); // false = 거리·시간·줍기 횟수 유지하고 재개
@@ -2081,6 +2336,14 @@ function MapPageInner() {
           onConfirm={handleCupReturnConfirm}
           onClose={() => setShowCupReturnModal(false)}
           isPlogging={isTracking}
+        />
+      )}
+
+      {/* ── 다회용기 배달 이용 인증 모달 ─────────────────── */}
+      {showContainerModal && (
+        <ReusableContainerCertModal
+          onConfirm={handleContainerConfirm}
+          onClose={() => setShowContainerModal(false)}
         />
       )}
 
