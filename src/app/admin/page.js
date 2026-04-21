@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, RefreshCw, BarChart3, Users, Gift, ShoppingCart, ClipboardList, Image, Recycle, Wrench, Megaphone, Footprints, MapPin, CalendarDays, UserRound, Route, PackageOpen } from "lucide-react";
+import { Settings, RefreshCw, BarChart3, Users, Gift, ShoppingCart, ClipboardList, Image, Recycle, Wrench, Megaphone, Footprints, MapPin, CalendarDays, UserRound, Route, PackageOpen, UsersRound, Trash2, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
@@ -141,6 +141,13 @@ export default function AdminPage() {
   const [productMode,    setProductMode]    = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [newProduct,     setNewProduct]     = useState(EMPTY_PRODUCT);
+
+  // ── 동아리 ────────────────────────────────────────────
+  const [clubs,          setClubs]          = useState([]);
+  const [clubSearch,     setClubSearch]     = useState("");
+  const [clubToDelete,   setClubToDelete]   = useState(null);
+  const [clubDeleting,   setClubDeleting]   = useState(false);
+  const [clubDeleteConfirm, setClubDeleteConfirm] = useState("");
 
   // ── 배너 ──────────────────────────────────────────────
   const [banners,      setBanners]      = useState([]);
@@ -358,6 +365,43 @@ export default function AdminPage() {
     finally { setLoading(false); }
   }, []);
 
+  // ── Fetch: 동아리 목록 ─��────────────────────────────
+  const fetchClubs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const snap = await getDocs(collection(db, "clubs"));
+      const arr = snap.docs.map((d) => ({ code: d.id, ...d.data() }));
+      arr.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      setClubs(arr);
+    } catch (e) { console.error("동아리 로드 실패:", e); }
+    finally { setLoading(false); }
+  }, []);
+
+  // ��─ 동아리 삭제 (하위 컬렉션 포함) ─────────────────────
+  const handleDeleteClub = async (club) => {
+    if (clubDeleteConfirm !== club.name) return;
+    setClubDeleting(true);
+    try {
+      // 하위 컬렉션 삭제 (history, notices)
+      const subCollections = ["history", "notices"];
+      for (const sub of subCollections) {
+        const subSnap = await getDocs(collection(db, "clubs", club.code, sub));
+        const batch = writeBatch(db);
+        subSnap.docs.forEach((d) => batch.delete(d.ref));
+        if (subSnap.docs.length > 0) await batch.commit();
+      }
+      // 메인 문서 삭제
+      await deleteDoc(doc(db, "clubs", club.code));
+      setClubs((prev) => prev.filter((c) => c.code !== club.code));
+      setClubToDelete(null);
+      setClubDeleteConfirm("");
+      showMsg(`🗑️ "${club.name}" 동아리가 삭제되었습니다.`);
+    } catch (e) {
+      console.error("동아리 삭제 실패:", e);
+      showMsg("❌ 삭�� 실패: " + e.message);
+    } finally { setClubDeleting(false); }
+  };
+
   // ── 구매 승인 → 포인트 지급 ──────────────────────────
   const handleApprovePurchase = async (purchase) => {
     try {
@@ -452,6 +496,7 @@ export default function AdminPage() {
     if (activeTab === "ecospots")    fetchEcoSpots();
     if (activeTab === "shop")        fetchProducts();
     if (activeTab === "purchases")   fetchPurchases();
+    if (activeTab === "clubs")       fetchClubs();
   }, [activeTab, user, isAdmin, emailLoaded]);
 
   useEffect(() => {
@@ -888,6 +933,7 @@ export default function AdminPage() {
     { id: "purchases",   Icon: ClipboardList,    name: `구매검토${purchases.filter(p=>p.status==="pending").length > 0 ? ` (${purchases.filter(p=>p.status==="pending").length})` : ""}` },
     { id: "banners",     Icon: Image,            name: "배너" },
     { id: "ecospots",    Icon: Recycle,          name: "에코스팟" },
+    { id: "clubs",       Icon: UsersRound,        name: "동아리" },
     { id: "maintenance", Icon: Wrench,           name: "유지관리" },
     { id: "notices",     Icon: Megaphone,        name: "공지" },
   ];
@@ -916,6 +962,7 @@ export default function AdminPage() {
               if (activeTab === "maintenance") fetchMaintenance();
               if (activeTab === "notices")     fetchNotices();
               if (activeTab === "purchases")   fetchPurchases();
+              if (activeTab === "clubs")       fetchClubs();
             }}
             className="bg-gray-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
           >
@@ -2622,6 +2669,156 @@ export default function AdminPage() {
               </>
             );
           })()}
+
+          {/* ══════════════════════════════════════
+              👥 동아리 관리 탭
+          ══════════════════════════════════════ */}
+          {activeTab === "clubs" && (
+            <>
+              <SectionTitle>동아리 관리 ({clubs.length}개)</SectionTitle>
+
+              {/* 검색 */}
+              <input
+                value={clubSearch}
+                onChange={(e) => setClubSearch(e.target.value)}
+                placeholder="동아리명 또는 코드 검색..."
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-green-400 mb-3"
+              />
+
+              {/* 동아리 목록 */}
+              {(() => {
+                const filtered = clubs.filter((c) => {
+                  if (!clubSearch.trim()) return true;
+                  const s = clubSearch.toLowerCase();
+                  return (c.name || "").toLowerCase().includes(s)
+                    || (c.code || "").toLowerCase().includes(s)
+                    || (c.hostName || "").toLowerCase().includes(s);
+                });
+                if (filtered.length === 0) return (
+                  <div className="text-center py-12 text-gray-400 text-sm">
+                    {clubs.length === 0 ? "등록된 동아리가 없습니다." : "검색 결과가 없습니다."}
+                  </div>
+                );
+                return (
+                  <div className="space-y-2">
+                    {filtered.map((club) => {
+                      const memberCount = club.memberUids?.length || club.members?.length || 0;
+                      const createdDate = club.createdAt?.toDate
+                        ? club.createdAt.toDate().toLocaleDateString("ko-KR")
+                        : "";
+                      return (
+                        <div key={club.code} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                          <div className="px-4 py-3 flex items-center gap-3">
+                            {/* 아이콘 */}
+                            <span className="text-2xl">{club.emoji || "🌿"}</span>
+                            {/* 정보 */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-gray-800 truncate">{club.name}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] text-gray-400 font-mono">{club.code}</span>
+                                {club.region && (
+                                  <span className="text-[10px] bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded font-medium">{club.region}</span>
+                                )}
+                              </div>
+                            </div>
+                            {/* 멤버 수 */}
+                            <div className="text-right flex-shrink-0">
+                              <p className="text-sm font-black text-gray-700">{memberCount}명</p>
+                              <p className="text-[10px] text-gray-400">{createdDate}</p>
+                            </div>
+                            {/* 삭제 버튼 */}
+                            <button
+                              onClick={() => { setClubToDelete(club); setClubDeleteConfirm(""); }}
+                              className="p-2 rounded-lg hover:bg-red-50 active:bg-red-100 transition-colors flex-shrink-0"
+                            >
+                              <Trash2 size={16} className="text-gray-300 hover:text-red-400" />
+                            </button>
+                          </div>
+                          {/* 상세 정보 */}
+                          <div className="px-4 pb-3 flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-medium">
+                              동아리장: {club.hostName || "알 수 없음"}
+                            </span>
+                            {club.description && (
+                              <span className="text-[10px] bg-gray-50 text-gray-500 px-2 py-0.5 rounded-full font-medium truncate max-w-[200px]">
+                                {club.description}
+                              </span>
+                            )}
+                            {club.hasSchedule && club.scheduleDay && (
+                              <span className="text-[10px] bg-purple-50 text-purple-500 px-2 py-0.5 rounded-full font-medium">
+                                {club.scheduleDay} {club.scheduleTime || ""}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
+              {/* ═══ 동아리 삭제 확인 모달 ═══ */}
+              {clubToDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
+                  <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+                    <div className="px-5 pt-5 pb-3">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+                          <AlertTriangle size={20} className="text-red-500" />
+                        </div>
+                        <div>
+                          <p className="text-base font-black text-gray-800">동아리 삭제</p>
+                          <p className="text-[11px] text-red-500 font-bold">이 작업은 되돌릴 수 없습니다!</p>
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 rounded-xl p-3 mb-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xl">{clubToDelete.emoji || "🌿"}</span>
+                          <p className="text-sm font-bold text-gray-700">{clubToDelete.name}</p>
+                        </div>
+                        <p className="text-[11px] text-gray-400">
+                          코드: {clubToDelete.code} · 멤버: {clubToDelete.memberUids?.length || 0}명 · 동아리장: {clubToDelete.hostName || "알 수 없음"}
+                        </p>
+                        <p className="text-xs text-red-500 font-bold mt-2">
+                          모든 활동 기록과 알림이 함께 삭제됩니다
+                        </p>
+                      </div>
+                      {/* 동아리명 입력 확인 */}
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1.5">삭제하려면 동아리명 <strong className="text-red-500">"{clubToDelete.name}"</strong>을 입력하세요</p>
+                        <input
+                          value={clubDeleteConfirm}
+                          onChange={(e) => setClubDeleteConfirm(e.target.value)}
+                          placeholder={clubToDelete.name}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-red-400"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex border-t border-gray-100">
+                      <button
+                        onClick={() => { setClubToDelete(null); setClubDeleteConfirm(""); }}
+                        disabled={clubDeleting}
+                        className="flex-1 py-3.5 text-sm font-bold text-gray-500 active:bg-gray-50 transition-colors"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClub(clubToDelete)}
+                        disabled={clubDeleting || clubDeleteConfirm !== clubToDelete.name}
+                        className={`flex-1 py-3.5 text-sm font-bold border-l border-gray-100 transition-colors ${
+                          clubDeleteConfirm === clubToDelete.name
+                            ? "text-red-500 active:bg-red-50"
+                            : "text-gray-300 cursor-not-allowed"
+                        }`}
+                      >
+                        {clubDeleting ? "삭제 중..." : "삭제"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
         </div>
       )}
