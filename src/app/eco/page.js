@@ -47,7 +47,7 @@ const COLORS = {
   evrental:       { icon: "text-sky-500",     bg: "bg-sky-50",     border: "border-sky-300",     text: "text-sky-600",     badge: "bg-sky-500" },
   ecoproduct:     { icon: "text-emerald-500", bg: "bg-emerald-50", border: "border-emerald-300", text: "text-emerald-600", badge: "bg-emerald-500" },
   qualityrecycle: { icon: "text-cyan-500",    bg: "bg-cyan-50",    border: "border-cyan-300",    text: "text-cyan-600",    badge: "bg-cyan-500" },
-  phonereturn:    { icon: "text-slate-500",   bg: "bg-slate-50",   border: "border-slate-300",   text: "text-slate-600",   badge: "bg-slate-500" },
+  phonereturn:    { icon: "text-rose-500",    bg: "bg-rose-50",    border: "border-rose-300",    text: "text-rose-600",    badge: "bg-rose-500" },
   futuregen:      { icon: "text-green-500",   bg: "bg-green-50",   border: "border-green-300",   text: "text-green-600",   badge: "bg-green-500" },
   sharedbike:     { icon: "text-lime-500",    bg: "bg-lime-50",    border: "border-lime-300",    text: "text-lime-600",    badge: "bg-lime-500" },
   zerowaste:      { icon: "text-orange-500",  bg: "bg-orange-50",  border: "border-orange-300",  text: "text-orange-600",  badge: "bg-orange-500" },
