@@ -1,7 +1,17 @@
 {
-  "version": "v1.94",
-  "build": 94,
+  "version": "v1.95",
+  "build": 95,
   "changelog": [
+    {
+      "version": "v1.95",
+      "build": 95,
+      "date": "2026-04-22",
+      "emoji": "💡",
+      "title": "녹색생활 내역 삭제 기능",
+      "items": [
+        "Firestore 인덱스, 쿼리 fallback, 내역 삭제 기능 추가"
+      ]
+    },
     {
       "version": "v1.94",
       "build": 94,

@@ -221,15 +221,31 @@ export default function HomePage() {
   useEffect(() => {
     const fetchNotices = async () => {
       try {
-        const q = query(
-          collection(db, "notices"),
-          where("active", "==", true),
-          orderBy("createdAt", "desc")
-        );
-        const snap = await getDocs(q);
-        setNotices(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        let snap;
+        try {
+          const q = query(
+            collection(db, "notices"),
+            where("active", "==", true),
+            orderBy("createdAt", "desc")
+          );
+          snap = await getDocs(q);
+        } catch (indexErr) {
+          // 복합 인덱스 미생성 시 → orderBy 없이 조회 후 클라이언트 정렬
+          console.warn("공지사항 인덱스 쿼리 실패, fallback:", indexErr.message);
+          const fallbackQ = query(
+            collection(db, "notices"),
+            where("active", "==", true)
+          );
+          snap = await getDocs(fallbackQ);
+        }
+        const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        docs.sort((a, b) => {
+          const ta = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
+          const tb = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
+          return tb - ta;
+        });
+        setNotices(docs);
       } catch (e) {
-        // 공지사항 로드 실패 무시 (인덱스 미생성 등)
         console.warn("공지사항 로드 실패:", e.message);
       }
     };
