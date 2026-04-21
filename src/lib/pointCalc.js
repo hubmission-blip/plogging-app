@@ -4,6 +4,7 @@
 // 연속 참여 보너스 = 30포인트 (전날도 플로깅 시)
 // 에코마일리지 연동 보너스 = 기본 포인트의 20% 추가
 // 분리수거 보너스 = 카테고리당 5포인트 × 수량
+// 텀블러/다회용컵 보너스 = 30포인트
 
 // 분리수거 카테고리 목록
 export const TRASH_CATEGORIES = [
@@ -24,8 +25,9 @@ export const ECOMILEAGE_PROGRAMS = [
 ];
 
 export const ECOMILEAGE_BONUS_RATE = 0.20; // 20% 추가
+export const TUMBLER_BONUS = 30; // 텀블러/다회용컵 사용 보너스
 
-export function calculatePoints({ distanceKm, groupSize = 1, ecomileageLinked = false, trashCategories = [] }) {
+export function calculatePoints({ distanceKm, groupSize = 1, ecomileageLinked = false, trashCategories = [], tumblerUsed = false }) {
   let points = 0;
   let breakdown = [];
 
@@ -56,6 +58,12 @@ export function calculatePoints({ distanceKm, groupSize = 1, ecomileageLinked = 
       points += recycleBonus;
       breakdown.push({ label: `분리수거 보너스 ♻️ (${totalRecycleCount}개)`, points: recycleBonus });
     }
+  }
+
+  // 텀블러/다회용컵 사용 보너스: 30점
+  if (tumblerUsed) {
+    points += TUMBLER_BONUS;
+    breakdown.push({ label: "텀블러/다회용컵 보너스 ☕", points: TUMBLER_BONUS });
   }
 
   // 에코마일리지 연동 보너스: 20% 추가

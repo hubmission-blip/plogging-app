@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, CirclePlay, Star, Smartphone, UserPlus, Navigation, Footprints, Flag, Camera, Trophy, HeartHandshake, Globe, Coins, Target, Zap, Activity, Sparkles, RefreshCw, Bell, Rocket, Pin, AlertTriangle, PartyPopper, ChevronUp, ChevronDown, PersonStanding, UserCheck, UsersRound, Contact, Route, School, FileCheck } from "lucide-react";
+import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, CirclePlay, Star, Smartphone, UserPlus, Navigation, Footprints, Flag, Camera, Trophy, HeartHandshake, Globe, Coins, Target, Zap, Activity, Sparkles, RefreshCw, Bell, Rocket, Pin, AlertTriangle, PartyPopper, ChevronUp, ChevronDown, PersonStanding, UserCheck, UsersRound, Contact, Route, School, FileCheck, Leaf } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
 import CharacterGuide from "@/components/CharacterGuide";
@@ -483,34 +483,41 @@ export default function HomePage() {
           </div>
 
           {/* ── 빠른 메뉴 (라이트 컬러 카드) ── */}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-5 gap-2">
             <Link
               href="/club"
               className="bg-cyan-50 border border-cyan-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <School className="w-6 h-6 text-cyan-600" strokeWidth={1.8} />
-              <span className="text-xs text-cyan-700 font-bold">동아리</span>
+              <School className="w-5 h-5 text-cyan-600" strokeWidth={1.8} />
+              <span className="text-[11px] text-cyan-700 font-bold">동아리</span>
             </Link>
             <Link
               href="/group"
               className="bg-sky-50 border border-sky-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <Users className="w-6 h-6 text-sky-600" strokeWidth={1.8} />
-              <span className="text-xs text-sky-700 font-bold">그룹</span>
+              <Users className="w-5 h-5 text-sky-600" strokeWidth={1.8} />
+              <span className="text-[11px] text-sky-700 font-bold">그룹</span>
             </Link>
             <Link
               href="/reward"
               className="bg-purple-50 border border-purple-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <Gift className="w-6 h-6 text-purple-600" strokeWidth={1.8} />
-              <span className="text-xs text-purple-700 font-bold">리워드</span>
+              <Gift className="w-5 h-5 text-purple-600" strokeWidth={1.8} />
+              <span className="text-[11px] text-purple-700 font-bold">리워드</span>
+            </Link>
+            <Link
+              href="/map?eco=tumbler"
+              className="bg-amber-50 border border-amber-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
+            >
+              <Leaf className="w-5 h-5 text-amber-600" strokeWidth={1.8} />
+              <span className="text-[11px] text-amber-700 font-bold">녹색생활</span>
             </Link>
             <button
               onClick={() => setShowManual(true)}
               className="bg-orange-50 border border-orange-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <CirclePlay className="w-6 h-6 text-orange-600" strokeWidth={1.8} />
-              <span className="text-xs text-orange-700 font-bold">매뉴얼</span>
+              <CirclePlay className="w-5 h-5 text-orange-600" strokeWidth={1.8} />
+              <span className="text-[11px] text-orange-700 font-bold">매뉴얼</span>
             </button>
           </div>
 
