@@ -3,11 +3,11 @@
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Leaf, ChevronDown, ChevronUp, Award, Filter, Calendar, TrendingUp, Receipt, Coffee, CupSoda, Pipette, Package, Car, ShieldCheck, Recycle, Smartphone, Sprout, Bike, UtensilsCrossed, TreePine, Sun, RotateCcw, ShoppingBag, Container } from "lucide-react";
+import { ArrowLeft, Leaf, ChevronDown, ChevronUp, Award, Filter, Calendar, TrendingUp, Receipt, Coffee, CupSoda, Pipette, Package, Car, ShieldCheck, Recycle, Smartphone, Sprout, Bike, UtensilsCrossed, TreePine, Sun, RotateCcw, ShoppingBag, Container, Trash2, X } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { auth, db } from "@/lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
+import { collection, query, where, orderBy, getDocs, deleteDoc, doc, updateDoc, increment } from "firebase/firestore";
 
 // ─── 항목 메타 정보 ──────────────────────────────────────
 const ECO_META = {
@@ -37,6 +37,9 @@ export default function EcoHistoryPage() {
   const [fetching, setFetching] = useState(true);
   const [showStats, setShowStats] = useState(false);
   const [filter, setFilter] = useState("all"); // "all" 또는 dbType
+  const [deleteTarget, setDeleteTarget] = useState(null); // 삭제 확인 대상
+  const [deleting, setDeleting] = useState(false);
+  const [viewPhoto, setViewPhoto] = useState(null); // 사진 확대 뷰어
 
   // Firebase Auth 재인증
   const ensureAuth = async () => {
@@ -136,6 +139,29 @@ export default function EcoHistoryPage() {
     const types = new Set(actions.map(a => a.type));
     return Array.from(types);
   }, [actions]);
+
+  // ─── 인증 내역 삭제 ───────────────────────────────────────
+  const handleDelete = async (action) => {
+    setDeleting(true);
+    try {
+      await ensureAuth();
+      // Firestore에서 문서 삭제
+      await deleteDoc(doc(db, "ecoActions", action.id));
+      // 포인트 차감 (음수 increment)
+      if (user && action.points > 0) {
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, { totalPoints: increment(-(action.points || 0)) }).catch(() => {});
+      }
+      // 로컬 상태에서 제거
+      setActions(prev => prev.filter(a => a.id !== action.id));
+      setDeleteTarget(null);
+    } catch (e) {
+      console.error("[EcoHistory] 삭제 실패:", e.code, e.message);
+      alert("삭제에 실패했습니다.\n" + (e.message || "잠시 후 다시 시도해주세요."));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   if (loading || fetching) {
     return (<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500" /></div>);
@@ -296,39 +322,48 @@ export default function EcoHistoryPage() {
                       <p className="text-sm font-bold text-gray-700">{meta.title}</p>
                       <p className="text-[10px] text-gray-400">{dateStr} {timeStr}</p>
                     </div>
-                    <div className="text-right">
-                      <span className="text-xs font-black text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
-                        +{action.points || 0}P
-                      </span>
-                    </div>
+                    <span className="text-xs font-black text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
+                      +{action.points || 0}P
+                    </span>
+                    <button
+                      onClick={() => setDeleteTarget(action)}
+                      className="p-1.5 rounded-lg hover:bg-red-50 active:bg-red-100 transition-colors"
+                      title="삭제"
+                    >
+                      <Trash2 size={14} className="text-gray-300 hover:text-red-400" />
+                    </button>
                   </div>
-                  {/* 사진 */}
-                  {action.photoUrl && (
-                    <div className="px-4 pb-3">
-                      <img
-                        src={action.photoUrl}
-                        alt="인증 사진"
-                        className="w-full h-40 object-cover rounded-xl"
-                        loading="lazy"
-                      />
+                  {/* 사진 + 추가 정보 (가로 배치) */}
+                  <div className="px-4 pb-3 flex items-start gap-3">
+                    {action.photoUrl && (
+                      <button
+                        onClick={() => setViewPhoto(action.photoUrl)}
+                        className="flex-shrink-0 rounded-xl overflow-hidden active:scale-95 transition-transform"
+                      >
+                        <img
+                          src={action.photoUrl}
+                          alt="인증 사진"
+                          className="w-16 h-16 object-cover"
+                          loading="lazy"
+                        />
+                      </button>
+                    )}
+                    <div className="flex-1 flex items-center gap-1.5 flex-wrap pt-1">
+                      {action.service && (
+                        <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">{action.service}</span>
+                      )}
+                      {action.cupCount > 0 && (
+                        <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">{action.cupCount}개 반환</span>
+                      )}
+                      {action.aiVerified != null && (
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${action.aiVerified ? "bg-green-50 text-green-600" : "bg-yellow-50 text-yellow-600"}`}>
+                          AI {action.aiVerified ? "검증완료" : "미검증"}
+                        </span>
+                      )}
+                      {action.receiptInfo?.storeName && (
+                        <span className="text-[10px] bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full font-medium">{action.receiptInfo.storeName}</span>
+                      )}
                     </div>
-                  )}
-                  {/* 추가 정보 */}
-                  <div className="px-4 pb-3 flex items-center gap-2 flex-wrap">
-                    {action.service && (
-                      <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">{action.service}</span>
-                    )}
-                    {action.cupCount > 0 && (
-                      <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">{action.cupCount}개 반환</span>
-                    )}
-                    {action.aiVerified != null && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${action.aiVerified ? "bg-green-50 text-green-600" : "bg-yellow-50 text-yellow-600"}`}>
-                        AI {action.aiVerified ? "검증완료" : "미검증"}
-                      </span>
-                    )}
-                    {action.receiptInfo?.storeName && (
-                      <span className="text-[10px] bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full font-medium">{action.receiptInfo.storeName}</span>
-                    )}
                   </div>
                 </div>
               );
@@ -346,6 +381,73 @@ export default function EcoHistoryPage() {
           </div>
         )}
       </div>
+
+      {/* ═══ 사진 확대 뷰어 ═══ */}
+      {viewPhoto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setViewPhoto(null)}
+        >
+          <button
+            onClick={() => setViewPhoto(null)}
+            className="absolute top-4 right-4 p-2 bg-black/40 rounded-full text-white active:bg-black/60 z-10"
+          >
+            <X size={22} />
+          </button>
+          <img
+            src={viewPhoto}
+            alt="인증 사진 확대"
+            className="max-w-[92vw] max-h-[85vh] object-contain rounded-xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+
+      {/* ═══ 삭제 확인 모달 ═══ */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+            <div className="px-5 pt-5 pb-3">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+                  <Trash2 size={20} className="text-red-500" />
+                </div>
+                <div>
+                  <p className="text-base font-black text-gray-800">인증 내역 삭제</p>
+                  <p className="text-[11px] text-gray-400">삭제하면 되돌릴 수 없습니다</p>
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-3 mb-1">
+                <p className="text-sm font-bold text-gray-700">
+                  {ECO_META[deleteTarget.type]?.title || "녹색생활 실천"}
+                </p>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  {deleteTarget.certifiedAt ? new Date(deleteTarget.certifiedAt).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" }) : ""}
+                </p>
+                <p className="text-xs text-red-500 font-bold mt-1">
+                  -{deleteTarget.points || 0}P 차감됩니다
+                </p>
+              </div>
+            </div>
+            <div className="flex border-t border-gray-100">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="flex-1 py-3.5 text-sm font-bold text-gray-500 active:bg-gray-50 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => handleDelete(deleteTarget)}
+                disabled={deleting}
+                className="flex-1 py-3.5 text-sm font-bold text-red-500 border-l border-gray-100 active:bg-red-50 transition-colors"
+              >
+                {deleting ? "삭제 중..." : "삭제"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
