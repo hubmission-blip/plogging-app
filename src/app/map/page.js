@@ -673,113 +673,240 @@ function PhotoRequiredModal({ onConfirm, onSkip, uploading, aiEnabled = true }) 
 
 // ─── 텀블러/다회용컵 인증 모달 ──────────────────────────────
 function TumblerCertModal({ onConfirm, onClose, isPlogging }) {
-  const [cafeName, setCafeName]   = useState("");
-  const [photo, setPhoto]         = useState(null);
-  const [preview, setPreview]     = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const fileRef = useRef(null);
+  const [step, setStep]                   = useState("guide"); // guide | cert
+  const [cafeName, setCafeName]           = useState("");
+  const [tumblerPhoto, setTumblerPhoto]   = useState(null);
+  const [tumblerPreview, setTumblerPreview] = useState(null);
+  const [receiptPhoto, setReceiptPhoto]   = useState(null);
+  const [receiptPreview, setReceiptPreview] = useState(null);
+  const [uploading, setUploading]         = useState(false);
+  const tumblerRef = useRef(null);
+  const receiptRef = useRef(null);
 
-  const handlePhoto = (e) => {
+  const handleFileSelect = (e, setFile, setPreview, allowGallery = false) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    // 10분 이내 사진만 허용
     const ageMin = (Date.now() - f.lastModified) / 60000;
-    if (ageMin > 10) {
-      e.target.value = "";
-      alert("방금 찍은 사진만 인증이 가능합니다.\n갤러리 사진은 사용할 수 없어요.");
-      return;
+    if (!allowGallery) {
+      // 텀블러 사진: 10분 이내 직접 촬영만
+      if (ageMin > 10) {
+        e.target.value = "";
+        alert("방금 찍은 사진만 인증이 가능합니다.\n갤러리 사진은 사용할 수 없어요.");
+        return;
+      }
+    } else {
+      // 주문내역 캡처: 2시간(120분) 이내 스크린샷만
+      if (ageMin > 120) {
+        e.target.value = "";
+        alert("2시간 이내의 주문내역만 인증 가능합니다.\n최근 스크린샷을 선택해주세요.");
+        return;
+      }
     }
-    setPhoto(f);
+    setFile(f);
     setPreview(URL.createObjectURL(f));
   };
 
   const handleSubmit = async () => {
-    if (!photo) { alert("텀블러 사진을 촬영해주세요"); return; }
+    if (!tumblerPhoto) { alert("텀블러 사진을 촬영해주세요"); return; }
     if (!cafeName.trim()) { alert("카페명을 입력해주세요"); return; }
     setUploading(true);
     try {
-      const photoUrl = await uploadToCloudinary(photo);
-      onConfirm({ cafeName: cafeName.trim(), photoUrl, certifiedAt: new Date().toISOString() });
+      const photoUrl = await uploadToCloudinary(tumblerPhoto);
+      let receiptUrl = null;
+      if (receiptPhoto) {
+        try { receiptUrl = await uploadToCloudinary(receiptPhoto); }
+        catch { /* 영수증 업로드 실패해도 진행 */ }
+      }
+      onConfirm({
+        cafeName: cafeName.trim(),
+        photoUrl,
+        receiptUrl,
+        certifiedAt: new Date().toISOString(),
+      });
     } catch (e) { alert("사진 업로드 실패: " + e.message); }
     finally { setUploading(false); }
   };
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[210]">
-      <div className="bg-white rounded-t-3xl w-full shadow-2xl overflow-hidden" style={{ maxHeight: "80vh" }}>
+      <div className="bg-white rounded-t-3xl w-full shadow-2xl overflow-hidden" style={{ maxHeight: "85vh" }}>
         <div className="pt-3 pb-1 flex justify-center">
           <div className="w-10 h-1 bg-gray-200 rounded-full" />
         </div>
-        <div className="px-5 pt-2 pb-6 overflow-y-auto" style={{ maxHeight: "calc(80vh - 2rem)", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 16px))" }}>
+        <div className="px-5 pt-2 pb-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 2rem)", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 16px))" }}>
 
-          <div className="text-center mb-4">
-            <div className="text-4xl mb-2">☕</div>
-            <h2 className="text-lg font-black text-gray-800">텀블러/다회용컵 인증</h2>
-            <p className="text-gray-500 text-sm mt-1">
-              텀블러 또는 다회용컵으로 음료를 받은 사진을 촬영해주세요
-            </p>
-            {isPlogging && (
-              <div className="mt-2 inline-flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-full px-3 py-1">
-                <span className="text-xs">🏃</span>
-                <span className="text-xs font-bold text-green-600">플로깅 진행 중 · 인증 후 계속됩니다</span>
+          {/* ══ STEP 1: 안내 가이드 ══ */}
+          {step === "guide" && (
+            <>
+              <div className="text-center mb-4">
+                <div className="text-4xl mb-2">☕</div>
+                <h2 className="text-lg font-black text-gray-800">텀블러/다회용컵 인증</h2>
+                <p className="text-gray-500 text-sm mt-1">
+                  텀블러 사용을 인증하고 포인트를 받아보세요!
+                </p>
+                {isPlogging && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-full px-3 py-1">
+                    <span className="text-xs">🏃</span>
+                    <span className="text-xs font-bold text-green-600">플로깅 진행 중 · 인증 후 계속됩니다</span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          {/* 사진 촬영 */}
-          <div className="mb-3">
-            {preview ? (
-              <div className="relative mb-2">
-                <img src={preview} alt="텀블러 사진" className="w-full h-44 object-cover rounded-2xl" />
-                <button onClick={() => { setPhoto(null); setPreview(null); }}
-                  className="absolute top-2 right-2 bg-black/50 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">✕</button>
+              {/* 인증 방법 안내 카드 */}
+              <div className="space-y-2.5 mb-4">
+                {/* 키오스크 주문 */}
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl mt-0.5">🖥️</span>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-black text-blue-800 mb-1.5">키오스크로 주문한 경우</h3>
+                      <div className="space-y-1.5 text-xs text-blue-700 leading-relaxed">
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-blue-400 mt-px">1</span>
+                          <span>키오스크 <span className="font-bold">주문 완료 화면을 먼저 촬영</span>해주세요</span>
+                        </div>
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-blue-400 mt-px">2</span>
+                          <span>음료를 받은 후 <span className="font-bold">텀블러 사진을 촬영</span>해주세요</span>
+                        </div>
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-blue-400 mt-px">3</span>
+                          <span>주문내역은 <span className="font-bold">갤러리에서 아까 찍은 사진을 선택</span>하면 돼요</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 앱 주문 */}
+                <div className="bg-green-50 border border-green-200 rounded-2xl p-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl mt-0.5">📱</span>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-black text-green-800 mb-1.5">카페 앱으로 주문한 경우</h3>
+                      <div className="space-y-1.5 text-xs text-green-700 leading-relaxed">
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-green-400 mt-px">1</span>
+                          <span>카페 앱에서 <span className="font-bold">주문내역 화면을 스크린샷</span> 찍어두세요</span>
+                        </div>
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-green-400 mt-px">2</span>
+                          <span>음료를 받은 후 <span className="font-bold">텀블러 사진을 촬영</span>해주세요</span>
+                        </div>
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-green-400 mt-px">3</span>
+                          <span>주문내역은 <span className="font-bold">갤러리에서 스크린샷을 선택</span>하면 돼요</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            ) : (
-              <button onClick={() => fileRef.current?.click()}
-                className="w-full h-36 border-2 border-dashed border-amber-300 rounded-2xl flex flex-col items-center justify-center gap-2 mb-2 active:bg-amber-50 bg-amber-50/30">
-                <span className="text-4xl">📸</span>
-                <span className="text-sm text-amber-600 font-bold">텀블러 사진 찍기</span>
-                <span className="text-xs text-gray-400">텀블러에 음료가 담긴 모습을 촬영해주세요</span>
-              </button>
-            )}
-            <input ref={fileRef} type="file" accept="image/*" capture="environment"
-              onChange={handlePhoto} className="hidden" />
-          </div>
 
-          {/* 카페명 입력 */}
-          <div className="mb-4">
-            <label className="text-sm font-bold text-gray-700 mb-1.5 block">카페명</label>
-            <input
-              type="text"
-              value={cafeName}
-              onChange={(e) => setCafeName(e.target.value)}
-              placeholder="예) 스타벅스 강남점, 이디야 역삼점"
-              className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 text-sm bg-white focus:outline-none focus:border-amber-400 placeholder:text-gray-300"
-            />
-          </div>
+              {/* 보너스 안내 */}
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-4 text-center">
+                <span className="text-xs font-bold text-amber-700">
+                  ☕ 텀블러 사용 인증 시 <span className="text-amber-500">+30 포인트</span> 적립!
+                </span>
+                <p className="text-[10px] text-amber-500 mt-1">탄소중립포인트 녹색생활 실천 연계 항목</p>
+              </div>
 
-          {/* 보너스 안내 */}
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-4 text-center">
-            <span className="text-xs font-bold text-amber-700">
-              ☕ 텀블러 사용 인증 시 <span className="text-amber-500">+30 포인트</span> 적립!
-            </span>
-            <p className="text-xs text-amber-500 mt-1">탄소중립포인트 녹색생활 실천 연계 항목</p>
-          </div>
+              {/* 버튼 */}
+              <div className="space-y-2">
+                <button onClick={() => setStep("cert")}
+                  className="w-full py-4 rounded-2xl font-black text-base bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md active:scale-95 transition-all">
+                  인증 시작하기
+                </button>
+                <button onClick={onClose}
+                  className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">
+                  취소
+                </button>
+              </div>
+            </>
+          )}
 
-          {/* 버튼 */}
-          <div className="space-y-2">
-            <button onClick={handleSubmit} disabled={uploading || !photo}
-              className={`w-full py-4 rounded-2xl font-black text-base transition-all
-                ${uploading ? "bg-gray-100 text-gray-400"
-                  : photo ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md active:scale-95"
-                  : "bg-gray-100 text-gray-300 cursor-not-allowed"}`}>
-              {uploading ? "인증 중... ⏳" : "☕ 텀블러 인증 완료"}
-            </button>
-            <button onClick={onClose}
-              className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">
-              취소
-            </button>
-          </div>
+          {/* ══ STEP 2: 인증 입력 ══ */}
+          {step === "cert" && (
+            <>
+              <div className="text-center mb-4">
+                <h2 className="text-lg font-black text-gray-800">텀블러 인증하기</h2>
+                <p className="text-gray-400 text-xs mt-1">텀블러 사진(필수)과 주문내역(선택)을 올려주세요</p>
+              </div>
+
+              {/* ── 2장 사진 나란히 ── */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {/* 텀블러 사진 (필수) */}
+                <div>
+                  <label className="text-xs font-bold text-amber-700 mb-1 block">텀블러 사진 <span className="text-red-400">*</span></label>
+                  {tumblerPreview ? (
+                    <div className="relative">
+                      <img src={tumblerPreview} alt="텀블러" className="w-full h-32 object-cover rounded-xl" />
+                      <button onClick={() => { setTumblerPhoto(null); setTumblerPreview(null); }}
+                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => tumblerRef.current?.click()}
+                      className="w-full h-32 border-2 border-dashed border-amber-300 rounded-xl flex flex-col items-center justify-center gap-1 active:bg-amber-50 bg-amber-50/30">
+                      <span className="text-2xl">🥤</span>
+                      <span className="text-[11px] text-amber-600 font-bold">텀블러 촬영</span>
+                      <span className="text-[10px] text-gray-400">음료가 담긴 모습</span>
+                    </button>
+                  )}
+                  <input ref={tumblerRef} type="file" accept="image/*" capture="environment"
+                    onChange={(e) => handleFileSelect(e, setTumblerPhoto, setTumblerPreview)} className="hidden" />
+                </div>
+
+                {/* 주문내역 (선택) */}
+                <div>
+                  <label className="text-xs font-bold text-gray-600 mb-1 block">주문내역 <span className="text-gray-400 font-normal">(선택)</span></label>
+                  {receiptPreview ? (
+                    <div className="relative">
+                      <img src={receiptPreview} alt="주문내역" className="w-full h-32 object-cover rounded-xl" />
+                      <button onClick={() => { setReceiptPhoto(null); setReceiptPreview(null); }}
+                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => receiptRef.current?.click()}
+                      className="w-full h-32 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 active:bg-gray-50 bg-gray-50/30">
+                      <span className="text-2xl">📱</span>
+                      <span className="text-[11px] text-gray-500 font-bold">주문내역 인증</span>
+                      <span className="text-[10px] text-gray-400">캡처 또는 화면촬영</span>
+                    </button>
+                  )}
+                  <input ref={receiptRef} type="file" accept="image/*"
+                    onChange={(e) => handleFileSelect(e, setReceiptPhoto, setReceiptPreview, true)} className="hidden" />
+                </div>
+              </div>
+
+              {/* 카페명 입력 */}
+              <div className="mb-4">
+                <label className="text-sm font-bold text-gray-700 mb-1.5 block">카페명 <span className="text-red-400">*</span></label>
+                <input
+                  type="text"
+                  value={cafeName}
+                  onChange={(e) => setCafeName(e.target.value)}
+                  placeholder="예) 스타벅스 강남점, 이디야 역삼점"
+                  className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 text-sm bg-white focus:outline-none focus:border-amber-400 placeholder:text-gray-300"
+                />
+              </div>
+
+              {/* 버튼 */}
+              <div className="space-y-2">
+                <button onClick={handleSubmit} disabled={uploading || !tumblerPhoto}
+                  className={`w-full py-4 rounded-2xl font-black text-base transition-all
+                    ${uploading ? "bg-gray-100 text-gray-400"
+                      : tumblerPhoto ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md active:scale-95"
+                      : "bg-gray-100 text-gray-300 cursor-not-allowed"}`}>
+                  {uploading ? "인증 중... ⏳" : "☕ 텀블러 인증 완료"}
+                </button>
+                <button onClick={() => setStep("guide")}
+                  className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">
+                  이전으로
+                </button>
+              </div>
+            </>
+          )}
+
         </div>
       </div>
     </div>
@@ -1376,6 +1503,7 @@ function MapPageInner() {
           type: "tumbler",
           cafeName: certData.cafeName,
           photoUrl: certData.photoUrl,
+          receiptUrl: certData.receiptUrl || null,
           points: TUMBLER_BONUS,
           certifiedAt: certData.certifiedAt,
           createdAt: serverTimestamp(),
