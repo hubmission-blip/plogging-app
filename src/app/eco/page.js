@@ -4,166 +4,368 @@ import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Leaf } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, getDocs, limit } from "firebase/firestore";
+import { collection, query, where, orderBy, getDocs, limit, addDoc, doc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
+import { uploadToCloudinary } from "@/lib/cloudinary";
+import { TUMBLER_BONUS, CUP_RETURN_PER_CUP, REUSABLE_CONTAINER_BONUS, EV_RENTAL_BONUS, SHARED_BIKE_BONUS, E_RECEIPT_BONUS, FUTURE_GEN_BONUS, ZERO_WASTE_BONUS, ECO_BAG_BONUS, OWN_CONTAINER_BONUS, RECYCLED_PRODUCT_BONUS } from "@/lib/pointCalc";
 
+// ─── 포인트 상수 (신규 4개) ────────────────────────────
+const TREE_PLANTING_BONUS  = 50;
+const SOLAR_PANEL_BONUS    = 50;
+const PHONE_RETURN_BONUS   = 30;
+const REFILL_STATION_BONUS = 30;
+
+// ─── 녹색생활 실천 항목 목록 ────────────────────────────
 const ECO_ACTIONS = [
-  {
-    id: "tumbler",
-    icon: "☕",
-    title: "텀블러/다회용컵 이용",
-    desc: "카페에서 텀블러로 음료를 받고 인증하세요",
-    points: "+30P",
-    color: "from-amber-400 to-orange-400",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
-    textColor: "text-amber-700",
-    href: "/map?eco=tumbler",
-  },
-  {
-    id: "cupreturn",
-    icon: "♻️",
-    title: "일회용컵 반환",
-    desc: "반환기에 일회용컵을 반환하고 인증하세요",
-    points: "컵당 +10P",
-    color: "from-teal-400 to-cyan-400",
-    bg: "bg-teal-50",
-    border: "border-teal-200",
-    textColor: "text-teal-700",
-    href: "/map?eco=cupreturn",
-  },
-  {
-    id: "container",
-    icon: "🍱",
-    title: "다회용기 배달 이용",
-    desc: "배달 주문 시 다회용기를 선택하고 인증하세요",
-    points: "+30P",
-    color: "from-indigo-400 to-violet-400",
-    bg: "bg-indigo-50",
-    border: "border-indigo-200",
-    textColor: "text-indigo-700",
-    href: "/map?eco=container",
-  },
-  {
-    id: "evrental",
-    icon: "🚗",
-    title: "무공해차 대여",
-    desc: "전기차·수소차를 대여하고 인증하세요",
-    points: "+50P",
-    color: "from-blue-400 to-sky-400",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    textColor: "text-blue-700",
-    href: "/map?eco=evrental",
-  },
-  {
-    id: "sharedbike",
-    icon: "🚲",
-    title: "공유자전거 이용",
-    desc: "공유자전거를 이용하고 인증하세요",
-    points: "+30P",
-    color: "from-lime-400 to-green-400",
-    bg: "bg-lime-50",
-    border: "border-lime-200",
-    textColor: "text-lime-700",
-    href: "/map?eco=sharedbike",
-  },
-  {
-    id: "ereceipt",
-    icon: "🧾",
-    title: "전자영수증 발급",
-    desc: "종이 영수증 대신 전자영수증을 받고 인증하세요",
-    points: "+20P",
-    color: "from-cyan-400 to-blue-400",
-    bg: "bg-cyan-50",
-    border: "border-cyan-200",
-    textColor: "text-cyan-700",
-    href: "/map?eco=ereceipt",
-  },
-  {
-    id: "futuregen",
-    icon: "🌱",
-    title: "미래세대 실천행동",
-    desc: "환경 교육·캠페인 참여를 인증하세요",
-    points: "+30P",
-    color: "from-emerald-400 to-green-400",
-    bg: "bg-emerald-50",
-    border: "border-emerald-200",
-    textColor: "text-emerald-700",
-    href: "/map?eco=futuregen",
-  },
-  {
-    id: "zerowaste",
-    icon: "🍽️",
-    title: "잔반제로 실천",
-    desc: "음식을 남기지 않고 깨끗이 비운 후 인증하세요",
-    points: "+20P",
-    color: "from-orange-400 to-red-400",
-    bg: "bg-orange-50",
-    border: "border-orange-200",
-    textColor: "text-orange-700",
-    href: "/map?eco=zerowaste",
-  },
-  {
-    id: "ecobag",
-    icon: "🛍️",
-    title: "개인장바구니 이용",
-    desc: "장보기 시 개인장바구니를 사용하고 인증하세요",
-    points: "+20P",
-    color: "from-pink-400 to-rose-400",
-    bg: "bg-pink-50",
-    border: "border-pink-200",
-    textColor: "text-pink-700",
-    href: "/map?eco=ecobag",
-  },
-  {
-    id: "owncontainer",
-    icon: "🥡",
-    title: "개인용기 식품포장",
-    desc: "개인용기로 식품을 포장받고 인증하세요",
-    points: "+20P",
-    color: "from-violet-400 to-purple-400",
-    bg: "bg-violet-50",
-    border: "border-violet-200",
-    textColor: "text-violet-700",
-    href: "/map?eco=owncontainer",
-  },
-  {
-    id: "recycledproduct",
-    icon: "♻️",
-    title: "재생원료 제품구매",
-    desc: "재생원료로 만든 제품을 구매하고 인증하세요",
-    points: "+30P",
-    color: "from-green-400 to-teal-400",
-    bg: "bg-green-50",
-    border: "border-green-200",
-    textColor: "text-green-700",
-    href: "/map?eco=recycledproduct",
-  },
+  { id: "tumbler",    icon: "☕",  title: "텀블러/다회용컵 이용",  desc: "카페에서 텀블러로 음료를 받고 인증하세요",          points: "+30P" },
+  { id: "cupreturn",  icon: "♻️",  title: "일회용컵 반환",         desc: "반환기에 일회용컵을 반환하고 인증하세요",         points: "컵당 +10P" },
+  { id: "container",  icon: "🍱",  title: "다회용기 배달 이용",     desc: "배달 주문 시 다회용기를 선택하고 인증하세요",     points: "+30P" },
+  { id: "evrental",   icon: "🚗",  title: "무공해차 대여",          desc: "전기차·수소차를 대여하고 인증하세요",            points: "+50P" },
+  { id: "sharedbike", icon: "🚲",  title: "공유자전거 이용",        desc: "공유자전거를 이용하고 인증하세요",               points: "+30P" },
+  { id: "ereceipt",   icon: "🧾",  title: "전자영수증 발급",        desc: "종이 영수증 대신 전자영수증을 받고 인증하세요",   points: "+20P" },
+  { id: "futuregen",  icon: "🌱",  title: "미래세대 실천행동",      desc: "환경 교육·캠페인 참여를 인증하세요",             points: "+30P" },
+  { id: "zerowaste",  icon: "🍽️",  title: "잔반제로 실천",          desc: "음식을 남기지 않고 깨끗이 비운 후 인증하세요",    points: "+20P" },
+  { id: "ecobag",     icon: "🛍️",  title: "개인장바구니 이용",      desc: "장보기 시 개인장바구니를 사용하고 인증하세요",    points: "+20P" },
+  { id: "owncontainer",icon: "🥡",  title: "개인용기 식품포장",     desc: "개인용기로 식품을 포장받고 인증하세요",           points: "+20P" },
+  { id: "recycledproduct", icon: "♻️", title: "재생원료 제품구매",  desc: "재생원료로 만든 제품을 구매하고 인증하세요",      points: "+30P" },
+  { id: "treeplanting",icon: "🌳",  title: "나무심기 캠페인 참여",  desc: "나무심기 캠페인에 참여하고 인증하세요",           points: "+50P" },
+  { id: "solarpanel",  icon: "☀️",  title: "베란다 태양광 설치",    desc: "베란다 태양광 패널 설치를 인증하세요",            points: "+50P" },
+  { id: "phonereturn", icon: "📱",  title: "폐휴대폰 반납",         desc: "사용하지 않는 폐휴대폰을 반납하고 인증하세요",   points: "+30P" },
+  { id: "refillstation",icon: "🫧",  title: "리필스테이션 이용",    desc: "세제·샴푸 등을 리필스테이션에서 리필하고 인증하세요", points: "+30P" },
 ];
 
-// 앞으로 추가될 녹색생활 실천 항목 (비활성)
-const COMING_SOON = [
-  { icon: "🚿", title: "샤워 절약", desc: "5분 이내 샤워 실천" },
-  { icon: "🌡️", title: "적정 냉난방", desc: "실내 적정온도 유지" },
-];
+// ─── 항목별 색상 ────────────────────────────────────────
+const COLORS = {
+  tumbler:    { color: "from-amber-400 to-orange-400", bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700" },
+  cupreturn:  { color: "from-teal-400 to-cyan-400", bg: "bg-teal-50", border: "border-teal-200", text: "text-teal-700" },
+  container:  { color: "from-indigo-400 to-violet-400", bg: "bg-indigo-50", border: "border-indigo-200", text: "text-indigo-700" },
+  evrental:   { color: "from-blue-400 to-sky-400", bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700" },
+  sharedbike: { color: "from-lime-400 to-green-400", bg: "bg-lime-50", border: "border-lime-200", text: "text-lime-700" },
+  ereceipt:   { color: "from-cyan-400 to-blue-400", bg: "bg-cyan-50", border: "border-cyan-200", text: "text-cyan-700" },
+  futuregen:  { color: "from-emerald-400 to-green-400", bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700" },
+  zerowaste:  { color: "from-orange-400 to-red-400", bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-700" },
+  ecobag:     { color: "from-pink-400 to-rose-400", bg: "bg-pink-50", border: "border-pink-200", text: "text-pink-700" },
+  owncontainer:    { color: "from-violet-400 to-purple-400", bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-700" },
+  recycledproduct: { color: "from-green-400 to-teal-400", bg: "bg-green-50", border: "border-green-200", text: "text-green-700" },
+  treeplanting:    { color: "from-green-500 to-emerald-500", bg: "bg-green-50", border: "border-green-200", text: "text-green-700" },
+  solarpanel:      { color: "from-yellow-400 to-amber-400", bg: "bg-yellow-50", border: "border-yellow-200", text: "text-yellow-700" },
+  phonereturn:     { color: "from-gray-400 to-slate-400", bg: "bg-gray-50", border: "border-gray-200", text: "text-gray-700" },
+  refillstation:   { color: "from-sky-400 to-indigo-400", bg: "bg-sky-50", border: "border-sky-200", text: "text-sky-700" },
+};
 
+// ─── 인증 모달 설정 ─────────────────────────────────────
+const CERT_CONFIG = {
+  tumbler: {
+    title: "텀블러/다회용컵 이용 인증", dbType: "tumbler", bonus: TUMBLER_BONUS,
+    steps: ["카페 방문 시 텀블러/다회용컵을 가져가세요", "텀블러에 음료를 받은 후 텀블러를 촬영", "주문내역 캡처를 함께 올리면 인증 완료!"],
+    tip: "스타벅스 등 제휴 매장에서는 텀블러 사용 시 300원 할인도 별도로 받을 수 있어요. 우리 앱의 포인트는 추가 적립입니다!",
+    photoLabel: "텀블러 사진", receiptLabel: "주문내역",
+  },
+  cupreturn: {
+    title: "일회용컵 반환 인증", dbType: "cup_return", hasCupCount: true,
+    steps: ["편의점, 카페 등에 설치된 컵 반환기를 찾아주세요", "일회용컵을 반환기에 넣어주세요", "반환 완료 화면 또는 반환기를 사진으로 촬영해주세요"],
+    tip: "일회용컵 반환 시 자원순환보증금 300원도 돌려받을 수 있어요. 오백원의 행복 포인트는 별도로 추가 적립됩니다!",
+    photoLabel: "반환기 사진", bonusPerCup: CUP_RETURN_PER_CUP,
+  },
+  container: {
+    title: "다회용기 배달 이용 인증", dbType: "reusable_container", bonus: REUSABLE_CONTAINER_BONUS,
+    steps: ["배달앱에서 주문 시 다회용기 선택", "배달 도착 후 다회용기에 담긴 음식을 촬영", "배달앱 주문내역 캡처를 함께 올리면 인증 완료!"],
+    tip: "다회용기 사진은 음식이 담긴 상태로 촬영해주세요. 주문내역 캡처에 \"다회용기\" 선택 표시가 보이면 더 좋아요!",
+    photoLabel: "다회용기 사진", receiptLabel: "주문내역",
+    services: ["배달의민족", "쿠팡이츠", "요기요", "기타"],
+  },
+  evrental: {
+    title: "무공해차 대여 인증", dbType: "ev_rental", bonus: EV_RENTAL_BONUS,
+    steps: ["카셰어링 앱에서 전기차·수소차를 대여", "대여한 차량을 촬영해주세요", "대여앱 이용내역 캡처를 함께 올리면 인증 완료!"],
+    tip: "전기차, 수소차 등 무공해 차량이 대상입니다. 쏘카, 그린카, 피플카 등 카셰어링 서비스의 전기차 대여가 해당돼요.",
+    photoLabel: "차량 사진", receiptLabel: "이용내역",
+    services: ["쏘카", "그린카", "피플카", "카카오T", "기타"],
+  },
+  sharedbike: {
+    title: "공유자전거 이용 인증", dbType: "shared_bike", bonus: SHARED_BIKE_BONUS,
+    steps: ["공유자전거 앱에서 자전거를 대여해주세요", "이용 중인 자전거를 촬영해주세요", "앱의 이용내역 캡처를 함께 올리면 인증 완료!"],
+    tip: "따릉이, 카카오T바이크, 일레클, 지쿠 등 공유자전거·전동킥보드 서비스가 모두 해당됩니다.",
+    photoLabel: "자전거 사진", receiptLabel: "이용내역",
+    services: ["따릉이", "카카오T바이크", "일레클", "지쿠", "기타"],
+  },
+  ereceipt: {
+    title: "전자영수증 발급 인증", dbType: "e_receipt", bonus: E_RECEIPT_BONUS, allowGallery: true,
+    steps: ["매장에서 결제 시 전자영수증 발급을 요청", "스마트폰에 수신된 전자영수증 화면을 캡처", "캡처한 화면을 업로드하면 인증 완료!"],
+    tip: "편의점, 마트, 카페 등 전자영수증 발급이 가능한 매장에서 이용하세요. 카카오톡, 네이버 전자영수증 모두 인정됩니다.",
+    photoLabel: "전자영수증 캡처",
+  },
+  futuregen: {
+    title: "미래세대 실천행동 인증", dbType: "future_gen", bonus: FUTURE_GEN_BONUS,
+    steps: ["환경 관련 교육, 캠페인, 봉사활동에 참여", "참여 현장 또는 수료증·인증서를 촬영", "사진을 업로드하면 인증 완료!"],
+    tip: "환경 교육, 기후행동 캠페인, 생태체험, 환경 봉사활동 등이 해당됩니다. 참여 증빙 사진을 찍어주세요.",
+    photoLabel: "참여 인증사진", receiptLabel: "수료증/인증서",
+  },
+  zerowaste: {
+    title: "잔반제로 실천 인증", dbType: "zero_waste", bonus: ZERO_WASTE_BONUS,
+    steps: ["식사 후 음식을 남기지 않고 깨끗이 비우기", "깨끗이 비운 식판·그릇을 촬영", "사진을 업로드하면 인증 완료!"],
+    tip: "구내식당, 식당, 가정식 등 어디서든 실천 가능합니다. 깨끗이 비운 접시·식판을 찍어주세요.",
+    photoLabel: "빈 식판/그릇",
+  },
+  ecobag: {
+    title: "개인장바구니 이용 인증", dbType: "eco_bag", bonus: ECO_BAG_BONUS,
+    steps: ["마트·시장에서 개인장바구니에 물건 담기", "장바구니에 물건이 담긴 모습을 촬영", "사진을 업로드하면 인증 완료!"],
+    tip: "마트, 전통시장, 편의점 등에서 비닐봉투 대신 장바구니를 사용해주세요.",
+    photoLabel: "장바구니 사진",
+  },
+  owncontainer: {
+    title: "개인용기 식품포장 인증", dbType: "own_container", bonus: OWN_CONTAINER_BONUS,
+    steps: ["매장 방문 시 개인용기를 가져가세요", "개인용기에 식품을 담아 포장받기", "포장된 개인용기를 촬영하면 인증 완료!"],
+    tip: "반찬가게, 식당 포장, 베이커리 등에서 일회용 용기 대신 개인용기를 사용해주세요.",
+    photoLabel: "개인용기 사진",
+  },
+  recycledproduct: {
+    title: "재생원료 제품구매 인증", dbType: "recycled_product", bonus: RECYCLED_PRODUCT_BONUS,
+    steps: ["재생원료 인증마크가 있는 제품을 구매", "제품 또는 인증마크를 촬영", "구매내역 캡처와 함께 올리면 인증 완료!"],
+    tip: "재생지, 재생플라스틱, 업사이클링 제품 등 GR마크·환경마크가 있는 제품이 해당됩니다.",
+    photoLabel: "제품/인증마크", receiptLabel: "구매내역",
+  },
+  treeplanting: {
+    title: "나무심기 캠페인 참여 인증", dbType: "tree_planting", bonus: TREE_PLANTING_BONUS,
+    steps: ["나무심기 캠페인이나 봉사활동에 참여", "나무를 심는 모습 또는 심은 나무를 촬영", "참여 인증서가 있으면 함께 올려주세요!"],
+    tip: "지자체, 기업, 시민단체 등이 주최하는 나무심기 행사가 모두 해당됩니다. 식목일 참여도 인정돼요!",
+    photoLabel: "활동 사진", receiptLabel: "참여 인증서",
+  },
+  solarpanel: {
+    title: "베란다 태양광 설치 인증", dbType: "solar_panel", bonus: SOLAR_PANEL_BONUS, allowGallery: true,
+    steps: ["베란다에 태양광 미니발전소를 설치", "설치된 태양광 패널을 촬영", "설치 확인서나 신청서 캡처를 함께 올려주세요!"],
+    tip: "지자체 보조금 신청 후 설치한 베란다 태양광이 대상입니다. 설치 후 1회 인증 가능합니다.",
+    photoLabel: "태양광 패널 사진", receiptLabel: "설치확인서",
+  },
+  phonereturn: {
+    title: "폐휴대폰 반납 인증", dbType: "phone_return", bonus: PHONE_RETURN_BONUS,
+    steps: ["사용하지 않는 폐휴대폰을 준비", "우체국, 대리점 등 수거함에 반납", "반납 모습 또는 수거함을 촬영해주세요!"],
+    tip: "우체국, 이동통신 대리점, 주민센터 등에 설치된 폐휴대폰 수거함에 반납하세요.",
+    photoLabel: "반납 사진",
+  },
+  refillstation: {
+    title: "리필스테이션 이용 인증", dbType: "refill_station", bonus: REFILL_STATION_BONUS,
+    steps: ["리필스테이션이 있는 매장을 방문", "세제, 샴푸 등을 개인용기에 리필", "리필 모습 또는 리필된 용기를 촬영해주세요!"],
+    tip: "아모레퍼시픽, 이니스프리, 아로마티카 등 리필스테이션 운영 매장에서 이용하세요.",
+    photoLabel: "리필 사진",
+  },
+};
+
+// ─── 최근 내역용 아이콘/이름 매핑 ──────────────────────
+const TYPE_META = {
+  tumbler:"☕", cup_return:"♻️", reusable_container:"🍱", ev_rental:"🚗", shared_bike:"🚲",
+  e_receipt:"🧾", future_gen:"🌱", zero_waste:"🍽️", eco_bag:"🛍️", own_container:"🥡",
+  recycled_product:"♻️", tree_planting:"🌳", solar_panel:"☀️", phone_return:"📱", refill_station:"🫧",
+};
+const TYPE_NAME = {
+  tumbler:"텀블러 사용", cup_return:"일회용컵 반환", reusable_container:"다회용기 배달",
+  ev_rental:"무공해차 대여", shared_bike:"공유자전거 이용", e_receipt:"전자영수증 발급",
+  future_gen:"미래세대 실천행동", zero_waste:"잔반제로 실천", eco_bag:"개인장바구니 이용",
+  own_container:"개인용기 식품포장", recycled_product:"재생원료 제품구매",
+  tree_planting:"나무심기 캠페인", solar_panel:"베란다 태양광", phone_return:"폐휴대폰 반납", refill_station:"리필스테이션",
+};
+
+// ═══════════════════════════════════════════════════════
+//  범용 인증 모달
+// ═══════════════════════════════════════════════════════
+function EcoCertModal({ ecoId, onConfirm, onClose }) {
+  const cfg = CERT_CONFIG[ecoId];
+  const clr = COLORS[ecoId];
+  const action = ECO_ACTIONS.find(a => a.id === ecoId);
+  const [step, setStep]       = useState("guide");
+  const [photo, setPhoto]     = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [receipt, setReceipt] = useState(null);
+  const [receiptPrev, setReceiptPrev] = useState(null);
+  const [cupCount, setCupCount] = useState(1);
+  const [service, setService]   = useState("");
+  const [uploading, setUploading] = useState(false);
+  const photoRef   = useRef(null);
+  const receiptRef = useRef(null);
+
+  const handlePhoto = (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const maxMin = cfg.allowGallery ? 120 : 10;
+    const msg = cfg.allowGallery ? "2시간 이내의 캡처만 인증이 가능합니다." : "방금 찍은 사진만 인증이 가능합니다.\n갤러리 사진은 사용할 수 없어요.";
+    if ((Date.now() - f.lastModified) / 60000 > maxMin) { e.target.value = ""; alert(msg); return; }
+    setPhoto(f); setPreview(URL.createObjectURL(f));
+  };
+  const handleReceipt = (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    if ((Date.now() - f.lastModified) / 60000 > 120) { e.target.value = ""; alert("2시간 이내의 이미지만 인증이 가능합니다."); return; }
+    setReceipt(f); setReceiptPrev(URL.createObjectURL(f));
+  };
+
+  const totalPoints = cfg.hasCupCount ? cupCount * cfg.bonusPerCup : (cfg.bonus || 0);
+
+  const handleSubmit = async () => {
+    if (!photo) { alert(`${cfg.photoLabel}을 올려주세요`); return; }
+    setUploading(true);
+    try {
+      const photoUrl = await uploadToCloudinary(photo);
+      let receiptUrl = null;
+      if (receipt) receiptUrl = await uploadToCloudinary(receipt);
+      onConfirm({ ecoId, photoUrl, receiptUrl, service, cupCount: cfg.hasCupCount ? cupCount : undefined, points: totalPoints, certifiedAt: new Date().toISOString() });
+    } catch (e) { alert("사진 업로드 실패: " + e.message); }
+    finally { setUploading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[210]">
+      <div className="bg-white rounded-t-3xl w-full shadow-2xl overflow-hidden" style={{ maxHeight: "85vh" }}>
+        <div className="pt-3 pb-1 flex justify-center"><div className="w-10 h-1 bg-gray-200 rounded-full" /></div>
+        <div className="px-5 pt-2 pb-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 2rem)", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 16px))" }}>
+
+          {step === "guide" && (
+            <>
+              <div className="text-center mb-4">
+                <div className="text-4xl mb-2">{action?.icon}</div>
+                <h2 className="text-lg font-black text-gray-800">{cfg.title}</h2>
+              </div>
+              <div className="space-y-2.5 mb-4">
+                <div className={`${clr.bg} border ${clr.border} rounded-2xl p-3.5`}>
+                  <h3 className={`text-sm font-black ${clr.text} mb-2`}>인증 방법</h3>
+                  <div className="space-y-1.5">
+                    {cfg.steps.map((s, i) => (
+                      <div key={i} className={`flex items-start gap-1.5 text-xs ${clr.text} leading-relaxed`}>
+                        <span className="font-black opacity-50 mt-px">{i + 1}</span>
+                        <span>{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl mt-0.5">💡</span>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-black text-gray-700 mb-1">알아두세요</h3>
+                      <p className="text-xs text-gray-500 leading-relaxed">{cfg.tip}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className={`${clr.bg} border ${clr.border} rounded-2xl p-3 mb-4 text-center`}>
+                <span className={`text-xs font-bold ${clr.text}`}>
+                  {action?.icon} 인증 시 <span className="opacity-80">{action?.points}</span> 적립!
+                </span>
+                <p className="text-[10px] text-gray-400 mt-1">탄소중립포인트 녹색생활 실천 연계 항목</p>
+              </div>
+              <div className="space-y-2">
+                <button onClick={() => setStep("cert")}
+                  className={`w-full py-4 rounded-2xl font-black text-base bg-gradient-to-r ${clr.color} text-white shadow-md active:scale-95 transition-all`}>
+                  인증 시작하기
+                </button>
+                <button onClick={onClose} className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">취소</button>
+              </div>
+            </>
+          )}
+
+          {step === "cert" && (
+            <>
+              <div className="text-center mb-4">
+                <h2 className="text-lg font-black text-gray-800">{cfg.title.replace(" 인증", "")} 인증하기</h2>
+                <p className="text-gray-400 text-xs mt-1">{cfg.photoLabel}을 올려주세요</p>
+              </div>
+
+              <div className={`${cfg.receiptLabel ? "grid grid-cols-2 gap-2" : ""} mb-3`}>
+                <div>
+                  <label className={`text-xs font-bold ${clr.text} mb-1 block`}>{cfg.photoLabel} <span className="text-red-400">*</span></label>
+                  {preview ? (
+                    <div className="relative">
+                      <img src={preview} alt="인증" className="w-full h-32 object-cover rounded-xl" />
+                      <button onClick={() => { setPhoto(null); setPreview(null); }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => photoRef.current?.click()} className={`w-full h-32 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-1 ${clr.border} ${clr.bg}`}>
+                      <span className="text-2xl">📸</span>
+                      <span className={`text-[10px] font-bold ${clr.text}`}>{cfg.photoLabel}</span>
+                    </button>
+                  )}
+                  <input ref={photoRef} type="file" accept="image/*" {...(cfg.allowGallery ? {} : { capture: "environment" })} onChange={handlePhoto} className="hidden" />
+                </div>
+                {cfg.receiptLabel && (
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1 block">{cfg.receiptLabel} <span className="text-gray-300">(선택)</span></label>
+                    {receiptPrev ? (
+                      <div className="relative">
+                        <img src={receiptPrev} alt="증빙" className="w-full h-32 object-cover rounded-xl" />
+                        <button onClick={() => { setReceipt(null); setReceiptPrev(null); }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => receiptRef.current?.click()} className="w-full h-32 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 bg-gray-50/30">
+                        <span className="text-2xl">🧾</span>
+                        <span className="text-[10px] text-gray-500 font-bold">{cfg.receiptLabel}</span>
+                      </button>
+                    )}
+                    <input ref={receiptRef} type="file" accept="image/*" onChange={handleReceipt} className="hidden" />
+                  </div>
+                )}
+              </div>
+
+              {/* 컵 수량 (일회용컵 반환 전용) */}
+              {cfg.hasCupCount && (
+                <div className="mb-4">
+                  <label className="text-sm font-bold text-gray-700 mb-2 block">반환 수량</label>
+                  <div className="flex items-center justify-center gap-4 bg-gray-50 rounded-2xl p-3">
+                    <button onClick={() => setCupCount(Math.max(1, cupCount - 1))} className="w-10 h-10 rounded-full bg-white border-2 border-gray-300 text-gray-500 text-lg font-bold flex items-center justify-center">−</button>
+                    <div className="text-center">
+                      <span className="text-3xl font-black text-gray-800">{cupCount}</span>
+                      <span className="text-sm text-gray-400 ml-1">개</span>
+                    </div>
+                    <button onClick={() => setCupCount(Math.min(20, cupCount + 1))} className="w-10 h-10 rounded-full bg-white border-2 border-gray-300 text-gray-500 text-lg font-bold flex items-center justify-center">+</button>
+                  </div>
+                  <div className="text-center mt-2">
+                    <span className={`inline-flex items-center gap-1 ${clr.bg} border ${clr.border} rounded-full px-3 py-1 text-xs font-bold ${clr.text}`}>
+                      ♻️ 적립 예정: +{totalPoints}P
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* 서비스 선택 */}
+              {cfg.services && (
+                <div className="mb-4">
+                  <label className="text-xs font-bold text-gray-600 mb-1.5 block">이용 서비스</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {cfg.services.map(s => (
+                      <button key={s} onClick={() => setService(s)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${service === s ? `bg-gradient-to-r ${clr.color} text-white border-transparent` : "bg-white text-gray-500 border-gray-200"}`}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <button onClick={handleSubmit} disabled={uploading || !photo}
+                  className={`w-full py-4 rounded-2xl font-black text-base transition-all ${uploading ? "bg-gray-100 text-gray-400" : photo ? `bg-gradient-to-r ${clr.color} text-white shadow-md active:scale-95` : "bg-gray-100 text-gray-300 cursor-not-allowed"}`}>
+                  {uploading ? "인증 중... ⏳" : `${action?.icon} 인증 완료`}
+                </button>
+                <button onClick={() => setStep("guide")} className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">이전으로</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+//  메인 페이지
+// ═══════════════════════════════════════════════════════
 export default function EcoLifePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [recentActions, setRecentActions] = useState([]);
+  const [activeModal, setActiveModal] = useState(null); // 열린 인증 모달 id
 
   useEffect(() => {
     if (!user) return;
     const fetchRecent = async () => {
       try {
-        const q = query(
-          collection(db, "ecoActions"),
-          where("userId", "==", user.uid),
-          orderBy("createdAt", "desc"),
-          limit(5)
-        );
+        const q = query(collection(db, "ecoActions"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
         const snap = await getDocs(q);
         setRecentActions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       } catch (e) { /* ignore */ }
@@ -171,12 +373,42 @@ export default function EcoLifePage() {
     fetchRecent();
   }, [user]);
 
+  // 인증 완료 핸들러
+  const handleConfirm = async (certData) => {
+    const cfg = CERT_CONFIG[certData.ecoId];
+    if (!cfg) return;
+    try {
+      const docData = {
+        userId: user?.uid || "anonymous",
+        type: cfg.dbType,
+        photoUrl: certData.photoUrl,
+        receiptUrl: certData.receiptUrl || null,
+        points: certData.points,
+        certifiedAt: certData.certifiedAt,
+        createdAt: serverTimestamp(),
+      };
+      if (certData.cupCount) docData.cupCount = certData.cupCount;
+      if (certData.service) docData.service = certData.service;
+
+      await addDoc(collection(db, "ecoActions"), docData);
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, { totalPoints: increment(certData.points) }).catch(() => {});
+      }
+      setActiveModal(null);
+      // 최근 내역 갱신
+      setRecentActions(prev => [{ id: Date.now().toString(), type: cfg.dbType, points: certData.points, certifiedAt: certData.certifiedAt, cupCount: certData.cupCount }, ...prev].slice(0, 5));
+      const action = ECO_ACTIONS.find(a => a.id === certData.ecoId);
+      alert(`${action?.icon} ${action?.title} 인증 완료!\n+${certData.points} 포인트가 적립되었습니다.`);
+    } catch (e) { alert("저장 실패: " + e.message); }
+  };
+
+  const handleCardClick = (action) => {
+    setActiveModal(action.id);
+  };
+
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500" />
-      </div>
-    );
+    return (<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500" /></div>);
   }
 
   if (!user) {
@@ -185,9 +417,7 @@ export default function EcoLifePage() {
         <div className="text-6xl">🔑</div>
         <h2 className="text-xl font-bold text-gray-800">로그인이 필요합니다</h2>
         <p className="text-gray-500 text-sm">녹색생활 실천 인증을 위해 로그인해주세요</p>
-        <Link href="/" className="bg-green-500 text-white px-6 py-3 rounded-full font-bold">
-          홈으로 돌아가기
-        </Link>
+        <Link href="/" className="bg-green-500 text-white px-6 py-3 rounded-full font-bold">홈으로 돌아가기</Link>
       </div>
     );
   }
@@ -223,29 +453,24 @@ export default function EcoLifePage() {
 
         {/* 실천 항목 카드 */}
         <h3 className="text-sm font-black text-gray-700 mb-3 flex items-center gap-1.5">
-          <span className="text-base">✅</span> 인증 가능한 활동
+          <span className="text-base">✅</span> 인증 가능한 활동 ({ECO_ACTIONS.length}개)
         </h3>
-        <div className="space-y-3 mb-6">
-          {ECO_ACTIONS.map(action => (
-            <Link key={action.id} href={action.href}
-              className={`block ${action.bg} border ${action.border} rounded-2xl p-4 active:scale-[0.98] transition-transform`}>
-              <div className="flex items-center gap-3">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${action.color} flex items-center justify-center text-2xl shadow-sm`}>
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          {ECO_ACTIONS.map(action => {
+            const clr = COLORS[action.id];
+            return (
+              <button key={action.id} onClick={() => handleCardClick(action)}
+                className={`flex flex-col items-center text-center ${clr.bg} border ${clr.border} rounded-2xl p-3 pb-2.5 active:scale-[0.97] transition-transform`}>
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${clr.color} flex items-center justify-center text-xl shadow-sm mb-2`}>
                   {action.icon}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h4 className={`font-black text-sm ${action.textColor}`}>{action.title}</h4>
-                    <span className={`text-xs font-black ${action.textColor} bg-white/70 px-2 py-0.5 rounded-full`}>
-                      {action.points}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-0.5">{action.desc}</p>
-                </div>
-                <span className="text-gray-300 text-lg">›</span>
-              </div>
-            </Link>
-          ))}
+                <h4 className={`font-black text-xs leading-tight ${clr.text}`}>{action.title}</h4>
+                <span className={`text-[10px] font-bold ${clr.text} opacity-70 mt-0.5`}>
+                  {action.points}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* 최근 인증 내역 */}
@@ -256,47 +481,23 @@ export default function EcoLifePage() {
             </h3>
             <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm mb-6">
               {recentActions.map((action, i) => (
-                <div key={action.id}
-                  className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? "border-t border-gray-50" : ""}`}>
-                  <span className="text-xl">
-                    {{ tumbler:"☕", cup_return:"♻️", reusable_container:"🍱", ev_rental:"🚗", shared_bike:"🚲", e_receipt:"🧾", future_gen:"🌱", zero_waste:"🍽️", eco_bag:"🛍️", own_container:"🥡", recycled_product:"♻️" }[action.type] || "🌿"}
-                  </span>
+                <div key={action.id} className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? "border-t border-gray-50" : ""}`}>
+                  <span className="text-xl">{TYPE_META[action.type] || "🌿"}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-700">
-                      {{ tumbler:"텀블러 사용", reusable_container:"다회용기 배달", ev_rental:"무공해차 대여", shared_bike:"공유자전거 이용", e_receipt:"전자영수증 발급", future_gen:"미래세대 실천행동", zero_waste:"잔반제로 실천", eco_bag:"개인장바구니 이용", own_container:"개인용기 식품포장", recycled_product:"재생원료 제품구매" }[action.type] || (action.type === "cup_return" ? `일회용컵 반환 (${action.cupCount || 1}개)` : "녹색생활 실천")}
+                      {TYPE_NAME[action.type] || "녹색생활 실천"}
+                      {action.type === "cup_return" && action.cupCount ? ` (${action.cupCount}개)` : ""}
                     </p>
                     <p className="text-[11px] text-gray-400">
                       {action.certifiedAt ? new Date(action.certifiedAt).toLocaleDateString("ko-KR") : ""}
                     </p>
                   </div>
-                  <span className="text-xs font-black text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                    +{action.points || 0}P
-                  </span>
+                  <span className="text-xs font-black text-green-600 bg-green-50 px-2 py-1 rounded-full">+{action.points || 0}P</span>
                 </div>
               ))}
             </div>
           </>
         )}
-
-        {/* 준비 중인 항목 */}
-        <h3 className="text-sm font-black text-gray-400 mb-3 flex items-center gap-1.5">
-          <span className="text-base">🔜</span> 준비 중인 활동
-        </h3>
-        <div className="grid grid-cols-2 gap-2 mb-6">
-          {COMING_SOON.map((item, i) => (
-            <div key={i}
-              className="bg-gray-50 border border-gray-100 rounded-2xl p-3 opacity-50">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">{item.icon}</span>
-                <span className="text-xs font-bold text-gray-500">{item.title}</span>
-              </div>
-              <p className="text-[10px] text-gray-400">{item.desc}</p>
-              <span className="inline-block mt-1.5 text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                준비 중
-              </span>
-            </div>
-          ))}
-        </div>
 
         {/* 하단 안내 */}
         <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 mb-6 text-center">
@@ -306,6 +507,15 @@ export default function EcoLifePage() {
           </p>
         </div>
       </div>
+
+      {/* ── 인증 모달 ───────────────────────────────────── */}
+      {activeModal && CERT_CONFIG[activeModal] && (
+        <EcoCertModal
+          ecoId={activeModal}
+          onConfirm={handleConfirm}
+          onClose={() => setActiveModal(null)}
+        />
+      )}
     </div>
   );
 }
