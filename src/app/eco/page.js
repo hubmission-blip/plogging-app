@@ -3,7 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Leaf, Receipt, Coffee, CupSoda, Pipette, Package, Car, ShieldCheck, Recycle, Smartphone, Sprout, Bike, UtensilsCrossed, TreePine, Sun, RotateCcw, ShoppingBag, Container } from "lucide-react";
+import { ArrowLeft, Leaf, Receipt, Coffee, CupSoda, Pipette, Package, Car, ShieldCheck, Recycle, Smartphone, Sprout, Bike, UtensilsCrossed, TreePine, Sun, RotateCcw, ShoppingBag, Container, ChevronDown, ChevronUp, Award } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, getDocs, limit, addDoc, doc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
@@ -379,18 +379,41 @@ export default function EcoLifePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [recentActions, setRecentActions] = useState([]);
-  const [activeModal, setActiveModal] = useState(null); // 열린 인증 모달 id
+  const [activeModal, setActiveModal] = useState(null);
+  const [stats, setStats] = useState(null); // { byType: { tumbler: {count, points}, ... }, totalPoints, totalCount }
+  const [showStats, setShowStats] = useState(false);
+
+  // dbType → eco action id 매핑 (역방향)
+  const DB_TO_ID = Object.fromEntries(Object.entries(CERT_CONFIG).map(([id, c]) => [c.dbType, id]));
 
   useEffect(() => {
     if (!user) return;
-    const fetchRecent = async () => {
+    const fetchData = async () => {
       try {
-        const q = query(collection(db, "ecoActions"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
-        const snap = await getDocs(q);
-        setRecentActions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        // 전체 내역 조회 (집계용)
+        const allQ = query(collection(db, "ecoActions"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
+        const allSnap = await getDocs(allQ);
+        const docs = allSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // 최근 5건
+        setRecentActions(docs.slice(0, 5));
+
+        // 항목별 집계
+        const byType = {};
+        let totalPoints = 0;
+        let totalCount = 0;
+        docs.forEach(d => {
+          const t = d.type;
+          if (!byType[t]) byType[t] = { count: 0, points: 0 };
+          byType[t].count += 1;
+          byType[t].points += (d.points || 0);
+          totalPoints += (d.points || 0);
+          totalCount += 1;
+        });
+        setStats({ byType, totalPoints, totalCount });
       } catch (e) { /* ignore */ }
     };
-    fetchRecent();
+    fetchData();
   }, [user]);
 
   // 인증 완료 핸들러
@@ -416,8 +439,16 @@ export default function EcoLifePage() {
         await updateDoc(userRef, { totalPoints: increment(certData.points) }).catch(() => {});
       }
       setActiveModal(null);
-      // 최근 내역 갱신
-      setRecentActions(prev => [{ id: Date.now().toString(), type: cfg.dbType, points: certData.points, certifiedAt: certData.certifiedAt, cupCount: certData.cupCount }, ...prev].slice(0, 5));
+      // 최근 내역 + 통계 갱신
+      const newEntry = { id: Date.now().toString(), type: cfg.dbType, points: certData.points, certifiedAt: certData.certifiedAt, cupCount: certData.cupCount };
+      setRecentActions(prev => [newEntry, ...prev].slice(0, 5));
+      setStats(prev => {
+        if (!prev) return { byType: { [cfg.dbType]: { count: 1, points: certData.points } }, totalPoints: certData.points, totalCount: 1 };
+        const bt = { ...prev.byType };
+        if (!bt[cfg.dbType]) bt[cfg.dbType] = { count: 0, points: 0 };
+        bt[cfg.dbType] = { count: bt[cfg.dbType].count + 1, points: bt[cfg.dbType].points + certData.points };
+        return { byType: bt, totalPoints: prev.totalPoints + certData.points, totalCount: prev.totalCount + 1 };
+      });
       const action = ECO_ACTIONS.find(a => a.id === certData.ecoId);
       alert(`${action?.title} 인증 완료!\n+${certData.points} 포인트가 적립되었습니다.`);
     } catch (e) { alert("저장 실패: " + e.message); }
@@ -470,6 +501,56 @@ export default function EcoLifePage() {
             </div>
           </div>
         </div>
+
+        {/* ── 내 실천 현황 대시보드 ── */}
+        {stats && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-5 overflow-hidden">
+            {/* 요약 헤더 (항상 보임) */}
+            <button onClick={() => setShowStats(!showStats)} className="w-full px-4 py-3.5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                <Award size={22} className="text-green-600" strokeWidth={2} />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-[11px] text-gray-400 font-medium">내 녹색생활 포인트</p>
+                <p className="text-xl font-black text-gray-800">{stats.totalPoints.toLocaleString()}<span className="text-sm font-bold text-gray-400 ml-0.5">P</span></p>
+              </div>
+              <div className="text-right mr-1">
+                <p className="text-[11px] text-gray-400">총 인증</p>
+                <p className="text-base font-black text-green-600">{stats.totalCount}회</p>
+              </div>
+              {showStats ? <ChevronUp size={18} className="text-gray-300" /> : <ChevronDown size={18} className="text-gray-300" />}
+            </button>
+
+            {/* 항목별 상세 (토글) */}
+            {showStats && (
+              <div className="border-t border-gray-100 px-4 py-3">
+                <div className="space-y-1.5">
+                  {ECO_ACTIONS.map(action => {
+                    const cfg = CERT_CONFIG[action.id];
+                    if (!cfg) return null;
+                    const s = stats.byType[cfg.dbType];
+                    const count = s?.count || 0;
+                    const pts = s?.points || 0;
+                    const clr = COLORS[action.id];
+                    const IconComp = action.Icon;
+                    return (
+                      <div key={action.id} className="flex items-center gap-2.5 py-1.5">
+                        <IconComp size={16} className={count > 0 ? clr.icon : "text-gray-300"} strokeWidth={2} />
+                        <span className={`text-xs flex-1 ${count > 0 ? "text-gray-700 font-medium" : "text-gray-300"}`}>{action.title}</span>
+                        <span className={`text-[11px] w-10 text-center ${count > 0 ? "text-gray-500 font-bold" : "text-gray-300"}`}>{count}회</span>
+                        <span className={`text-[11px] w-14 text-right font-bold ${count > 0 ? "text-green-600" : "text-gray-300"}`}>{pts > 0 ? `+${pts}P` : "-"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-500">합계</span>
+                  <span className="text-sm font-black text-green-600">{stats.totalPoints.toLocaleString()}P</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 실천 항목 카드 */}
         <h3 className="text-sm font-black text-gray-700 mb-3 flex items-center gap-1.5">

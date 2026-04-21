@@ -1,7 +1,19 @@
 {
-  "version": "v1.86",
-  "build": 86,
+  "version": "v1.87",
+  "build": 87,
   "changelog": [
+    {
+      "version": "v1.87",
+      "build": 87,
+      "date": "2026-04-22",
+      "emoji": "🏆",
+      "title": "녹색생활 실천 페이지 추가",
+      "items": [
+        "Apple & 카카오페이 간편후원 기능",
+        "Apple 로그인 추가",
+        "회원 안전 탈퇴 기능 추가"
+      ]
+    },
     {
       "version": "v1.86",
       "build": 86,
