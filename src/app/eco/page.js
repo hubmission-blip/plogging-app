@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Leaf, Receipt, Coffee, CupSoda, Pipette, Package, Car, ShieldCheck, Recycle, Smartphone, Sprout, Bike, UtensilsCrossed, TreePine, Sun, RotateCcw, ShoppingBag, Container, ChevronDown, ChevronUp, Award } from "lucide-react";
+// Award는 내역 버튼 아이콘에 사용
 import { useState, useEffect, useRef } from "react";
 import { auth, db } from "@/lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
@@ -201,12 +202,52 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
   const [cupCount, setCupCount] = useState(1);
   const [service, setService]   = useState("");
   const [uploading, setUploading] = useState(false);
+  // AI 검증 상태
+  const [aiVerifying, setAiVerifying] = useState(false);
+  const [aiResult, setAiResult]     = useState(null); // { valid, confidence, reason, skipped }
   // OCR 상태
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrResult, setOcrResult]   = useState(null); // { text, confidence, info }
   const [showOcrDetail, setShowOcrDetail] = useState(false);
   const photoRef   = useRef(null);
   const receiptRef = useRef(null);
+
+  // AI 사진 검증 함수
+  const verifyPhotoWithAI = async (file) => {
+    setAiVerifying(true);
+    setAiResult(null);
+    try {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result;
+          const base64Data = dataUrl.split(",")[1];
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const res = await fetch("/api/verify-eco", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: base64,
+          mimeType: file.type || "image/jpeg",
+          category: ecoId,
+        }),
+      });
+      const data = await res.json();
+      setAiResult(data);
+      return data;
+    } catch (e) {
+      console.warn("[AI검증] 오류:", e);
+      const fallback = { valid: true, confidence: "low", reason: "AI 검증을 수행할 수 없어 자동 승인됩니다.", skipped: true };
+      setAiResult(fallback);
+      return fallback;
+    } finally {
+      setAiVerifying(false);
+    }
+  };
 
   // OCR이 필요한지 판단
   const needsOcrOnPhoto   = !!cfg.ocrMain;                        // ereceipt: 메인 사진이 영수증
@@ -234,6 +275,8 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
     const msg = cfg.allowGallery ? "2시간 이내의 캡처만 인증이 가능합니다." : "방금 찍은 사진만 인증이 가능합니다.\n갤러리 사진은 사용할 수 없어요.";
     if ((Date.now() - f.lastModified) / 60000 > maxMin) { e.target.value = ""; alert(msg); return; }
     setPhoto(f); setPreview(URL.createObjectURL(f));
+    // AI 사진 검증 실행
+    verifyPhotoWithAI(f);
     // 메인 사진 OCR (ereceipt)
     if (needsOcrOnPhoto) runOcr(f);
   };
@@ -249,6 +292,12 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
 
   const handleSubmit = async () => {
     if (!photo) { alert(`${cfg.photoLabel}을 올려주세요`); return; }
+    // AI 검증 결과 확인
+    if (aiResult && !aiResult.valid) {
+      alert("사진이 인증 기준에 맞지 않습니다.\n다시 촬영해주세요.\n\n사유: " + (aiResult.reason || ""));
+      return;
+    }
+    if (aiVerifying) { alert("사진 확인 중입니다. 잠시만 기다려주세요."); return; }
     setUploading(true);
     try {
       const photoUrl = await uploadToCloudinary(photo);
@@ -260,7 +309,14 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
         receiptInfo: ocrResult.info || null,
         ocrConfidence: ocrResult.confidence || 0,
       } : {};
-      await onConfirm({ ecoId, photoUrl, receiptUrl, service, cupCount: cfg.hasCupCount ? cupCount : undefined, points: totalPoints, certifiedAt: new Date().toISOString(), ...ocrData });
+      // AI 검증 데이터 포함
+      const aiData = aiResult ? {
+        aiVerified: aiResult.valid,
+        aiConfidence: aiResult.confidence || "low",
+        aiReason: aiResult.reason || "",
+        aiSkipped: aiResult.skipped || false,
+      } : {};
+      await onConfirm({ ecoId, photoUrl, receiptUrl, service, cupCount: cfg.hasCupCount ? cupCount : undefined, points: totalPoints, certifiedAt: new Date().toISOString(), ...ocrData, ...aiData });
     } catch (e) {
       const msg = e.message || "";
       if (msg.includes("permission") || msg.includes("Permission") || e.code === "permission-denied") {
@@ -336,7 +392,7 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
                   {preview ? (
                     <div className="relative">
                       <img src={preview} alt="인증" className="w-full h-32 object-cover rounded-xl" />
-                      <button onClick={() => { setPhoto(null); setPreview(null); if (needsOcrOnPhoto) { setOcrResult(null); setShowOcrDetail(false); } }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                      <button onClick={() => { setPhoto(null); setPreview(null); setAiResult(null); if (needsOcrOnPhoto) { setOcrResult(null); setShowOcrDetail(false); } }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
                     </div>
                   ) : (
                     <button onClick={() => photoRef.current?.click()} className={`w-full h-32 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-1 ${clr.border} ${clr.bg}`}>
@@ -364,6 +420,42 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
                   </div>
                 )}
               </div>
+
+              {/* AI 사진 검증 결과 */}
+              {(aiVerifying || aiResult) && (
+                <div className="mb-3">
+                  {aiVerifying && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-2.5">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-200 border-t-blue-500" />
+                      <span className="text-xs font-bold text-blue-600">AI가 사진을 확인하고 있습니다...</span>
+                    </div>
+                  )}
+                  {!aiVerifying && aiResult && (
+                    <div className={`rounded-xl p-3 flex items-center gap-2.5 ${
+                      aiResult.valid
+                        ? "bg-green-50 border border-green-200"
+                        : "bg-red-50 border border-red-200"
+                    }`}>
+                      <span className="text-lg">{aiResult.valid ? "✅" : "❌"}</span>
+                      <div className="flex-1">
+                        <p className={`text-xs font-bold ${aiResult.valid ? "text-green-700" : "text-red-700"}`}>
+                          {aiResult.valid ? "사진 확인 완료" : "사진이 적합하지 않습니다"}
+                        </p>
+                        <p className={`text-[10px] mt-0.5 ${aiResult.valid ? "text-green-500" : "text-red-500"}`}>
+                          {aiResult.reason}
+                        </p>
+                      </div>
+                      {aiResult.confidence && !aiResult.skipped && (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
+                          aiResult.confidence === "high" ? "bg-green-100 text-green-600"
+                          : aiResult.confidence === "medium" ? "bg-yellow-100 text-yellow-600"
+                          : "bg-gray-100 text-gray-500"
+                        }`}>{aiResult.confidence === "high" ? "높음" : aiResult.confidence === "medium" ? "보통" : "낮음"}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* OCR 결과 미리보기 */}
               {(needsOcrOnPhoto || needsOcrOnReceipt) && (ocrLoading || ocrResult) && (
@@ -456,9 +548,14 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
               )}
 
               <div className="space-y-2">
-                <button onClick={handleSubmit} disabled={uploading || !photo}
-                  className={`w-full py-4 rounded-2xl font-black text-base transition-all ${uploading ? "bg-gray-100 text-gray-400" : photo ? `${clr.badge} text-white shadow-md active:scale-95` : "bg-gray-100 text-gray-300 cursor-not-allowed"}`}>
-                  {uploading ? "인증 중..." : "인증 완료"}
+                <button onClick={handleSubmit} disabled={uploading || !photo || aiVerifying || (aiResult && !aiResult.valid)}
+                  className={`w-full py-4 rounded-2xl font-black text-base transition-all ${
+                    uploading || aiVerifying ? "bg-gray-100 text-gray-400"
+                    : aiResult && !aiResult.valid ? "bg-red-100 text-red-300 cursor-not-allowed"
+                    : photo ? `${clr.badge} text-white shadow-md active:scale-95`
+                    : "bg-gray-100 text-gray-300 cursor-not-allowed"
+                  }`}>
+                  {uploading ? "인증 중..." : aiVerifying ? "사진 확인 중..." : aiResult && !aiResult.valid ? "사진을 다시 촬영해주세요" : "인증 완료"}
                 </button>
                 <button onClick={() => setStep("guide")} className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">이전으로</button>
               </div>
@@ -478,8 +575,6 @@ export default function EcoLifePage() {
   const router = useRouter();
   const [recentActions, setRecentActions] = useState([]);
   const [activeModal, setActiveModal] = useState(null);
-  const [stats, setStats] = useState(null); // { byType: { tumbler: {count, points}, ... }, totalPoints, totalCount }
-  const [showStats, setShowStats] = useState(false);
 
   // dbType → eco action id 매핑 (역방향)
   const DB_TO_ID = Object.fromEntries(Object.entries(CERT_CONFIG).map(([id, c]) => [c.dbType, id]));
@@ -546,20 +641,6 @@ export default function EcoLifePage() {
 
         // 최근 5건
         setRecentActions(docs.slice(0, 5));
-
-        // 항목별 집계
-        const byType = {};
-        let totalPoints = 0;
-        let totalCount = 0;
-        docs.forEach(d => {
-          const t = d.type;
-          if (!byType[t]) byType[t] = { count: 0, points: 0 };
-          byType[t].count += 1;
-          byType[t].points += (d.points || 0);
-          totalPoints += (d.points || 0);
-          totalCount += 1;
-        });
-        setStats({ byType, totalPoints, totalCount });
       } catch (e) { /* ignore */ }
     };
     fetchData();
@@ -588,6 +669,11 @@ export default function EcoLifePage() {
     if (certData.receiptText) docData.receiptText = certData.receiptText;
     if (certData.receiptInfo) docData.receiptInfo = certData.receiptInfo;
     if (certData.ocrConfidence != null) docData.ocrConfidence = certData.ocrConfidence;
+    // AI 검증 데이터 저장
+    if (certData.aiVerified != null) docData.aiVerified = certData.aiVerified;
+    if (certData.aiConfidence) docData.aiConfidence = certData.aiConfidence;
+    if (certData.aiReason) docData.aiReason = certData.aiReason;
+    if (certData.aiSkipped) docData.aiSkipped = true;
 
     await addDoc(collection(db, "ecoActions"), docData);
     if (user) {
@@ -595,16 +681,9 @@ export default function EcoLifePage() {
       await updateDoc(userRef, { totalPoints: increment(certData.points) }).catch(() => {});
     }
     setActiveModal(null);
-    // 최근 내역 + 통계 갱신
+    // 최근 내역 갱신
     const newEntry = { id: Date.now().toString(), type: certCfg.dbType, points: certData.points, certifiedAt: certData.certifiedAt, cupCount: certData.cupCount };
     setRecentActions(prev => [newEntry, ...prev].slice(0, 5));
-    setStats(prev => {
-      if (!prev) return { byType: { [certCfg.dbType]: { count: 1, points: certData.points } }, totalPoints: certData.points, totalCount: 1 };
-      const bt = { ...prev.byType };
-      if (!bt[certCfg.dbType]) bt[certCfg.dbType] = { count: 0, points: 0 };
-      bt[certCfg.dbType] = { count: bt[certCfg.dbType].count + 1, points: bt[certCfg.dbType].points + certData.points };
-      return { byType: bt, totalPoints: prev.totalPoints + certData.points, totalCount: prev.totalCount + 1 };
-    });
     const action = ECO_ACTIONS.find(a => a.id === certData.ecoId);
     alert(`${action?.title} 인증 완료!\n+${certData.points} 포인트가 적립되었습니다.`);
   };
@@ -657,55 +736,20 @@ export default function EcoLifePage() {
           </div>
         </div>
 
-        {/* ── 내 실천 현황 대시보드 ── */}
-        {stats && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-5 overflow-hidden">
-            {/* 요약 헤더 (항상 보임) */}
-            <button onClick={() => setShowStats(!showStats)} className="w-full px-4 py-3.5 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-                <Award size={22} className="text-green-600" strokeWidth={2} />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-[11px] text-gray-400 font-medium">내 녹색생활 포인트</p>
-                <p className="text-xl font-black text-gray-800">{stats.totalPoints.toLocaleString()}<span className="text-sm font-bold text-gray-400 ml-0.5">P</span></p>
-              </div>
-              <div className="text-right mr-1">
-                <p className="text-[11px] text-gray-400">총 인증</p>
-                <p className="text-base font-black text-green-600">{stats.totalCount}회</p>
-              </div>
-              {showStats ? <ChevronUp size={18} className="text-gray-300" /> : <ChevronDown size={18} className="text-gray-300" />}
-            </button>
-
-            {/* 항목별 상세 (토글) */}
-            {showStats && (
-              <div className="border-t border-gray-100 px-4 py-3">
-                <div className="space-y-1.5">
-                  {ECO_ACTIONS.map(action => {
-                    const cfg = CERT_CONFIG[action.id];
-                    if (!cfg) return null;
-                    const s = stats.byType[cfg.dbType];
-                    const count = s?.count || 0;
-                    const pts = s?.points || 0;
-                    const clr = COLORS[action.id];
-                    const IconComp = action.Icon;
-                    return (
-                      <div key={action.id} className="flex items-center gap-2.5 py-1.5">
-                        <IconComp size={16} className={count > 0 ? clr.icon : "text-gray-300"} strokeWidth={2} />
-                        <span className={`text-xs flex-1 ${count > 0 ? "text-gray-700 font-medium" : "text-gray-300"}`}>{action.title}</span>
-                        <span className={`text-[11px] w-10 text-center ${count > 0 ? "text-gray-500 font-bold" : "text-gray-300"}`}>{count}회</span>
-                        <span className={`text-[11px] w-14 text-right font-bold ${count > 0 ? "text-green-600" : "text-gray-300"}`}>{pts > 0 ? `+${pts}P` : "-"}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-xs font-bold text-gray-500">합계</span>
-                  <span className="text-sm font-black text-green-600">{stats.totalPoints.toLocaleString()}P</span>
-                </div>
-              </div>
-            )}
+        {/* ── 내 녹색생활 실천내역 버튼 ── */}
+        <Link href="/eco/history"
+          className="block bg-white rounded-2xl shadow-sm border border-gray-100 mb-5 overflow-hidden active:scale-[0.98] transition-all">
+          <div className="px-4 py-3.5 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+              <Award size={22} className="text-green-600" strokeWidth={2} />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-black text-gray-800">내 녹색생활 실천내역</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">포인트 현황 · 인증 사진 · 월별 통계</p>
+            </div>
+            <ArrowLeft size={18} className="text-gray-300 rotate-180" />
           </div>
-        )}
+        </Link>
 
         {/* 실천 항목 카드 */}
         <h3 className="text-sm font-black text-gray-700 mb-3 flex items-center gap-1.5">
