@@ -3,12 +3,12 @@
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Leaf } from "lucide-react";
+import { ArrowLeft, Leaf, Receipt, Coffee, CupSoda, Pipette, Package, Car, ShieldCheck, Recycle, Smartphone, Sprout, Bike, UtensilsCrossed, TreePine, Sun, RotateCcw, ShoppingBag, Container } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, getDocs, limit, addDoc, doc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-import { TUMBLER_BONUS, CUP_RETURN_PER_CUP, REUSABLE_CONTAINER_BONUS, EV_RENTAL_BONUS, SHARED_BIKE_BONUS, E_RECEIPT_BONUS, FUTURE_GEN_BONUS, ZERO_WASTE_BONUS, ECO_BAG_BONUS, OWN_CONTAINER_BONUS, RECYCLED_PRODUCT_BONUS } from "@/lib/pointCalc";
+import { TUMBLER_BONUS, CUP_RETURN_PER_CUP, REUSABLE_CONTAINER_BONUS, EV_RENTAL_BONUS, SHARED_BIKE_BONUS, E_RECEIPT_BONUS, FUTURE_GEN_BONUS, ZERO_WASTE_BONUS, ECO_BAG_BONUS, OWN_CONTAINER_BONUS, RECYCLED_PRODUCT_BONUS, ECO_PRODUCT_BONUS, QUALITY_RECYCLE_BONUS } from "@/lib/pointCalc";
 
 // ─── 포인트 상수 (신규 4개) ────────────────────────────
 const TREE_PLANTING_BONUS  = 50;
@@ -16,42 +16,46 @@ const SOLAR_PANEL_BONUS    = 50;
 const PHONE_RETURN_BONUS   = 30;
 const REFILL_STATION_BONUS = 30;
 
-// ─── 녹색생활 실천 항목 목록 ────────────────────────────
+// ─── 녹색생활 실천 항목 목록 (탄소중립포인트 공식 순서) ──
 const ECO_ACTIONS = [
-  { id: "tumbler",    icon: "☕",  title: "텀블러/다회용컵 이용",  desc: "카페에서 텀블러로 음료를 받고 인증하세요",          points: "+30P" },
-  { id: "cupreturn",  icon: "♻️",  title: "일회용컵 반환",         desc: "반환기에 일회용컵을 반환하고 인증하세요",         points: "컵당 +10P" },
-  { id: "container",  icon: "🍱",  title: "다회용기 배달 이용",     desc: "배달 주문 시 다회용기를 선택하고 인증하세요",     points: "+30P" },
-  { id: "evrental",   icon: "🚗",  title: "무공해차 대여",          desc: "전기차·수소차를 대여하고 인증하세요",            points: "+50P" },
-  { id: "sharedbike", icon: "🚲",  title: "공유자전거 이용",        desc: "공유자전거를 이용하고 인증하세요",               points: "+30P" },
-  { id: "ereceipt",   icon: "🧾",  title: "전자영수증 발급",        desc: "종이 영수증 대신 전자영수증을 받고 인증하세요",   points: "+20P" },
-  { id: "futuregen",  icon: "🌱",  title: "미래세대 실천행동",      desc: "환경 교육·캠페인 참여를 인증하세요",             points: "+30P" },
-  { id: "zerowaste",  icon: "🍽️",  title: "잔반제로 실천",          desc: "음식을 남기지 않고 깨끗이 비운 후 인증하세요",    points: "+20P" },
-  { id: "ecobag",     icon: "🛍️",  title: "개인장바구니 이용",      desc: "장보기 시 개인장바구니를 사용하고 인증하세요",    points: "+20P" },
-  { id: "owncontainer",icon: "🥡",  title: "개인용기 식품포장",     desc: "개인용기로 식품을 포장받고 인증하세요",           points: "+20P" },
-  { id: "recycledproduct", icon: "♻️", title: "재생원료 제품구매",  desc: "재생원료로 만든 제품을 구매하고 인증하세요",      points: "+30P" },
-  { id: "treeplanting",icon: "🌳",  title: "나무심기 캠페인 참여",  desc: "나무심기 캠페인에 참여하고 인증하세요",           points: "+50P" },
-  { id: "solarpanel",  icon: "☀️",  title: "베란다 태양광 설치",    desc: "베란다 태양광 패널 설치를 인증하세요",            points: "+50P" },
-  { id: "phonereturn", icon: "📱",  title: "폐휴대폰 반납",         desc: "사용하지 않는 폐휴대폰을 반납하고 인증하세요",   points: "+30P" },
-  { id: "refillstation",icon: "🫧",  title: "리필스테이션 이용",    desc: "세제·샴푸 등을 리필스테이션에서 리필하고 인증하세요", points: "+30P" },
+  { id: "ereceipt",       Icon: Receipt,           title: "전자영수증 발급",        desc: "종이 영수증 대신 전자영수증을 받고 인증하세요",             points: "+20P" },
+  { id: "tumbler",        Icon: Coffee,            title: "텀블러/다회용컵 이용",    desc: "카페에서 텀블러로 음료를 받고 인증하세요",                 points: "+30P" },
+  { id: "cupreturn",      Icon: CupSoda,           title: "일회용컵 반환",           desc: "반환기에 일회용컵을 반환하고 인증하세요",                  points: "컵당 +10P" },
+  { id: "refillstation",  Icon: Pipette,           title: "리필스테이션 이용",       desc: "세제·샴푸 등을 리필스테이션에서 리필하고 인증하세요",       points: "+30P" },
+  { id: "container",      Icon: Package,           title: "다회용기 배달 이용",      desc: "배달 주문 시 다회용기를 선택하고 인증하세요",              points: "+30P" },
+  { id: "evrental",       Icon: Car,               title: "무공해차 대여",           desc: "전기차·수소차를 대여하고 인증하세요",                     points: "+50P" },
+  { id: "ecoproduct",     Icon: ShieldCheck,       title: "친환경제품 구매",         desc: "환경마크 인증 친환경제품을 구매하고 인증하세요",            points: "+30P" },
+  { id: "qualityrecycle", Icon: Recycle,           title: "고품질 재활용품 배출",    desc: "깨끗하게 분리배출한 재활용품을 인증하세요",                points: "+20P" },
+  { id: "phonereturn",    Icon: Smartphone,        title: "폐휴대폰 반납",           desc: "사용하지 않는 폐휴대폰을 반납하고 인증하세요",            points: "+30P" },
+  { id: "futuregen",      Icon: Sprout,            title: "미래세대 실천행동",       desc: "환경 교육·캠페인 참여를 인증하세요",                      points: "+30P" },
+  { id: "sharedbike",     Icon: Bike,              title: "공유자전거 이용",         desc: "공유자전거를 이용하고 인증하세요",                        points: "+30P" },
+  { id: "zerowaste",      Icon: UtensilsCrossed,   title: "잔반제로 실천",           desc: "음식을 남기지 않고 깨끗이 비운 후 인증하세요",             points: "+20P" },
+  { id: "treeplanting",   Icon: TreePine,          title: "나무심기 캠페인 참여",    desc: "나무심기 캠페인에 참여하고 인증하세요",                   points: "+50P" },
+  { id: "solarpanel",     Icon: Sun,               title: "베란다 태양광 설치",      desc: "베란다 태양광 패널 설치를 인증하세요",                    points: "+50P" },
+  { id: "recycledproduct",Icon: RotateCcw,         title: "재생원료 제품구매",       desc: "재생원료로 만든 제품을 구매하고 인증하세요",               points: "+30P" },
+  { id: "ecobag",         Icon: ShoppingBag,       title: "개인장바구니 이용",       desc: "장보기 시 개인장바구니를 사용하고 인증하세요",             points: "+20P" },
+  { id: "owncontainer",   Icon: Container,         title: "개인용기 식품포장",       desc: "개인용기로 식품을 포장받고 인증하세요",                   points: "+20P" },
 ];
 
-// ─── 항목별 색상 ────────────────────────────────────────
+// ─── 항목별 색상 (아이콘 색상 + 배경) ───────────────────
 const COLORS = {
-  tumbler:    { color: "from-amber-400 to-orange-400", bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700" },
-  cupreturn:  { color: "from-teal-400 to-cyan-400", bg: "bg-teal-50", border: "border-teal-200", text: "text-teal-700" },
-  container:  { color: "from-indigo-400 to-violet-400", bg: "bg-indigo-50", border: "border-indigo-200", text: "text-indigo-700" },
-  evrental:   { color: "from-blue-400 to-sky-400", bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700" },
-  sharedbike: { color: "from-lime-400 to-green-400", bg: "bg-lime-50", border: "border-lime-200", text: "text-lime-700" },
-  ereceipt:   { color: "from-cyan-400 to-blue-400", bg: "bg-cyan-50", border: "border-cyan-200", text: "text-cyan-700" },
-  futuregen:  { color: "from-emerald-400 to-green-400", bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700" },
-  zerowaste:  { color: "from-orange-400 to-red-400", bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-700" },
-  ecobag:     { color: "from-pink-400 to-rose-400", bg: "bg-pink-50", border: "border-pink-200", text: "text-pink-700" },
-  owncontainer:    { color: "from-violet-400 to-purple-400", bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-700" },
-  recycledproduct: { color: "from-green-400 to-teal-400", bg: "bg-green-50", border: "border-green-200", text: "text-green-700" },
-  treeplanting:    { color: "from-green-500 to-emerald-500", bg: "bg-green-50", border: "border-green-200", text: "text-green-700" },
-  solarpanel:      { color: "from-yellow-400 to-amber-400", bg: "bg-yellow-50", border: "border-yellow-200", text: "text-yellow-700" },
-  phonereturn:     { color: "from-gray-400 to-slate-400", bg: "bg-gray-50", border: "border-gray-200", text: "text-gray-700" },
-  refillstation:   { color: "from-sky-400 to-indigo-400", bg: "bg-sky-50", border: "border-sky-200", text: "text-sky-700" },
+  ereceipt:       { icon: "text-blue-500",    bg: "bg-blue-50",    border: "border-blue-100",    text: "text-blue-600",    badge: "bg-blue-500" },
+  tumbler:        { icon: "text-amber-500",   bg: "bg-amber-50",   border: "border-amber-100",   text: "text-amber-600",   badge: "bg-amber-500" },
+  cupreturn:      { icon: "text-teal-500",    bg: "bg-teal-50",    border: "border-teal-100",    text: "text-teal-600",    badge: "bg-teal-500" },
+  refillstation:  { icon: "text-indigo-500",  bg: "bg-indigo-50",  border: "border-indigo-100",  text: "text-indigo-600",  badge: "bg-indigo-500" },
+  container:      { icon: "text-violet-500",  bg: "bg-violet-50",  border: "border-violet-100",  text: "text-violet-600",  badge: "bg-violet-500" },
+  evrental:       { icon: "text-sky-500",     bg: "bg-sky-50",     border: "border-sky-100",     text: "text-sky-600",     badge: "bg-sky-500" },
+  ecoproduct:     { icon: "text-emerald-500", bg: "bg-emerald-50", border: "border-emerald-100", text: "text-emerald-600", badge: "bg-emerald-500" },
+  qualityrecycle: { icon: "text-cyan-500",    bg: "bg-cyan-50",    border: "border-cyan-100",    text: "text-cyan-600",    badge: "bg-cyan-500" },
+  phonereturn:    { icon: "text-slate-500",   bg: "bg-slate-50",   border: "border-slate-100",   text: "text-slate-600",   badge: "bg-slate-500" },
+  futuregen:      { icon: "text-green-500",   bg: "bg-green-50",   border: "border-green-100",   text: "text-green-600",   badge: "bg-green-500" },
+  sharedbike:     { icon: "text-lime-500",    bg: "bg-lime-50",    border: "border-lime-100",    text: "text-lime-600",    badge: "bg-lime-500" },
+  zerowaste:      { icon: "text-orange-500",  bg: "bg-orange-50",  border: "border-orange-100",  text: "text-orange-600",  badge: "bg-orange-500" },
+  treeplanting:   { icon: "text-green-600",   bg: "bg-green-50",   border: "border-green-100",   text: "text-green-700",   badge: "bg-green-600" },
+  solarpanel:     { icon: "text-yellow-500",  bg: "bg-yellow-50",  border: "border-yellow-100",  text: "text-yellow-600",  badge: "bg-yellow-500" },
+  recycledproduct:{ icon: "text-teal-500",    bg: "bg-teal-50",    border: "border-teal-100",    text: "text-teal-600",    badge: "bg-teal-500" },
+  ecobag:         { icon: "text-pink-500",    bg: "bg-pink-50",    border: "border-pink-100",    text: "text-pink-600",    badge: "bg-pink-500" },
+  owncontainer:   { icon: "text-purple-500",  bg: "bg-purple-50",  border: "border-purple-100",  text: "text-purple-600",  badge: "bg-purple-500" },
 };
 
 // ─── 인증 모달 설정 ─────────────────────────────────────
@@ -149,6 +153,18 @@ const CERT_CONFIG = {
     tip: "아모레퍼시픽, 이니스프리, 아로마티카 등 리필스테이션 운영 매장에서 이용하세요.",
     photoLabel: "리필 사진",
   },
+  ecoproduct: {
+    title: "친환경제품 구매 인증", dbType: "eco_product", bonus: ECO_PRODUCT_BONUS,
+    steps: ["환경마크·녹색인증 제품을 구매", "제품의 환경마크 또는 녹색인증 마크를 촬영", "구매내역 캡처와 함께 올리면 인증 완료!"],
+    tip: "환경마크, 저탄소제품 인증, GR마크 등이 부착된 제품이 해당됩니다. 세제, 화장지, 문구류 등 다양한 제품이 있어요.",
+    photoLabel: "제품/인증마크", receiptLabel: "구매내역",
+  },
+  qualityrecycle: {
+    title: "고품질 재활용품 배출 인증", dbType: "quality_recycle", bonus: QUALITY_RECYCLE_BONUS,
+    steps: ["재활용품을 깨끗이 세척하고 라벨을 제거", "분리배출 기준에 맞게 정리", "깨끗하게 정리된 재활용품을 촬영해주세요!"],
+    tip: "페트병 라벨 제거, 캔·유리병 세척, 종이류 이물질 제거 등 고품질 분리배출이 대상입니다. 투명 페트병은 별도 배출해주세요.",
+    photoLabel: "분리배출 사진",
+  },
 };
 
 // ─── 최근 내역용 아이콘/이름 매핑 ──────────────────────
@@ -156,6 +172,7 @@ const TYPE_META = {
   tumbler:"☕", cup_return:"♻️", reusable_container:"🍱", ev_rental:"🚗", shared_bike:"🚲",
   e_receipt:"🧾", future_gen:"🌱", zero_waste:"🍽️", eco_bag:"🛍️", own_container:"🥡",
   recycled_product:"♻️", tree_planting:"🌳", solar_panel:"☀️", phone_return:"📱", refill_station:"🫧",
+  eco_product:"🌿", quality_recycle:"🔄",
 };
 const TYPE_NAME = {
   tumbler:"텀블러 사용", cup_return:"일회용컵 반환", reusable_container:"다회용기 배달",
@@ -163,6 +180,7 @@ const TYPE_NAME = {
   future_gen:"미래세대 실천행동", zero_waste:"잔반제로 실천", eco_bag:"개인장바구니 이용",
   own_container:"개인용기 식품포장", recycled_product:"재생원료 제품구매",
   tree_planting:"나무심기 캠페인", solar_panel:"베란다 태양광", phone_return:"폐휴대폰 반납", refill_station:"리필스테이션",
+  eco_product:"친환경제품 구매", quality_recycle:"고품질 재활용품 배출",
 };
 
 // ═══════════════════════════════════════════════════════
@@ -219,7 +237,9 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
           {step === "guide" && (
             <>
               <div className="text-center mb-4">
-                <div className="text-4xl mb-2">{action?.icon}</div>
+                <div className={`w-14 h-14 rounded-2xl ${clr.bg} border ${clr.border} flex items-center justify-center mx-auto mb-2`}>
+                  {action?.Icon && <action.Icon size={28} className={clr.icon} strokeWidth={2} />}
+                </div>
                 <h2 className="text-lg font-black text-gray-800">{cfg.title}</h2>
               </div>
               <div className="space-y-2.5 mb-4">
@@ -246,13 +266,13 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
               </div>
               <div className={`${clr.bg} border ${clr.border} rounded-2xl p-3 mb-4 text-center`}>
                 <span className={`text-xs font-bold ${clr.text}`}>
-                  {action?.icon} 인증 시 <span className="opacity-80">{action?.points}</span> 적립!
+                  인증 시 <span className="opacity-80">{action?.points}</span> 적립!
                 </span>
                 <p className="text-[10px] text-gray-400 mt-1">탄소중립포인트 녹색생활 실천 연계 항목</p>
               </div>
               <div className="space-y-2">
                 <button onClick={() => setStep("cert")}
-                  className={`w-full py-4 rounded-2xl font-black text-base bg-gradient-to-r ${clr.color} text-white shadow-md active:scale-95 transition-all`}>
+                  className={`w-full py-4 rounded-2xl font-black text-base ${clr.badge} text-white shadow-md active:scale-95 transition-all`}>
                   인증 시작하기
                 </button>
                 <button onClick={onClose} className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">취소</button>
@@ -329,7 +349,7 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
                   <div className="flex flex-wrap gap-1.5">
                     {cfg.services.map(s => (
                       <button key={s} onClick={() => setService(s)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${service === s ? `bg-gradient-to-r ${clr.color} text-white border-transparent` : "bg-white text-gray-500 border-gray-200"}`}>
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${service === s ? `${clr.badge} text-white border-transparent` : "bg-white text-gray-500 border-gray-200"}`}>
                         {s}
                       </button>
                     ))}
@@ -339,8 +359,8 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
 
               <div className="space-y-2">
                 <button onClick={handleSubmit} disabled={uploading || !photo}
-                  className={`w-full py-4 rounded-2xl font-black text-base transition-all ${uploading ? "bg-gray-100 text-gray-400" : photo ? `bg-gradient-to-r ${clr.color} text-white shadow-md active:scale-95` : "bg-gray-100 text-gray-300 cursor-not-allowed"}`}>
-                  {uploading ? "인증 중... ⏳" : `${action?.icon} 인증 완료`}
+                  className={`w-full py-4 rounded-2xl font-black text-base transition-all ${uploading ? "bg-gray-100 text-gray-400" : photo ? `${clr.badge} text-white shadow-md active:scale-95` : "bg-gray-100 text-gray-300 cursor-not-allowed"}`}>
+                  {uploading ? "인증 중..." : "인증 완료"}
                 </button>
                 <button onClick={() => setStep("guide")} className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">이전으로</button>
               </div>
@@ -399,7 +419,7 @@ export default function EcoLifePage() {
       // 최근 내역 갱신
       setRecentActions(prev => [{ id: Date.now().toString(), type: cfg.dbType, points: certData.points, certifiedAt: certData.certifiedAt, cupCount: certData.cupCount }, ...prev].slice(0, 5));
       const action = ECO_ACTIONS.find(a => a.id === certData.ecoId);
-      alert(`${action?.icon} ${action?.title} 인증 완료!\n+${certData.points} 포인트가 적립되었습니다.`);
+      alert(`${action?.title} 인증 완료!\n+${certData.points} 포인트가 적립되었습니다.`);
     } catch (e) { alert("저장 실패: " + e.message); }
   };
 
@@ -455,17 +475,18 @@ export default function EcoLifePage() {
         <h3 className="text-sm font-black text-gray-700 mb-3 flex items-center gap-1.5">
           <span className="text-base">✅</span> 인증 가능한 활동 ({ECO_ACTIONS.length}개)
         </h3>
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-3 gap-2.5 mb-6">
           {ECO_ACTIONS.map(action => {
             const clr = COLORS[action.id];
+            const IconComp = action.Icon;
             return (
               <button key={action.id} onClick={() => handleCardClick(action)}
-                className={`flex flex-col items-center text-center ${clr.bg} border ${clr.border} rounded-2xl p-3 pb-2.5 active:scale-[0.97] transition-transform`}>
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${clr.color} flex items-center justify-center text-xl shadow-sm mb-2`}>
-                  {action.icon}
+                className="bg-white border border-gray-100 rounded-2xl p-3 pb-2.5 flex flex-col items-center text-center shadow-sm hover:shadow-md active:scale-[0.96] transition-all">
+                <div className={`w-11 h-11 rounded-xl ${clr.bg} border ${clr.border} flex items-center justify-center mb-2`}>
+                  <IconComp size={22} className={clr.icon} strokeWidth={2} />
                 </div>
-                <h4 className={`font-black text-xs leading-tight ${clr.text}`}>{action.title}</h4>
-                <span className={`text-[10px] font-bold ${clr.text} opacity-70 mt-0.5`}>
+                <h4 className="font-bold text-[11px] leading-tight text-gray-700 mb-1">{action.title}</h4>
+                <span className={`text-[9px] font-bold text-white ${clr.badge} px-1.5 py-0.5 rounded-full`}>
                   {action.points}
                 </span>
               </button>

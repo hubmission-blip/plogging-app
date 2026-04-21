@@ -36,6 +36,8 @@ export const ZERO_WASTE_BONUS = 20; // 잔반제로 실천 보너스
 export const ECO_BAG_BONUS = 20; // 개인장바구니 이용 보너스
 export const OWN_CONTAINER_BONUS = 20; // 개인용기 식품포장 보너스
 export const RECYCLED_PRODUCT_BONUS = 30; // 재생원료 제품구매 보너스
+export const ECO_PRODUCT_BONUS = 30; // 친환경제품 구매 보너스
+export const QUALITY_RECYCLE_BONUS = 20; // 고품질 재활용품 배출 보너스
 
 export function calculatePoints({ distanceKm, groupSize = 1, ecomileageLinked = false, trashCategories = [], tumblerUsed = false }) {
   let points = 0;
