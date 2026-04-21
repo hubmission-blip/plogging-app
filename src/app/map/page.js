@@ -16,7 +16,7 @@ import {
   increment, serverTimestamp, query,
   where, getDocs, deleteDoc, limit,
 } from "firebase/firestore";
-import { calculatePoints } from "@/lib/pointCalc";
+import { calculatePoints, TRASH_CATEGORIES } from "@/lib/pointCalc";
 import { getWeekNumber, getExpiresAt, isExpired, getRouteColor } from "@/lib/routeUtils";
 
 // ─── 인증 조건 상수 ───────────────────────────────────────
@@ -345,6 +345,24 @@ function PhotoRequiredModal({ onConfirm, onSkip, uploading, aiEnabled = true }) 
   const [verifyResult, setVerifyResult] = useState(null); // {valid, confidence, reason, exifFail}
   const inputRef                = useRef(null);
 
+  // 분리수거 카테고리 상태
+  const [trashCounts, setTrashCounts] = useState({
+    pet: 0, can: 0, bottle: 0, paper: 0, vinyl: 0, general: 0,
+  });
+
+  const updateTrashCount = (id, delta) => {
+    setTrashCounts(prev => ({
+      ...prev,
+      [id]: Math.max(0, Math.min(99, (prev[id] || 0) + delta)),
+    }));
+  };
+
+  const getSelectedTrash = () => {
+    return Object.entries(trashCounts)
+      .filter(([, count]) => count > 0)
+      .map(([id, count]) => ({ id, count }));
+  };
+
   const handleFileChange = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -417,13 +435,13 @@ function PhotoRequiredModal({ onConfirm, onSkip, uploading, aiEnabled = true }) 
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[200]">
-      <div className="bg-white rounded-t-3xl w-full shadow-2xl overflow-hidden">
+      <div className="bg-white rounded-t-3xl w-full shadow-2xl overflow-hidden" style={{ maxHeight: "85vh" }}>
         {/* 핸들 */}
         <div className="pt-3 pb-1 flex justify-center">
           <div className="w-10 h-1 bg-gray-200 rounded-full" />
         </div>
 
-        <div className="px-5 pt-2 pb-6" style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 16px))" }}>
+        <div className="px-5 pt-2 pb-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 2rem)", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 16px))" }}>
 
           {/* ── STEP 1: 촬영 ── */}
           {step === "capture" && (
@@ -549,10 +567,50 @@ function PhotoRequiredModal({ onConfirm, onSkip, uploading, aiEnabled = true }) 
                   </div>
                 )}
 
+                {/* ── 분리수거 카테고리 선택 (인증 통과 시) ── */}
+                {verifyResult.valid && (
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-base">♻️</span>
+                      <h3 className="text-sm font-black text-gray-700">수거한 쓰레기 분류</h3>
+                      <span className="text-xs text-gray-400">(선택사항)</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {TRASH_CATEGORIES.map(cat => {
+                        const count = trashCounts[cat.id] || 0;
+                        const active = count > 0;
+                        return (
+                          <div key={cat.id}
+                            className={`rounded-xl border-2 p-2 text-center transition-all ${
+                              active ? cat.color + " border-current" : "bg-gray-50 text-gray-400 border-gray-200"
+                            }`}>
+                            <div className="text-lg leading-none mb-1">{cat.icon}</div>
+                            <div className={`text-xs font-bold mb-1.5 ${active ? "" : "text-gray-500"}`}>{cat.label}</div>
+                            <div className="flex items-center justify-center gap-1">
+                              <button onClick={() => updateTrashCount(cat.id, -1)}
+                                className="w-6 h-6 rounded-full bg-white border border-gray-300 text-gray-500 text-sm font-bold flex items-center justify-center active:bg-gray-100">−</button>
+                              <span className={`w-6 text-center text-sm font-black ${active ? "text-gray-800" : "text-gray-400"}`}>{count}</span>
+                              <button onClick={() => updateTrashCount(cat.id, 1)}
+                                className="w-6 h-6 rounded-full bg-white border border-gray-300 text-gray-500 text-sm font-bold flex items-center justify-center active:bg-gray-100">+</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {getSelectedTrash().filter(c => c.id !== "general").length > 0 && (
+                      <div className="mt-2 text-center">
+                        <span className="inline-flex items-center gap-1 bg-green-50 border border-green-200 rounded-full px-3 py-1 text-xs font-bold text-green-600">
+                          ♻️ 분리수거 보너스 +{getSelectedTrash().filter(c => c.id !== "general").reduce((s, c) => s + c.count, 0) * 5}P
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   {/* 통과: 포인트 받기 */}
                   {verifyResult.valid && (
-                    <button onClick={() => onConfirm(file)} disabled={uploading}
+                    <button onClick={() => onConfirm(file, getSelectedTrash())} disabled={uploading}
                       className={`w-full py-4 rounded-2xl font-black text-base transition-all
                         ${uploading ? "bg-gray-100 text-gray-400" : "bg-gradient-to-r from-green-500 to-teal-500 text-white shadow-md active:scale-95"}`}>
                       {uploading ? "저장 중... ⏳" : "✅ 완료! 포인트 받기"}
@@ -989,19 +1047,24 @@ function MapPageInner() {
   // ─── Firestore 저장 ──────────────────────────────────
   const saveRoute = useCallback(async ({
     routePath, routeDistance, routeDuration, routeStopCount,
-    points, photoUrl = null,
+    points, photoUrl = null, trashCategories = [],
   }) => {
     const weekNumber = getWeekNumber();
     const expiresAt  = getExpiresAt();
     try {
-      const routeDoc = await addDoc(collection(db, "routes"), {
+      const routeData = {
         userId: user?.uid || "anonymous",
         coords: routePath, distance: routeDistance,
         points, duration: routeDuration, stopCount: routeStopCount,
         photoUrl, weekNumber, expiresAt,
         verified: !!photoUrl,
         createdAt: serverTimestamp(),
-      });
+      };
+      // 분리수거 데이터가 있으면 저장
+      if (trashCategories && trashCategories.length > 0) {
+        routeData.trashCategories = trashCategories;
+      }
+      const routeDoc = await addDoc(collection(db, "routes"), routeData);
       setSavedRouteId(routeDoc.id);
 
       if (user && points > 0) {
@@ -1117,15 +1180,27 @@ function MapPageInner() {
     }
   };
 
-  const handlePhotoConfirm = async (file) => {
+  const handlePhotoConfirm = async (file, trashCategories = []) => {
     const p = pendingDataRef.current;
     if (!p) return;
     setUploading(true);
     try {
       const photoUrl = await uploadToCloudinary(file);
-      await saveRoute({ ...p, points: p.total, photoUrl });
+      // 분리수거 보너스 포인트 재계산
+      let finalPoints = p.total;
+      let finalBreakdown = [...p.breakdown];
+      if (trashCategories.length > 0) {
+        const recycleItems = trashCategories.filter(c => c.id !== "general");
+        const totalRecycleCount = recycleItems.reduce((sum, c) => sum + (c.count || 0), 0);
+        if (totalRecycleCount > 0) {
+          const recycleBonus = totalRecycleCount * 5;
+          finalPoints += recycleBonus;
+          finalBreakdown.push({ label: `분리수거 보너스 ♻️ (${totalRecycleCount}개)`, points: recycleBonus });
+        }
+      }
+      await saveRoute({ ...p, points: finalPoints, photoUrl, trashCategories });
       setShowPhotoModal(false);
-      setResult({ distance: p.routeDistance, total: p.total, breakdown: p.breakdown, verified: true });
+      setResult({ distance: p.routeDistance, total: finalPoints, breakdown: finalBreakdown, verified: true });
     } catch (e) { alert("사진 업로드 실패: " + e.message); }
     finally { setUploading(false); pendingDataRef.current = null; }
   };

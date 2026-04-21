@@ -3,6 +3,17 @@
 // 완주 보너스 = 100포인트 (2km 이상 완주 시)
 // 연속 참여 보너스 = 30포인트 (전날도 플로깅 시)
 // 에코마일리지 연동 보너스 = 기본 포인트의 20% 추가
+// 분리수거 보너스 = 카테고리당 5포인트 × 수량
+
+// 분리수거 카테고리 목록
+export const TRASH_CATEGORIES = [
+  { id: "pet",     label: "페트",       icon: "🧴", color: "bg-blue-100 text-blue-700 border-blue-300" },
+  { id: "can",     label: "캔",         icon: "🥫", color: "bg-red-100 text-red-700 border-red-300" },
+  { id: "bottle",  label: "공병",       icon: "🍾", color: "bg-green-100 text-green-700 border-green-300" },
+  { id: "paper",   label: "종이",       icon: "📄", color: "bg-yellow-100 text-yellow-700 border-yellow-300" },
+  { id: "vinyl",   label: "비닐",       icon: "🛍️", color: "bg-purple-100 text-purple-700 border-purple-300" },
+  { id: "general", label: "일반쓰레기", icon: "🗑️", color: "bg-gray-100 text-gray-700 border-gray-300" },
+];
 
 // 에코마일리지 연동 프로그램 목록
 export const ECOMILEAGE_PROGRAMS = [
@@ -14,7 +25,7 @@ export const ECOMILEAGE_PROGRAMS = [
 
 export const ECOMILEAGE_BONUS_RATE = 0.20; // 20% 추가
 
-export function calculatePoints({ distanceKm, groupSize = 1, ecomileageLinked = false }) {
+export function calculatePoints({ distanceKm, groupSize = 1, ecomileageLinked = false, trashCategories = [] }) {
   let points = 0;
   let breakdown = [];
 
@@ -34,6 +45,17 @@ export function calculatePoints({ distanceKm, groupSize = 1, ecomileageLinked = 
     const groupBonus = groupSize * 5;
     points += groupBonus;
     breakdown.push({ label: `그룹 참여 보너스 (${groupSize}명)`, points: groupBonus });
+  }
+
+  // 분리수거 보너스: 재활용 카테고리 수량 × 5점 (일반쓰레기 제외)
+  if (trashCategories && trashCategories.length > 0) {
+    const recycleItems = trashCategories.filter(c => c.id !== "general");
+    const totalRecycleCount = recycleItems.reduce((sum, c) => sum + (c.count || 0), 0);
+    if (totalRecycleCount > 0) {
+      const recycleBonus = totalRecycleCount * 5;
+      points += recycleBonus;
+      breakdown.push({ label: `분리수거 보너스 ♻️ (${totalRecycleCount}개)`, points: recycleBonus });
+    }
   }
 
   // 에코마일리지 연동 보너스: 20% 추가
