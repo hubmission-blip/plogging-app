@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Leaf, Receipt, Coffee, CupSoda, Pipette, Package, Car, ShieldCheck, Recycle, Smartphone, Sprout, Bike, UtensilsCrossed, TreePine, Sun, RotateCcw, ShoppingBag, Container, ChevronDown, ChevronUp, Award } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { collection, query, where, orderBy, getDocs, limit, addDoc, doc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { extractText, parseReceiptInfo } from "@/lib/ocr";
@@ -478,10 +479,41 @@ export default function EcoLifePage() {
   // dbType → eco action id 매핑 (역방향)
   const DB_TO_ID = Object.fromEntries(Object.entries(CERT_CONFIG).map(([id, c]) => [c.dbType, id]));
 
+  // Firebase Auth 세션 확인 및 재인증
+  const ensureFirebaseAuth = async () => {
+    if (auth.currentUser) return; // 이미 인증됨
+    // localStorage에 저장된 카카오/애플 정보로 재인증 시도
+    try {
+      const kakaoUser = localStorage.getItem("kakaoUser");
+      const appleUser = localStorage.getItem("appleUser");
+      if (kakaoUser) {
+        const parsed = JSON.parse(kakaoUser);
+        const kakaoUid = parsed.kakaoUid || parsed.uid;
+        const fakeEmail = `kakao_${kakaoUid}@kakao-auth.plogging.app`;
+        const fakePassword = `kakao_${kakaoUid}_plogging2024!`;
+        await signInWithEmailAndPassword(auth, fakeEmail, fakePassword);
+        console.log("[Eco] 카카오 Firebase 재인증 성공");
+      } else if (appleUser) {
+        const parsed = JSON.parse(appleUser);
+        const appleUid = parsed.appleUid || parsed.uid;
+        const uidShort = String(appleUid).replace(/[^a-zA-Z0-9]/g, "").slice(0, 20);
+        const fakeEmail = `apple_${uidShort}@apple-auth.plogging.app`;
+        const fakePassword = `apple_${uidShort}_plogging2024!`;
+        await signInWithEmailAndPassword(auth, fakeEmail, fakePassword);
+        console.log("[Eco] 애플 Firebase 재인증 성공");
+      }
+    } catch (e) {
+      console.warn("[Eco] Firebase 재인증 실패:", e.message);
+      throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
       try {
+        // Firestore 읽기 전 Firebase Auth 세션 확인
+        await ensureFirebaseAuth();
         // 전체 내역 조회 (집계용)
         const allQ = query(collection(db, "ecoActions"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
         const allSnap = await getDocs(allQ);
@@ -512,6 +544,9 @@ export default function EcoLifePage() {
   const handleConfirm = async (certData) => {
     const certCfg = CERT_CONFIG[certData.ecoId];
     if (!certCfg) throw new Error("인증 설정을 찾을 수 없습니다");
+
+    // Firestore 쓰기 전 Firebase Auth 세션 확인
+    await ensureFirebaseAuth();
 
     const docData = {
       userId: user?.uid || "anonymous",
