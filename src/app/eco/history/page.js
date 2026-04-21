@@ -55,22 +55,42 @@ export default function EcoHistoryPage() {
         const uid = String(p.appleUid || p.uid).replace(/[^a-zA-Z0-9]/g, "").slice(0, 20);
         await signInWithEmailAndPassword(auth, `apple_${uid}@apple-auth.plogging.app`, `apple_${uid}_plogging2024!`);
       }
-    } catch {}
+    } catch (e) {
+      console.error("[EcoHistory] Firebase 재인증 실패:", e.code, e.message);
+    }
   };
 
   useEffect(() => {
     if (!user) { setFetching(false); return; }
-    const fetch = async () => {
+    const fetchData = async () => {
       try {
         await ensureAuth();
-        const q = query(collection(db, "ecoActions"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
-        const snap = await getDocs(q);
-        setActions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        console.log("[EcoHistory] 조회 시작, user.uid:", user.uid, "auth.currentUser:", auth.currentUser?.uid);
+        // 복합 인덱스(userId + createdAt) 쿼리 시도
+        let snap;
+        try {
+          const q = query(collection(db, "ecoActions"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
+          snap = await getDocs(q);
+        } catch (indexErr) {
+          // 인덱스 미생성 시 orderBy 없이 재시도 → 클라이언트 정렬
+          console.warn("[EcoHistory] 인덱스 쿼리 실패(인덱스 생성 필요):", indexErr.message);
+          const fallbackQ = query(collection(db, "ecoActions"), where("userId", "==", user.uid));
+          snap = await getDocs(fallbackQ);
+        }
+        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // 클라이언트 정렬 (인덱스 fallback 대응)
+        docs.sort((a, b) => {
+          const ta = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
+          const tb = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
+          return tb - ta;
+        });
+        console.log("[EcoHistory] 조회 완료:", docs.length, "건");
+        setActions(docs);
       } catch (e) {
-        console.warn("[EcoHistory] 데이터 조회 실패:", e);
+        console.error("[EcoHistory] 데이터 조회 실패:", e.code, e.message);
       } finally { setFetching(false); }
     };
-    fetch();
+    fetchData();
   }, [user]);
 
   // ─── 통계 계산 ─────────────────────────────────────────

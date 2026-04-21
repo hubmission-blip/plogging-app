@@ -1,7 +1,17 @@
 {
-  "version": "v1.91",
-  "build": 91,
+  "version": "v1.92",
+  "build": 92,
   "changelog": [
+    {
+      "version": "v1.92",
+      "build": 92,
+      "date": "2026-04-22",
+      "emoji": "✨",
+      "title": "녹색생활 내역 조회 수정",
+      "items": [
+        "Firestore 복합 인덱스 추가, 쿼리 fallback 적용"
+      ]
+    },
     {
       "version": "v1.91",
       "build": 91,

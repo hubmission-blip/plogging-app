@@ -635,13 +635,28 @@ export default function EcoLifePage() {
         // Firestore 읽기 전 Firebase Auth 세션 확인
         await ensureFirebaseAuth();
         // 전체 내역 조회 (집계용)
-        const allQ = query(collection(db, "ecoActions"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
-        const allSnap = await getDocs(allQ);
+        let allSnap;
+        try {
+          const allQ = query(collection(db, "ecoActions"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
+          allSnap = await getDocs(allQ);
+        } catch (indexErr) {
+          // 복합 인덱스 미생성 시 → orderBy 없이 조회 후 클라이언트 정렬
+          console.warn("[Eco] 인덱스 쿼리 실패, fallback:", indexErr.message);
+          const fallbackQ = query(collection(db, "ecoActions"), where("userId", "==", user.uid));
+          allSnap = await getDocs(fallbackQ);
+        }
         const docs = allSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        docs.sort((a, b) => {
+          const ta = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
+          const tb = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
+          return tb - ta;
+        });
 
         // 최근 5건
         setRecentActions(docs.slice(0, 5));
-      } catch (e) { /* ignore */ }
+      } catch (e) {
+        console.error("[Eco] 내역 조회 실패:", e.code, e.message);
+      }
     };
     fetchData();
   }, [user]);
