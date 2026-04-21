@@ -475,20 +475,18 @@ export default function EcoLifePage() {
         <h3 className="text-sm font-black text-gray-700 mb-3 flex items-center gap-1.5">
           <span className="text-base">✅</span> 인증 가능한 활동 ({ECO_ACTIONS.length}개)
         </h3>
-        <div className="grid grid-cols-3 gap-2.5 mb-6">
+        <div className="grid grid-cols-2 gap-2.5 mb-6">
           {ECO_ACTIONS.map(action => {
             const clr = COLORS[action.id];
             const IconComp = action.Icon;
             return (
               <button key={action.id} onClick={() => handleCardClick(action)}
-                className="bg-white border border-gray-100 rounded-2xl p-3 pb-2.5 flex flex-col items-center text-center shadow-sm hover:shadow-md active:scale-[0.96] transition-all">
-                <div className={`w-11 h-11 rounded-xl ${clr.bg} border ${clr.border} flex items-center justify-center mb-2`}>
-                  <IconComp size={22} className={clr.icon} strokeWidth={2} />
+                className={`${clr.bg} border ${clr.border} rounded-2xl px-3.5 py-3 flex items-center gap-3 text-left active:scale-[0.97] transition-all`}>
+                <IconComp size={22} className={clr.icon} strokeWidth={2} />
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-xs text-gray-700 leading-tight">{action.title}</h4>
+                  <span className={`text-[10px] font-bold ${clr.text}`}>{action.points}</span>
                 </div>
-                <h4 className="font-bold text-[11px] leading-tight text-gray-700 mb-1">{action.title}</h4>
-                <span className={`text-[9px] font-bold text-white ${clr.badge} px-1.5 py-0.5 rounded-full`}>
-                  {action.points}
-                </span>
               </button>
             );
           })}

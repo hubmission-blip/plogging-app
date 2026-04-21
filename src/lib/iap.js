@@ -68,39 +68,39 @@ export function getIAPProducts() {
   });
 }
 
-// 구매 실행
+// 후원 결제 실행
 export async function purchaseIAP(productId) {
   const store = window.CdvPurchase?.store;
   if (!store) throw new Error("IAP 스토어 미초기화");
 
   const product = store.get(productId);
-  if (!product) throw new Error("상품을 찾을 수 없습니다");
+  if (!product) throw new Error("후원 상품을 찾을 수 없습니다");
 
   const offer = product.getOffer();
-  if (!offer) throw new Error("구매 가능한 오퍼가 없습니다");
+  if (!offer) throw new Error("현재 후원이 불가합니다. 잠시 후 다시 시도해주세요");
 
-  // 구매 시작
+  // 후원 결제 시작
   const result = await store.order(offer);
   if (result?.isError) {
-    throw new Error(result.message || "구매 실패");
+    throw new Error(result.message || "후원 처리에 실패했습니다");
   }
   return result;
 }
 
-// 구매 완료 처리 콜백 등록
+// 후원 완료 처리 콜백 등록
 export function onIAPApproved(callback) {
   const store = window.CdvPurchase?.store;
   if (!store) return;
 
   store.when().approved((transaction) => {
-    console.log("[IAP] 구매 승인:", transaction);
+    console.log("[IAP] 후원 승인:", transaction);
     callback(transaction);
     // 소모성 상품이므로 finish 호출
     transaction.finish();
   });
 }
 
-// 구매 에러 콜백 등록
+// 후원 에러 콜백 등록
 export function onIAPError(callback) {
   const store = window.CdvPurchase?.store;
   if (!store) return;

@@ -2,16 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { CalendarDays, Leaf, Monitor, Cloud, Lightbulb, Heart, TreePine, Server, HandHeart, UserRound, Coins, Landmark, Smartphone, Info, PenLine } from "lucide-react";
+import { CalendarDays, Leaf, Monitor, Cloud, Lightbulb, Heart, TreePine, Server, HandHeart, UserRound, Coins, Smartphone, ShieldCheck } from "lucide-react";
 import { isNativeIOS, initIAP, getIAPProducts, purchaseIAP, onIAPApproved, onIAPError, IAP_PRODUCTS } from "@/lib/iap";
 import { db } from "@/lib/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
-
-// ── 후원 계좌 정보 ─────────────────────────────────────────────
-const ACCOUNTS = [
-  { bank: "우리은행", number: "1005-504-709367", holder: "(사)국제청년환경연합회", color: "bg-blue-600", icon: "🔵" },
-];
 
 // ── 후원 금액 프리셋 ─────────────────────────────────────────
 const AMOUNTS = [
@@ -55,7 +50,6 @@ export default function DonatePage() {
   const { user } = useAuth();
   const [selectedAmount, setSelectedAmount] = useState(null);
   const [customAmount,   setCustomAmount]   = useState("");
-  const [copiedBank,     setCopiedBank]     = useState(null);
   const [showThanks,     setShowThanks]     = useState(false);
   const [thanksMsg,      setThanksMsg]      = useState("");
 
@@ -105,20 +99,6 @@ export default function DonatePage() {
     ? parseInt(customAmount.replace(/,/g, ""), 10) || 0
     : selectedAmount?.value || 0;
 
-  // ── 계좌 복사 ──
-  const handleCopy = async (account) => {
-    const copyText = finalAmount > 0
-      ? `${account.bank} ${account.number}\n예금주: ${account.holder}\n후원금액: ${finalAmount.toLocaleString()}원`
-      : `${account.bank} ${account.number}\n예금주: ${account.holder}`;
-    try {
-      await navigator.clipboard.writeText(copyText);
-      setCopiedBank(account.bank);
-      setTimeout(() => setCopiedBank(null), 2500);
-    } catch {
-      alert(copyText);
-    }
-  };
-
   // ── 외부 링크 열기 ──
   const openExternal = async (url) => {
     if (isIOS) {
@@ -144,8 +124,8 @@ export default function DonatePage() {
     try {
       await purchaseIAP(productId);
     } catch (e) {
-      console.error("[IAP] 구매 실패:", e);
-      alert("구매에 실패했습니다. 다시 시도해주세요.");
+      console.error("[IAP] 후원 실패:", e);
+      alert("후원 처리에 실패했습니다.\n잠시 후 다시 시도해주세요.");
       setIapLoading(false);
     }
   };
@@ -289,66 +269,15 @@ export default function DonatePage() {
         </div>
 
         {/* ══════════════════════════════════════════════════════
-            ② 후원 계좌 (계좌이체)
-            ══════════════════════════════════════════════════════ */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5"><Landmark className="w-4 h-4 text-gray-600" strokeWidth={2} /> 후원 계좌</p>
-          <div className="space-y-2">
-            {ACCOUNTS.map((acc) => (
-              <div key={acc.bank} className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
-                <div className={`w-9 h-9 ${acc.color} rounded-full flex items-center justify-center text-white font-black text-xs flex-shrink-0`}>
-                  {acc.bank.slice(0, 2)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-400">{acc.bank}</p>
-                  <p className="text-sm font-black text-gray-800">{acc.number}</p>
-                  <p className="text-[11px] text-gray-400">{acc.holder}</p>
-                </div>
-                <button
-                  onClick={() => handleCopy(acc)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all
-                    ${copiedBank === acc.bank
-                      ? "bg-green-500 text-white"
-                      : finalAmount > 0
-                        ? "bg-orange-500 text-white"
-                        : "bg-orange-100 text-orange-600"}`}
-                >
-                  {copiedBank === acc.bank
-                    ? "✓ 복사됨"
-                    : finalAmount > 0
-                      ? `${finalAmount.toLocaleString()}원 복사`
-                      : "계좌 복사"}
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-3 bg-orange-50 rounded-xl px-3 py-2.5 flex items-start gap-2">
-            <Info className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" strokeWidth={2} />
-            <p className="text-[11px] text-orange-700 leading-relaxed">
-              <strong>금액을 먼저 선택</strong>하고 복사 버튼을 누르면
-              <strong> 계좌번호 + 예금주 + 후원금액</strong>이 한 번에 복사돼요.
-            </p>
-          </div>
-          <div className="mt-2 bg-yellow-50 rounded-xl px-3 py-2.5 flex items-start gap-2">
-            <PenLine className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
-            <p className="text-[11px] text-yellow-700 leading-relaxed">
-              입금 시 <strong>입금자명에 닉네임 또는 연락처</strong>를 남겨주시면 감사 인사를 전해드려요.
-              문의: <strong>hubmission@gmail.com</strong>
-            </p>
-          </div>
-        </div>
-
-        {/* ══════════════════════════════════════════════════════
-            ③ 간편 후원 (Apple · 카카오페이)
+            ② 후원하기 (Apple · 카카오페이)
             ══════════════════════════════════════════════════════ */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <p className="text-sm font-bold text-gray-700 mb-1 flex items-center gap-1.5">
-            <Smartphone className="w-4 h-4 text-gray-600" strokeWidth={2} /> 간편 후원
+            <Smartphone className="w-4 h-4 text-gray-600" strokeWidth={2} /> 후원하기
           </p>
           <p className="text-xs text-gray-400 mb-3">
             {finalAmount > 0
-              ? `${finalAmount.toLocaleString()}원을 간편하게 후원하세요`
+              ? `${finalAmount.toLocaleString()}원을 후원하세요`
               : "위에서 금액을 먼저 선택해주세요"}
           </p>
 
@@ -398,13 +327,20 @@ export default function DonatePage() {
           </div>
         </div>
 
-        {/* ── 후원 완료 버튼 ── */}
-        <button
-          onClick={() => { setThanksMsg(""); setShowThanks(true); }}
-          className="w-full bg-gradient-to-r from-orange-400 to-orange-500 text-white py-4 rounded-2xl font-black text-base shadow-sm active:scale-95 transition-transform"
-        >
-          🧡 입금했어요! (후원 완료 알림)
-        </button>
+        {/* ── 비영리 기부 안내 ── */}
+        <div className="bg-green-50 rounded-2xl p-4">
+          <div className="flex items-start gap-2.5">
+            <ShieldCheck className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
+            <div>
+              <p className="text-xs font-bold text-green-700 mb-1">비영리 사단법인 기부금</p>
+              <p className="text-[11px] text-green-600 leading-relaxed">
+                모든 후원금은 사단법인 국제청년환경연합회(GYEA)에
+                100% 전액 기부되며, 환경 보호 활동에만 사용됩니다.
+                후원은 앱 내 기능과 무관한 순수 기부입니다.
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* ── 감사 메시지 모달 ── */}
         {showThanks && (
@@ -413,7 +349,7 @@ export default function DonatePage() {
               <p className="text-5xl mb-3">🧡</p>
               <h2 className="text-lg font-black text-gray-800 mb-2">감사합니다!</h2>
               <p className="text-sm text-gray-500 leading-relaxed mb-4">
-                {thanksMsg || (<>후원해 주셔서 진심으로 감사드립니다.<br />입금 확인 후 1~3일 내에 혜택이 적용됩니다.<br />문의: <strong>hubmission@gmail.com</strong></>)}
+                {thanksMsg || (<>후원해 주셔서 진심으로 감사드립니다.<br />소중한 기부금은 환경 보호에 사용됩니다.<br />문의: <strong>hubmission@gmail.com</strong></>)}
               </p>
               <p className="text-xs text-gray-400 mb-4">오백원의 행복은 여러분의 응원 덕분에 계속됩니다 🌿</p>
               <button onClick={() => setShowThanks(false)} className="w-full bg-orange-500 text-white py-3 rounded-2xl font-bold text-sm">확인</button>
