@@ -39,23 +39,23 @@ const ECO_ACTIONS = [
 
 // ─── 항목별 색상 (아이콘 색상 + 배경) ───────────────────
 const COLORS = {
-  ereceipt:       { icon: "text-blue-500",    bg: "bg-blue-50",    border: "border-blue-100",    text: "text-blue-600",    badge: "bg-blue-500" },
-  tumbler:        { icon: "text-amber-500",   bg: "bg-amber-50",   border: "border-amber-100",   text: "text-amber-600",   badge: "bg-amber-500" },
-  cupreturn:      { icon: "text-teal-500",    bg: "bg-teal-50",    border: "border-teal-100",    text: "text-teal-600",    badge: "bg-teal-500" },
-  refillstation:  { icon: "text-indigo-500",  bg: "bg-indigo-50",  border: "border-indigo-100",  text: "text-indigo-600",  badge: "bg-indigo-500" },
-  container:      { icon: "text-violet-500",  bg: "bg-violet-50",  border: "border-violet-100",  text: "text-violet-600",  badge: "bg-violet-500" },
-  evrental:       { icon: "text-sky-500",     bg: "bg-sky-50",     border: "border-sky-100",     text: "text-sky-600",     badge: "bg-sky-500" },
-  ecoproduct:     { icon: "text-emerald-500", bg: "bg-emerald-50", border: "border-emerald-100", text: "text-emerald-600", badge: "bg-emerald-500" },
-  qualityrecycle: { icon: "text-cyan-500",    bg: "bg-cyan-50",    border: "border-cyan-100",    text: "text-cyan-600",    badge: "bg-cyan-500" },
-  phonereturn:    { icon: "text-slate-500",   bg: "bg-slate-50",   border: "border-slate-100",   text: "text-slate-600",   badge: "bg-slate-500" },
-  futuregen:      { icon: "text-green-500",   bg: "bg-green-50",   border: "border-green-100",   text: "text-green-600",   badge: "bg-green-500" },
-  sharedbike:     { icon: "text-lime-500",    bg: "bg-lime-50",    border: "border-lime-100",    text: "text-lime-600",    badge: "bg-lime-500" },
-  zerowaste:      { icon: "text-orange-500",  bg: "bg-orange-50",  border: "border-orange-100",  text: "text-orange-600",  badge: "bg-orange-500" },
-  treeplanting:   { icon: "text-green-600",   bg: "bg-green-50",   border: "border-green-100",   text: "text-green-700",   badge: "bg-green-600" },
-  solarpanel:     { icon: "text-yellow-500",  bg: "bg-yellow-50",  border: "border-yellow-100",  text: "text-yellow-600",  badge: "bg-yellow-500" },
-  recycledproduct:{ icon: "text-teal-500",    bg: "bg-teal-50",    border: "border-teal-100",    text: "text-teal-600",    badge: "bg-teal-500" },
-  ecobag:         { icon: "text-pink-500",    bg: "bg-pink-50",    border: "border-pink-100",    text: "text-pink-600",    badge: "bg-pink-500" },
-  owncontainer:   { icon: "text-purple-500",  bg: "bg-purple-50",  border: "border-purple-100",  text: "text-purple-600",  badge: "bg-purple-500" },
+  ereceipt:       { icon: "text-blue-500",    bg: "bg-blue-50",    border: "border-blue-300",    text: "text-blue-600",    badge: "bg-blue-500" },
+  tumbler:        { icon: "text-amber-500",   bg: "bg-amber-50",   border: "border-amber-300",   text: "text-amber-600",   badge: "bg-amber-500" },
+  cupreturn:      { icon: "text-teal-500",    bg: "bg-teal-50",    border: "border-teal-300",    text: "text-teal-600",    badge: "bg-teal-500" },
+  refillstation:  { icon: "text-indigo-500",  bg: "bg-indigo-50",  border: "border-indigo-300",  text: "text-indigo-600",  badge: "bg-indigo-500" },
+  container:      { icon: "text-violet-500",  bg: "bg-violet-50",  border: "border-violet-300",  text: "text-violet-600",  badge: "bg-violet-500" },
+  evrental:       { icon: "text-sky-500",     bg: "bg-sky-50",     border: "border-sky-300",     text: "text-sky-600",     badge: "bg-sky-500" },
+  ecoproduct:     { icon: "text-emerald-500", bg: "bg-emerald-50", border: "border-emerald-300", text: "text-emerald-600", badge: "bg-emerald-500" },
+  qualityrecycle: { icon: "text-cyan-500",    bg: "bg-cyan-50",    border: "border-cyan-300",    text: "text-cyan-600",    badge: "bg-cyan-500" },
+  phonereturn:    { icon: "text-slate-500",   bg: "bg-slate-50",   border: "border-slate-300",   text: "text-slate-600",   badge: "bg-slate-500" },
+  futuregen:      { icon: "text-green-500",   bg: "bg-green-50",   border: "border-green-300",   text: "text-green-600",   badge: "bg-green-500" },
+  sharedbike:     { icon: "text-lime-500",    bg: "bg-lime-50",    border: "border-lime-300",    text: "text-lime-600",    badge: "bg-lime-500" },
+  zerowaste:      { icon: "text-orange-500",  bg: "bg-orange-50",  border: "border-orange-300",  text: "text-orange-600",  badge: "bg-orange-500" },
+  treeplanting:   { icon: "text-green-600",   bg: "bg-green-50",   border: "border-green-300",   text: "text-green-700",   badge: "bg-green-600" },
+  solarpanel:     { icon: "text-yellow-500",  bg: "bg-yellow-50",  border: "border-yellow-300",  text: "text-yellow-600",  badge: "bg-yellow-500" },
+  recycledproduct:{ icon: "text-teal-500",    bg: "bg-teal-50",    border: "border-teal-300",    text: "text-teal-600",    badge: "bg-teal-500" },
+  ecobag:         { icon: "text-pink-500",    bg: "bg-pink-50",    border: "border-pink-300",    text: "text-pink-600",    badge: "bg-pink-500" },
+  owncontainer:   { icon: "text-purple-500",  bg: "bg-purple-50",  border: "border-purple-300",  text: "text-purple-600",  badge: "bg-purple-500" },
 };
 
 // ─── 인증 모달 설정 ─────────────────────────────────────
@@ -475,18 +475,17 @@ export default function EcoLifePage() {
         <h3 className="text-sm font-black text-gray-700 mb-3 flex items-center gap-1.5">
           <span className="text-base">✅</span> 인증 가능한 활동 ({ECO_ACTIONS.length}개)
         </h3>
-        <div className="grid grid-cols-2 gap-2.5 mb-6">
+        <div className="grid grid-cols-2 gap-3 mb-6">
           {ECO_ACTIONS.map(action => {
             const clr = COLORS[action.id];
             const IconComp = action.Icon;
             return (
               <button key={action.id} onClick={() => handleCardClick(action)}
-                className={`${clr.bg} border ${clr.border} rounded-2xl px-3.5 py-3 flex items-center gap-3 text-left active:scale-[0.97] transition-all`}>
-                <IconComp size={22} className={clr.icon} strokeWidth={2} />
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-xs text-gray-700 leading-tight">{action.title}</h4>
-                  <span className={`text-[10px] font-bold ${clr.text}`}>{action.points}</span>
-                </div>
+                className={`${clr.bg} border-2 ${clr.border} rounded-2xl px-3 pt-4 pb-3 flex flex-col items-center text-center active:scale-[0.96] transition-all`}>
+                <IconComp size={32} className={clr.icon} strokeWidth={1.8} />
+                <h4 className="font-black text-[13px] text-gray-800 mt-2 leading-tight">{action.title}</h4>
+                <p className="text-[10px] text-gray-400 mt-1 leading-snug line-clamp-2">{action.desc}</p>
+                <span className={`text-[11px] font-bold ${clr.text} mt-1.5`}>{action.points}</span>
               </button>
             );
           })}
