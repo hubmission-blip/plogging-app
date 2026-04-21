@@ -1603,11 +1603,18 @@ function MapPageInner() {
             <p className="text-xs text-white bg-black/40 rounded-full px-3 py-1 flex items-center gap-1">
               <Sun className="w-3.5 h-3.5 inline" strokeWidth={2} /> 시작 시 화면 꺼짐이 자동으로 방지돼요
             </p>
-            <button onClick={() => setShowReadyCheck(true)}
-              className="text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform flex items-center gap-2"
-              style={{ backgroundColor: "#8dc63f" }}>
-              <FootprintsIcon className="w-5 h-5" strokeWidth={2} /> 플로깅 시작
-            </button>
+            <div className="flex items-center gap-3">
+              <button onClick={() => setShowReadyCheck(true)}
+                className="text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform flex items-center gap-2"
+                style={{ backgroundColor: "#8dc63f" }}>
+                <FootprintsIcon className="w-5 h-5" strokeWidth={2} /> 플로깅 시작
+              </button>
+              <button onClick={() => setShowTumblerModal(true)}
+                className="w-14 h-14 rounded-full bg-white border-2 border-amber-300 shadow-lg flex flex-col items-center justify-center active:scale-95 transition-transform relative">
+                <span className="text-xl leading-none">☕</span>
+                <span className="text-[8px] font-bold text-amber-700 leading-none mt-0.5">텀블러</span>
+              </button>
+            </div>
           </>
         ) : (
           <>
@@ -1622,10 +1629,22 @@ function MapPageInner() {
                 }
               </div>
             )}
-            <button onClick={handleStop}
-              className="bg-red-500 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform flex items-center gap-2">
-              <FlagIcon className="w-5 h-5" strokeWidth={2} /> 플로깅 종료
-            </button>
+            <div className="flex items-center gap-3">
+              <button onClick={handleStop}
+                className="bg-red-500 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform flex items-center gap-2">
+                <FlagIcon className="w-5 h-5" strokeWidth={2} /> 플로깅 종료
+              </button>
+              <button onClick={() => setShowTumblerModal(true)}
+                className="w-14 h-14 rounded-full bg-white border-2 border-amber-300 shadow-lg flex flex-col items-center justify-center active:scale-95 transition-transform relative">
+                <span className="text-xl leading-none">☕</span>
+                <span className="text-[8px] font-bold text-amber-700 leading-none mt-0.5">텀블러</span>
+                {sessionTumblerCerts.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {sessionTumblerCerts.length}
+                  </span>
+                )}
+              </button>
+            </div>
           </>
         )}
       </div>
@@ -1682,25 +1701,6 @@ function MapPageInner() {
           onClose={() => setShowTumblerModal(false)}
           isPlogging={isTracking}
         />
-      )}
-
-      {/* ── 텀블러 인증 플로팅 버튼 (항상 표시) ───────── */}
-      {!showPhotoModal && !showTumblerModal && !result && (
-        <button
-          onClick={() => setShowTumblerModal(true)}
-          className="fixed bottom-24 right-4 z-30 flex items-center gap-2 bg-white border-2 border-amber-300 rounded-full pl-3 pr-4 py-2.5 shadow-lg active:scale-95 transition-all"
-          style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }}>
-          <span className="text-lg">☕</span>
-          <div className="text-left">
-            <div className="text-xs font-black text-amber-700 leading-tight">텀블러 인증</div>
-            <div className="text-[10px] text-gray-400 leading-tight">+30P</div>
-          </div>
-          {isTracking && sessionTumblerCerts.length > 0 && (
-            <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
-              {sessionTumblerCerts.length}
-            </span>
-          )}
-        </button>
       )}
 
       {/* ── B. 제휴 상점 팝업 (플로깅 중에도 표시) ──────── */}
