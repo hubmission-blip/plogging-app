@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, getDocs, limit, addDoc, doc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { extractText, parseReceiptInfo } from "@/lib/ocr";
 import { TUMBLER_BONUS, CUP_RETURN_PER_CUP, REUSABLE_CONTAINER_BONUS, EV_RENTAL_BONUS, SHARED_BIKE_BONUS, E_RECEIPT_BONUS, FUTURE_GEN_BONUS, ZERO_WASTE_BONUS, ECO_BAG_BONUS, OWN_CONTAINER_BONUS, RECYCLED_PRODUCT_BONUS, ECO_PRODUCT_BONUS, QUALITY_RECYCLE_BONUS } from "@/lib/pointCalc";
 
 // ─── 포인트 상수 (신규 4개) ────────────────────────────
@@ -95,6 +96,7 @@ const CERT_CONFIG = {
   },
   ereceipt: {
     title: "전자영수증 발급 인증", dbType: "e_receipt", bonus: E_RECEIPT_BONUS, allowGallery: true,
+    ocrMain: true, // 메인 사진 자체가 영수증 → OCR 적용
     steps: ["매장에서 결제 시 전자영수증 발급을 요청", "스마트폰에 수신된 전자영수증 화면을 캡처", "캡처한 화면을 업로드하면 인증 완료!"],
     tip: "편의점, 마트, 카페 등 전자영수증 발급이 가능한 매장에서 이용하세요. 카카오톡, 네이버 전자영수증 모두 인정됩니다.",
     photoLabel: "전자영수증 캡처",
@@ -198,8 +200,32 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
   const [cupCount, setCupCount] = useState(1);
   const [service, setService]   = useState("");
   const [uploading, setUploading] = useState(false);
+  // OCR 상태
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrResult, setOcrResult]   = useState(null); // { text, confidence, info }
+  const [showOcrDetail, setShowOcrDetail] = useState(false);
   const photoRef   = useRef(null);
   const receiptRef = useRef(null);
+
+  // OCR이 필요한지 판단
+  const needsOcrOnPhoto   = !!cfg.ocrMain;                        // ereceipt: 메인 사진이 영수증
+  const needsOcrOnReceipt = !!cfg.receiptLabel && !cfg.ocrMain;   // receiptLabel 있는 항목
+
+  // OCR 실행 함수
+  const runOcr = async (file) => {
+    setOcrLoading(true);
+    setOcrResult(null);
+    try {
+      const { text, confidence } = await extractText(file);
+      const info = parseReceiptInfo(text);
+      setOcrResult({ text, confidence, info });
+    } catch (e) {
+      console.warn("[OCR] 실행 실패:", e);
+      setOcrResult({ text: "", confidence: 0, info: { storeName: null, amount: null, date: null } });
+    } finally {
+      setOcrLoading(false);
+    }
+  };
 
   const handlePhoto = (e) => {
     const f = e.target.files?.[0]; if (!f) return;
@@ -207,11 +233,15 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
     const msg = cfg.allowGallery ? "2시간 이내의 캡처만 인증이 가능합니다." : "방금 찍은 사진만 인증이 가능합니다.\n갤러리 사진은 사용할 수 없어요.";
     if ((Date.now() - f.lastModified) / 60000 > maxMin) { e.target.value = ""; alert(msg); return; }
     setPhoto(f); setPreview(URL.createObjectURL(f));
+    // 메인 사진 OCR (ereceipt)
+    if (needsOcrOnPhoto) runOcr(f);
   };
   const handleReceipt = (e) => {
     const f = e.target.files?.[0]; if (!f) return;
     if ((Date.now() - f.lastModified) / 60000 > 120) { e.target.value = ""; alert("2시간 이내의 이미지만 인증이 가능합니다."); return; }
     setReceipt(f); setReceiptPrev(URL.createObjectURL(f));
+    // 영수증 OCR
+    if (needsOcrOnReceipt) runOcr(f);
   };
 
   const totalPoints = cfg.hasCupCount ? cupCount * cfg.bonusPerCup : (cfg.bonus || 0);
@@ -223,9 +253,16 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
       const photoUrl = await uploadToCloudinary(photo);
       let receiptUrl = null;
       if (receipt) receiptUrl = await uploadToCloudinary(receipt);
-      onConfirm({ ecoId, photoUrl, receiptUrl, service, cupCount: cfg.hasCupCount ? cupCount : undefined, points: totalPoints, certifiedAt: new Date().toISOString() });
-    } catch (e) { alert("사진 업로드 실패: " + e.message); }
-    finally { setUploading(false); }
+      // OCR 데이터 포함
+      const ocrData = ocrResult ? {
+        receiptText: ocrResult.text || "",
+        receiptInfo: ocrResult.info || null,
+        ocrConfidence: ocrResult.confidence || 0,
+      } : {};
+      await onConfirm({ ecoId, photoUrl, receiptUrl, service, cupCount: cfg.hasCupCount ? cupCount : undefined, points: totalPoints, certifiedAt: new Date().toISOString(), ...ocrData });
+    } catch (e) {
+      alert("저장 실패: " + e.message);
+    } finally { setUploading(false); }
   };
 
   return (
@@ -293,7 +330,7 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
                   {preview ? (
                     <div className="relative">
                       <img src={preview} alt="인증" className="w-full h-32 object-cover rounded-xl" />
-                      <button onClick={() => { setPhoto(null); setPreview(null); }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                      <button onClick={() => { setPhoto(null); setPreview(null); if (needsOcrOnPhoto) { setOcrResult(null); setShowOcrDetail(false); } }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
                     </div>
                   ) : (
                     <button onClick={() => photoRef.current?.click()} className={`w-full h-32 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-1 ${clr.border} ${clr.bg}`}>
@@ -309,7 +346,7 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
                     {receiptPrev ? (
                       <div className="relative">
                         <img src={receiptPrev} alt="증빙" className="w-full h-32 object-cover rounded-xl" />
-                        <button onClick={() => { setReceipt(null); setReceiptPrev(null); }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+                        <button onClick={() => { setReceipt(null); setReceiptPrev(null); if (needsOcrOnReceipt) { setOcrResult(null); setShowOcrDetail(false); } }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
                       </div>
                     ) : (
                       <button onClick={() => receiptRef.current?.click()} className="w-full h-32 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 bg-gray-50/30">
@@ -321,6 +358,61 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
                   </div>
                 )}
               </div>
+
+              {/* OCR 결과 미리보기 */}
+              {(needsOcrOnPhoto || needsOcrOnReceipt) && (ocrLoading || ocrResult) && (
+                <div className="mb-3">
+                  {ocrLoading && (
+                    <div className={`${clr.bg} border ${clr.border} rounded-xl p-3 flex items-center gap-2.5`}>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-green-500" />
+                      <span className={`text-xs font-bold ${clr.text}`}>영수증 텍스트 인식 중...</span>
+                    </div>
+                  )}
+                  {!ocrLoading && ocrResult && (
+                    <div className={`${clr.bg} border ${clr.border} rounded-xl overflow-hidden`}>
+                      <button onClick={() => setShowOcrDetail(!showOcrDetail)} className="w-full px-3 py-2.5 flex items-center gap-2">
+                        <Receipt size={14} className={clr.icon} strokeWidth={2} />
+                        <span className={`text-xs font-bold ${clr.text} flex-1 text-left`}>
+                          {ocrResult.text ? "영수증 인식 완료" : "텍스트를 인식하지 못했어요"}
+                        </span>
+                        {ocrResult.confidence > 0 && (
+                          <span className="text-[10px] text-gray-400 font-medium">정확도 {ocrResult.confidence}%</span>
+                        )}
+                        {showOcrDetail
+                          ? <ChevronUp size={14} className="text-gray-400" />
+                          : <ChevronDown size={14} className="text-gray-400" />
+                        }
+                      </button>
+                      {showOcrDetail && ocrResult.text && (
+                        <div className="border-t border-gray-100 px-3 py-2.5 space-y-1.5">
+                          {ocrResult.info?.storeName && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-gray-400 w-10 flex-shrink-0">매장</span>
+                              <span className="text-xs text-gray-700 font-medium">{ocrResult.info.storeName}</span>
+                            </div>
+                          )}
+                          {ocrResult.info?.amount && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-gray-400 w-10 flex-shrink-0">금액</span>
+                              <span className="text-xs text-gray-700 font-medium">{ocrResult.info.amount.toLocaleString()}원</span>
+                            </div>
+                          )}
+                          {ocrResult.info?.date && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-gray-400 w-10 flex-shrink-0">날짜</span>
+                              <span className="text-xs text-gray-700 font-medium">{ocrResult.info.date}</span>
+                            </div>
+                          )}
+                          <div className="pt-1.5 border-t border-gray-100">
+                            <p className="text-[10px] text-gray-400 mb-1">원본 텍스트</p>
+                            <p className="text-[10px] text-gray-500 leading-relaxed whitespace-pre-wrap max-h-20 overflow-y-auto">{ocrResult.text.slice(0, 300)}{ocrResult.text.length > 300 ? "..." : ""}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* 컵 수량 (일회용컵 반환 전용) */}
               {cfg.hasCupCount && (
@@ -418,40 +510,43 @@ export default function EcoLifePage() {
 
   // 인증 완료 핸들러
   const handleConfirm = async (certData) => {
-    const cfg = CERT_CONFIG[certData.ecoId];
-    if (!cfg) return;
-    try {
-      const docData = {
-        userId: user?.uid || "anonymous",
-        type: cfg.dbType,
-        photoUrl: certData.photoUrl,
-        receiptUrl: certData.receiptUrl || null,
-        points: certData.points,
-        certifiedAt: certData.certifiedAt,
-        createdAt: serverTimestamp(),
-      };
-      if (certData.cupCount) docData.cupCount = certData.cupCount;
-      if (certData.service) docData.service = certData.service;
+    const certCfg = CERT_CONFIG[certData.ecoId];
+    if (!certCfg) throw new Error("인증 설정을 찾을 수 없습니다");
 
-      await addDoc(collection(db, "ecoActions"), docData);
-      if (user) {
-        const userRef = doc(db, "users", user.uid);
-        await updateDoc(userRef, { totalPoints: increment(certData.points) }).catch(() => {});
-      }
-      setActiveModal(null);
-      // 최근 내역 + 통계 갱신
-      const newEntry = { id: Date.now().toString(), type: cfg.dbType, points: certData.points, certifiedAt: certData.certifiedAt, cupCount: certData.cupCount };
-      setRecentActions(prev => [newEntry, ...prev].slice(0, 5));
-      setStats(prev => {
-        if (!prev) return { byType: { [cfg.dbType]: { count: 1, points: certData.points } }, totalPoints: certData.points, totalCount: 1 };
-        const bt = { ...prev.byType };
-        if (!bt[cfg.dbType]) bt[cfg.dbType] = { count: 0, points: 0 };
-        bt[cfg.dbType] = { count: bt[cfg.dbType].count + 1, points: bt[cfg.dbType].points + certData.points };
-        return { byType: bt, totalPoints: prev.totalPoints + certData.points, totalCount: prev.totalCount + 1 };
-      });
-      const action = ECO_ACTIONS.find(a => a.id === certData.ecoId);
-      alert(`${action?.title} 인증 완료!\n+${certData.points} 포인트가 적립되었습니다.`);
-    } catch (e) { alert("저장 실패: " + e.message); }
+    const docData = {
+      userId: user?.uid || "anonymous",
+      type: certCfg.dbType,
+      photoUrl: certData.photoUrl,
+      receiptUrl: certData.receiptUrl || null,
+      points: certData.points,
+      certifiedAt: certData.certifiedAt,
+      createdAt: serverTimestamp(),
+    };
+    if (certData.cupCount) docData.cupCount = certData.cupCount;
+    if (certData.service) docData.service = certData.service;
+    // OCR 데이터 저장
+    if (certData.receiptText) docData.receiptText = certData.receiptText;
+    if (certData.receiptInfo) docData.receiptInfo = certData.receiptInfo;
+    if (certData.ocrConfidence != null) docData.ocrConfidence = certData.ocrConfidence;
+
+    await addDoc(collection(db, "ecoActions"), docData);
+    if (user) {
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, { totalPoints: increment(certData.points) }).catch(() => {});
+    }
+    setActiveModal(null);
+    // 최근 내역 + 통계 갱신
+    const newEntry = { id: Date.now().toString(), type: certCfg.dbType, points: certData.points, certifiedAt: certData.certifiedAt, cupCount: certData.cupCount };
+    setRecentActions(prev => [newEntry, ...prev].slice(0, 5));
+    setStats(prev => {
+      if (!prev) return { byType: { [certCfg.dbType]: { count: 1, points: certData.points } }, totalPoints: certData.points, totalCount: 1 };
+      const bt = { ...prev.byType };
+      if (!bt[certCfg.dbType]) bt[certCfg.dbType] = { count: 0, points: 0 };
+      bt[certCfg.dbType] = { count: bt[certCfg.dbType].count + 1, points: bt[certCfg.dbType].points + certData.points };
+      return { byType: bt, totalPoints: prev.totalPoints + certData.points, totalCount: prev.totalCount + 1 };
+    });
+    const action = ECO_ACTIONS.find(a => a.id === certData.ecoId);
+    alert(`${action?.title} 인증 완료!\n+${certData.points} 포인트가 적립되었습니다.`);
   };
 
   const handleCardClick = (action) => {
