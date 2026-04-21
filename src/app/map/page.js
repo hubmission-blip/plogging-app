@@ -16,7 +16,7 @@ import {
   increment, serverTimestamp, query,
   where, getDocs, deleteDoc, limit,
 } from "firebase/firestore";
-import { calculatePoints, TRASH_CATEGORIES, TUMBLER_BONUS } from "@/lib/pointCalc";
+import { calculatePoints, TRASH_CATEGORIES, TUMBLER_BONUS, CUP_RETURN_PER_CUP } from "@/lib/pointCalc";
 import { getWeekNumber, getExpiresAt, isExpired, getRouteColor } from "@/lib/routeUtils";
 
 // ─── 인증 조건 상수 ───────────────────────────────────────
@@ -913,6 +913,197 @@ function TumblerCertModal({ onConfirm, onClose, isPlogging }) {
   );
 }
 
+// ─── 일회용컵 반환 인증 모달 ──────────────────────────────
+function CupReturnCertModal({ onConfirm, onClose, isPlogging }) {
+  const [step, setStep]             = useState("guide"); // guide | cert
+  const [cupCount, setCupCount]     = useState(1);
+  const [photo, setPhoto]           = useState(null);
+  const [preview, setPreview]       = useState(null);
+  const [uploading, setUploading]   = useState(false);
+  const fileRef = useRef(null);
+
+  const handlePhoto = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const ageMin = (Date.now() - f.lastModified) / 60000;
+    if (ageMin > 10) {
+      e.target.value = "";
+      alert("방금 찍은 사진만 인증이 가능합니다.\n갤러리 사진은 사용할 수 없어요.");
+      return;
+    }
+    setPhoto(f);
+    setPreview(URL.createObjectURL(f));
+  };
+
+  const handleSubmit = async () => {
+    if (!photo) { alert("반환기 사진을 촬영해주세요"); return; }
+    setUploading(true);
+    try {
+      const photoUrl = await uploadToCloudinary(photo);
+      onConfirm({ cupCount, photoUrl, certifiedAt: new Date().toISOString() });
+    } catch (e) { alert("사진 업로드 실패: " + e.message); }
+    finally { setUploading(false); }
+  };
+
+  const totalPoints = cupCount * CUP_RETURN_PER_CUP;
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[210]">
+      <div className="bg-white rounded-t-3xl w-full shadow-2xl overflow-hidden" style={{ maxHeight: "85vh" }}>
+        <div className="pt-3 pb-1 flex justify-center">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
+        <div className="px-5 pt-2 pb-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 2rem)", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 16px))" }}>
+
+          {/* ══ STEP 1: 안내 가이드 ══ */}
+          {step === "guide" && (
+            <>
+              <div className="text-center mb-4">
+                <div className="text-4xl mb-2">♻️</div>
+                <h2 className="text-lg font-black text-gray-800">일회용컵 반환 인증</h2>
+                <p className="text-gray-500 text-sm mt-1">
+                  일회용컵을 반환기에 넣고 인증해주세요!
+                </p>
+                {isPlogging && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-full px-3 py-1">
+                    <span className="text-xs">🏃</span>
+                    <span className="text-xs font-bold text-green-600">플로깅 진행 중 · 인증 후 계속됩니다</span>
+                  </div>
+                )}
+              </div>
+
+              {/* 인증 방법 안내 */}
+              <div className="space-y-2.5 mb-4">
+                <div className="bg-teal-50 border border-teal-200 rounded-2xl p-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl mt-0.5">🏪</span>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-black text-teal-800 mb-1.5">컵 반환기 사용 방법</h3>
+                      <div className="space-y-1.5 text-xs text-teal-700 leading-relaxed">
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-teal-400 mt-px">1</span>
+                          <span>편의점, 카페 등에 설치된 <span className="font-bold">컵 반환기를 찾아주세요</span></span>
+                        </div>
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-teal-400 mt-px">2</span>
+                          <span>일회용컵을 <span className="font-bold">반환기에 넣어주세요</span></span>
+                        </div>
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-black text-teal-400 mt-px">3</span>
+                          <span>반환 완료 화면 또는 반환기를 <span className="font-bold">사진으로 촬영</span>해주세요</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl mt-0.5">💡</span>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-black text-gray-700 mb-1">알고 계셨나요?</h3>
+                      <p className="text-xs text-gray-500 leading-relaxed">
+                        일회용컵 반환 시 자원순환보증금 <span className="font-bold">300원</span>도 돌려받을 수 있어요.
+                        오백원의 행복 포인트는 <span className="font-bold">별도로 추가 적립</span>됩니다!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 보너스 안내 */}
+              <div className="bg-teal-50 border border-teal-200 rounded-2xl p-3 mb-4 text-center">
+                <span className="text-xs font-bold text-teal-700">
+                  ♻️ 일회용컵 반환 시 컵당 <span className="text-teal-500">+10 포인트</span> 적립!
+                </span>
+                <p className="text-[10px] text-teal-500 mt-1">탄소중립포인트 녹색생활 실천 연계 항목</p>
+              </div>
+
+              <div className="space-y-2">
+                <button onClick={() => setStep("cert")}
+                  className="w-full py-4 rounded-2xl font-black text-base bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md active:scale-95 transition-all">
+                  인증 시작하기
+                </button>
+                <button onClick={onClose}
+                  className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">
+                  취소
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ══ STEP 2: 인증 입력 ══ */}
+          {step === "cert" && (
+            <>
+              <div className="text-center mb-4">
+                <h2 className="text-lg font-black text-gray-800">컵 반환 인증하기</h2>
+                <p className="text-gray-400 text-xs mt-1">반환기 사진을 촬영하고 반환 수량을 입력해주세요</p>
+              </div>
+
+              {/* 반환기 사진 촬영 */}
+              <div className="mb-3">
+                <label className="text-xs font-bold text-teal-700 mb-1 block">반환기 사진 <span className="text-red-400">*</span></label>
+                {preview ? (
+                  <div className="relative">
+                    <img src={preview} alt="반환기" className="w-full h-40 object-cover rounded-2xl" />
+                    <button onClick={() => { setPhoto(null); setPreview(null); }}
+                      className="absolute top-2 right-2 bg-black/50 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">✕</button>
+                  </div>
+                ) : (
+                  <button onClick={() => fileRef.current?.click()}
+                    className="w-full h-36 border-2 border-dashed border-teal-300 rounded-2xl flex flex-col items-center justify-center gap-2 active:bg-teal-50 bg-teal-50/30">
+                    <span className="text-3xl">📸</span>
+                    <span className="text-sm text-teal-600 font-bold">반환기 촬영</span>
+                    <span className="text-xs text-gray-400">반환 완료 화면 또는 반환기를 촬영해주세요</span>
+                  </button>
+                )}
+                <input ref={fileRef} type="file" accept="image/*" capture="environment"
+                  onChange={handlePhoto} className="hidden" />
+              </div>
+
+              {/* 반환 수량 */}
+              <div className="mb-4">
+                <label className="text-sm font-bold text-gray-700 mb-2 block">반환 수량</label>
+                <div className="flex items-center justify-center gap-4 bg-gray-50 rounded-2xl p-3">
+                  <button onClick={() => setCupCount(Math.max(1, cupCount - 1))}
+                    className="w-10 h-10 rounded-full bg-white border-2 border-gray-300 text-gray-500 text-lg font-bold flex items-center justify-center active:bg-gray-100">−</button>
+                  <div className="text-center">
+                    <span className="text-3xl font-black text-gray-800">{cupCount}</span>
+                    <span className="text-sm text-gray-400 ml-1">개</span>
+                  </div>
+                  <button onClick={() => setCupCount(Math.min(20, cupCount + 1))}
+                    className="w-10 h-10 rounded-full bg-white border-2 border-gray-300 text-gray-500 text-lg font-bold flex items-center justify-center active:bg-gray-100">+</button>
+                </div>
+                <div className="text-center mt-2">
+                  <span className="inline-flex items-center gap-1 bg-teal-50 border border-teal-200 rounded-full px-3 py-1 text-xs font-bold text-teal-600">
+                    ♻️ 적립 예정: +{totalPoints}P
+                  </span>
+                </div>
+              </div>
+
+              {/* 버튼 */}
+              <div className="space-y-2">
+                <button onClick={handleSubmit} disabled={uploading || !photo}
+                  className={`w-full py-4 rounded-2xl font-black text-base transition-all
+                    ${uploading ? "bg-gray-100 text-gray-400"
+                      : photo ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md active:scale-95"
+                      : "bg-gray-100 text-gray-300 cursor-not-allowed"}`}>
+                  {uploading ? "인증 중... ⏳" : "♻️ 반환 인증 완료"}
+                </button>
+                <button onClick={() => setStep("guide")}
+                  className="w-full py-3 rounded-2xl text-gray-400 text-sm font-medium bg-gray-50 active:bg-gray-100">
+                  이전으로
+                </button>
+              </div>
+            </>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── B. 제휴 상점 상세 팝업 ──────────────────────────────
 const ECO_CAT_STYLE = {
   eco_store:   { label: "🌿 친환경매장",   bg: "bg-green-100",  text: "text-green-700",  headerBg: "from-green-400 to-emerald-500" },
@@ -1052,10 +1243,16 @@ function MapPageInner() {
   const [showTumblerModal, setShowTumblerModal]     = useState(false);
   const [sessionTumblerCerts, setSessionTumblerCerts] = useState([]); // 플로깅 중 텀블러 인증 기록
 
-  // 메인 퀵메뉴에서 녹색생활 → 텀블러 인증으로 진입 시 자동 오픈
+  // ── 일회용컵 반환 인증 ──────────────────────────────────
+  const [showCupReturnModal, setShowCupReturnModal]     = useState(false);
+  const [sessionCupReturnCerts, setSessionCupReturnCerts] = useState([]); // 플로깅 중 컵 반환 인증 기록
+
+  // 메인 퀵메뉴에서 녹색생활 → 텀블러/컵반환 인증으로 진입 시 자동 오픈
   useEffect(() => {
     if (ecoAction === "tumbler" && user && !loading) {
       setShowTumblerModal(true);
+    } else if (ecoAction === "cupreturn" && user && !loading) {
+      setShowCupReturnModal(true);
     }
   }, [ecoAction, user, loading]);
 
@@ -1383,6 +1580,7 @@ function MapPageInner() {
       // 경고 확인 후 포인트 없이 시작
       noPointsOverride.current = false;
       setSessionTumblerCerts([]); // 텀블러 인증 초기화
+      setSessionCupReturnCerts([]); // 컵 반환 인증 초기화
       startTracking();
       return;
     }
@@ -1394,6 +1592,7 @@ function MapPageInner() {
       return;
     }
     setSessionTumblerCerts([]); // 텀블러 인증 초기화
+    setSessionCupReturnCerts([]); // 컵 반환 인증 초기화
     startTracking();
   };
 
@@ -1470,8 +1669,17 @@ function MapPageInner() {
         finalBreakdown.push({ label: `텀블러 보너스 ☕ (${sessionTumblerCerts.length}회)`, points: TUMBLER_BONUS * sessionTumblerCerts.length });
       }
 
+      // 플로깅 중 컵 반환 인증이 있으면 보너스 추가
+      if (sessionCupReturnCerts.length > 0) {
+        const totalCups = sessionCupReturnCerts.reduce((sum, c) => sum + (c.cupCount || 0), 0);
+        const cupReturnBonus = totalCups * CUP_RETURN_PER_CUP;
+        finalPoints += cupReturnBonus;
+        finalBreakdown.push({ label: `컵 반환 보너스 ♻️ (${totalCups}개)`, points: cupReturnBonus });
+      }
+
       await saveRoute({ ...p, points: finalPoints, photoUrl, trashCategories,
-        tumblerInfo: sessionTumblerCerts.length > 0 ? sessionTumblerCerts : null });
+        tumblerInfo: sessionTumblerCerts.length > 0 ? sessionTumblerCerts : null,
+        cupReturnInfo: sessionCupReturnCerts.length > 0 ? sessionCupReturnCerts : null });
       setShowPhotoModal(false);
       setResult({ distance: p.routeDistance, total: finalPoints, breakdown: finalBreakdown, verified: true });
     } catch (e) { alert("사진 업로드 실패: " + e.message); }
@@ -1517,6 +1725,42 @@ function MapPageInner() {
         }
         setShowTumblerModal(false);
         alert(`☕ 텀블러 인증 완료!\n+${TUMBLER_BONUS} 포인트가 적립되었습니다.`);
+      } catch (e) {
+        alert("저장 실패: " + e.message);
+      }
+    }
+  };
+
+  // ─── 컵 반환 인증 처리 (플로깅 중 / 독립) ──────────────
+  const handleCupReturnConfirm = async (certData) => {
+    if (isTracking) {
+      // 플로깅 중 → 세션에 기록, 종료 시 보너스 합산
+      setSessionCupReturnCerts(prev => [...prev, certData]);
+      setShowCupReturnModal(false);
+      const pts = certData.cupCount * CUP_RETURN_PER_CUP;
+      alert(`♻️ 컵 반환 인증 완료! (${certData.cupCount}개)\n플로깅을 계속하세요.\n종료 시 +${pts}P가 합산됩니다.`);
+    } else {
+      // 독립 인증 → ecoActions 컬렉션에 바로 저장 + 포인트 지급
+      try {
+        const pts = certData.cupCount * CUP_RETURN_PER_CUP;
+        await addDoc(collection(db, "ecoActions"), {
+          userId: user?.uid || "anonymous",
+          type: "cup_return",
+          cupCount: certData.cupCount,
+          photoUrl: certData.photoUrl,
+          points: pts,
+          certifiedAt: certData.certifiedAt,
+          createdAt: serverTimestamp(),
+        });
+        // 사용자 포인트 업데이트
+        if (user) {
+          const userRef = doc(db, "users", user.uid);
+          await updateDoc(userRef, {
+            totalPoints: increment(pts),
+          }).catch(() => {});
+        }
+        setShowCupReturnModal(false);
+        alert(`♻️ 컵 반환 인증 완료! (${certData.cupCount}개)\n+${pts} 포인트가 적립되었습니다.`);
       } catch (e) {
         alert("저장 실패: " + e.message);
       }
@@ -1827,6 +2071,15 @@ function MapPageInner() {
         <TumblerCertModal
           onConfirm={handleTumblerConfirm}
           onClose={() => setShowTumblerModal(false)}
+          isPlogging={isTracking}
+        />
+      )}
+
+      {/* ── 일회용컵 반환 인증 모달 ─────────────────────── */}
+      {showCupReturnModal && (
+        <CupReturnCertModal
+          onConfirm={handleCupReturnConfirm}
+          onClose={() => setShowCupReturnModal(false)}
           isPlogging={isTracking}
         />
       )}

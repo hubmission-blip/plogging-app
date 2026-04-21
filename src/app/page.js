@@ -506,11 +506,11 @@ export default function HomePage() {
               <span className="text-[11px] text-purple-700 font-bold">리워드</span>
             </Link>
             <Link
-              href="/map?eco=tumbler"
-              className="bg-amber-50 border border-amber-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
+              href="/eco"
+              className="bg-green-50 border border-green-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <Leaf className="w-5 h-5 text-amber-600" strokeWidth={1.8} />
-              <span className="text-[11px] text-amber-700 font-bold">녹색생활</span>
+              <Leaf className="w-5 h-5 text-green-600" strokeWidth={1.8} />
+              <span className="text-[11px] text-green-700 font-bold">녹색생활</span>
             </Link>
             <button
               onClick={() => setShowManual(true)}
