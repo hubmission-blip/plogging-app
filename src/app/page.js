@@ -334,19 +334,19 @@ export default function HomePage() {
   const myRefUrl  = myRefCode ? `https://happy500.kr/?ref=${myRefCode}` : "https://happy500.kr";
 
   const handleShare = async () => {
+    const userName = user?.displayName || user?.email?.split("@")[0] || "";
     const shareText = myRefCode
-      ? `🌿 플로깅으로 지구를 지키고 포인트도 받아요!\n\n아래 링크로 가입하면 추가 보너스 포인트!\n추천인 코드: ${myRefCode}`
-      : "🌿 플로깅으로 지구를 지키고 포인트도 받아요!";
+      ? `"오백원의 행복"으로 삶을 느껴보세요.\n\n오백원의 행복 - 🌿 플로깅(Plogging)이란?\n조깅, 등산, 걷기등 운동을 하면서\n쓰레기(담배꽁초 등)를 줍기도 하는\n환경보호운동입니다.\n지구를 지키고 포인트도 받아가세요!\n\n플로깅을 시작할 개인이나 단체가 거리와 시간, 장소,\n(쓰레기 수거장소)에 집합.\n플로깅 활동과 동시에 환산 포인트 적립과\n플로깅 시간을 자동체킹하여, 봉사시간 인증부여\n(분기별 또는 연말 대상 시상식\n전국 청소년및 일반인(교육감상, 지자체상, 장관상)추천\n\n아래 링크로 가입하면 추가 보너스 포인트!\n\n${userName}님의 추천\n추천인 코드: ${myRefCode} ${myRefUrl}`
+      : `"오백원의 행복"으로 삶을 느껴보세요.\n\n오백원의 행복 - 🌿 플로깅(Plogging)이란?\n조깅, 등산, 걷기등 운동을 하면서\n쓰레기(담배꽁초 등)를 줍기도 하는\n환경보호운동입니다.\n지구를 지키고 포인트도 받아가세요!`;
     try {
       if (navigator.share) {
         await navigator.share({
-          title: "오백원의 행복",
+          title: "오백원의 행복 - 플로깅으로 지구를 지켜요",
           text: shareText,
-          url: myRefUrl,
         });
       } else {
-        await navigator.clipboard.writeText(`${shareText}\n${myRefUrl}`);
-        alert("링크가 복사됐어요! 📋");
+        await navigator.clipboard.writeText(shareText);
+        alert("초대 메시지가 복사됐어요! 📋");
       }
     } catch (e) {
       console.log("공유 취소");
