@@ -9,25 +9,25 @@ import { auth, db } from "@/lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { collection, query, where, orderBy, getDocs, deleteDoc, doc, updateDoc, increment } from "firebase/firestore";
 
-// ─── 항목 메타 정보 ──────────────────────────────────────
+// ─── 항목 메타 정보 + 탄소중립포인트 공식 리워드 금액(원/회) ──
 const ECO_META = {
-  e_receipt:          { icon: Receipt,         title: "전자영수증 발급",      color: "text-blue-500",    bg: "bg-blue-50",    border: "border-blue-200" },
-  tumbler:            { icon: Coffee,          title: "텀블러/다회용컵 이용", color: "text-amber-500",   bg: "bg-amber-50",   border: "border-amber-200" },
-  cup_return:         { icon: CupSoda,         title: "일회용컵 반환",       color: "text-teal-500",    bg: "bg-teal-50",    border: "border-teal-200" },
-  refill_station:     { icon: Pipette,         title: "리필스테이션 이용",    color: "text-indigo-500",  bg: "bg-indigo-50",  border: "border-indigo-200" },
-  reusable_container: { icon: Package,         title: "다회용기 배달 이용",   color: "text-violet-500",  bg: "bg-violet-50",  border: "border-violet-200" },
-  ev_rental:          { icon: Car,             title: "무공해차 대여",       color: "text-sky-500",     bg: "bg-sky-50",     border: "border-sky-200" },
-  eco_product:        { icon: ShieldCheck,     title: "친환경제품 구매",      color: "text-emerald-500", bg: "bg-emerald-50", border: "border-emerald-200" },
-  quality_recycle:    { icon: Recycle,          title: "고품질 재활용품 배출", color: "text-cyan-500",    bg: "bg-cyan-50",    border: "border-cyan-200" },
-  phone_return:       { icon: Smartphone,      title: "폐휴대폰 반납",       color: "text-rose-500",    bg: "bg-rose-50",    border: "border-rose-200" },
-  future_gen:         { icon: Sprout,          title: "미래세대 실천행동",    color: "text-green-500",   bg: "bg-green-50",   border: "border-green-200" },
-  shared_bike:        { icon: Bike,            title: "공유자전거 이용",      color: "text-lime-500",    bg: "bg-lime-50",    border: "border-lime-200" },
-  zero_waste:         { icon: UtensilsCrossed, title: "잔반제로 실천",       color: "text-orange-500",  bg: "bg-orange-50",  border: "border-orange-200" },
-  tree_planting:      { icon: TreePine,        title: "나무심기 캠페인 참여", color: "text-green-600",   bg: "bg-green-50",   border: "border-green-200" },
-  solar_panel:        { icon: Sun,             title: "베란다 태양광 설치",   color: "text-yellow-500",  bg: "bg-yellow-50",  border: "border-yellow-200" },
-  recycled_product:   { icon: RotateCcw,       title: "재생원료 제품구매",    color: "text-teal-500",    bg: "bg-teal-50",    border: "border-teal-200" },
-  eco_bag:            { icon: ShoppingBag,     title: "개인장바구니 이용",    color: "text-pink-500",    bg: "bg-pink-50",    border: "border-pink-200" },
-  own_container:      { icon: Container,       title: "개인용기 식품포장",    color: "text-purple-500",  bg: "bg-purple-50",  border: "border-purple-200" },
+  e_receipt:          { icon: Receipt,         title: "전자영수증 발급",      color: "text-blue-500",    bg: "bg-blue-50",    border: "border-blue-200",   reward: 100 },
+  tumbler:            { icon: Coffee,          title: "텀블러/다회용컵 이용", color: "text-amber-500",   bg: "bg-amber-50",   border: "border-amber-200",  reward: 300 },
+  cup_return:         { icon: CupSoda,         title: "일회용컵 반환",       color: "text-teal-500",    bg: "bg-teal-50",    border: "border-teal-200",   reward: 200 },
+  refill_station:     { icon: Pipette,         title: "리필스테이션 이용",    color: "text-indigo-500",  bg: "bg-indigo-50",  border: "border-indigo-200", reward: 2000 },
+  reusable_container: { icon: Package,         title: "다회용기 배달 이용",   color: "text-violet-500",  bg: "bg-violet-50",  border: "border-violet-200", reward: 1000 },
+  ev_rental:          { icon: Car,             title: "무공해차 대여",       color: "text-sky-500",     bg: "bg-sky-50",     border: "border-sky-200",    reward: 100 },
+  eco_product:        { icon: ShieldCheck,     title: "친환경제품 구매",      color: "text-emerald-500", bg: "bg-emerald-50", border: "border-emerald-200",reward: 1000 },
+  quality_recycle:    { icon: Recycle,          title: "고품질 재활용품 배출", color: "text-cyan-500",    bg: "bg-cyan-50",    border: "border-cyan-200",   reward: 100 },
+  phone_return:       { icon: Smartphone,      title: "폐휴대폰 반납",       color: "text-rose-500",    bg: "bg-rose-50",    border: "border-rose-200",   reward: 1000 },
+  future_gen:         { icon: Sprout,          title: "미래세대 실천행동",    color: "text-green-500",   bg: "bg-green-50",   border: "border-green-200",  reward: 0 },
+  shared_bike:        { icon: Bike,            title: "공유자전거 이용",      color: "text-lime-500",    bg: "bg-lime-50",    border: "border-lime-200",   reward: 0 },
+  zero_waste:         { icon: UtensilsCrossed, title: "잔반제로 실천",       color: "text-orange-500",  bg: "bg-orange-50",  border: "border-orange-200", reward: 0 },
+  tree_planting:      { icon: TreePine,        title: "나무심기 캠페인 참여", color: "text-green-600",   bg: "bg-green-50",   border: "border-green-200",  reward: 0 },
+  solar_panel:        { icon: Sun,             title: "베란다 태양광 설치",   color: "text-yellow-500",  bg: "bg-yellow-50",  border: "border-yellow-200", reward: 0 },
+  recycled_product:   { icon: RotateCcw,       title: "재생원료 제품구매",    color: "text-teal-500",    bg: "bg-teal-50",    border: "border-teal-200",   reward: 1000 },
+  eco_bag:            { icon: ShoppingBag,     title: "개인장바구니 이용",    color: "text-pink-500",    bg: "bg-pink-50",    border: "border-pink-200",   reward: 0 },
+  own_container:      { icon: Container,       title: "개인용기 식품포장",    color: "text-purple-500",  bg: "bg-purple-50",  border: "border-purple-200", reward: 0 },
 };
 
 export default function EcoHistoryPage() {
@@ -101,15 +101,19 @@ export default function EcoHistoryPage() {
     const byType = {};
     let totalPoints = 0;
     let totalCount = 0;
+    let totalReward = 0;
     actions.forEach(a => {
       const t = a.type;
-      if (!byType[t]) byType[t] = { count: 0, points: 0 };
+      if (!byType[t]) byType[t] = { count: 0, points: 0, reward: 0 };
       byType[t].count += 1;
       byType[t].points += (a.points || 0);
+      const unitReward = ECO_META[t]?.reward || 0;
+      byType[t].reward += unitReward;
       totalPoints += (a.points || 0);
       totalCount += 1;
+      totalReward += unitReward;
     });
-    return { byType, totalPoints, totalCount };
+    return { byType, totalPoints, totalCount, totalReward };
   }, [actions]);
 
   // ─── 월별 통계 ─────────────────────────────────────────
@@ -205,6 +209,9 @@ export default function EcoHistoryPage() {
             <div className="flex-1 text-left">
               <p className="text-[11px] text-gray-400 font-medium">내 녹색생활 포인트</p>
               <p className="text-xl font-black text-gray-800">{stats.totalPoints.toLocaleString()}<span className="text-sm font-bold text-gray-400 ml-0.5">P</span></p>
+              {stats.totalReward > 0 && (
+                <p className="text-[11px] text-amber-500 font-bold mt-0.5">예상 리워드 약 {stats.totalReward.toLocaleString()}원</p>
+              )}
             </div>
             <div className="text-right mr-1">
               <p className="text-[11px] text-gray-400">총 인증</p>
@@ -227,13 +234,19 @@ export default function EcoHistoryPage() {
                       <span className={`text-xs flex-1 ${count > 0 ? "text-gray-700 font-medium" : "text-gray-300"}`}>{meta.title}</span>
                       <span className={`text-[11px] w-10 text-center ${count > 0 ? "text-gray-500 font-bold" : "text-gray-300"}`}>{count}회</span>
                       <span className={`text-[11px] w-14 text-right font-bold ${count > 0 ? "text-green-600" : "text-gray-300"}`}>{pts > 0 ? `+${pts}P` : "-"}</span>
+                      <span className={`text-[11px] w-16 text-right font-bold ${s?.reward > 0 ? "text-amber-500" : "text-gray-300"}`}>{s?.reward > 0 ? `${s.reward.toLocaleString()}원` : "-"}</span>
                     </div>
                   );
                 })}
               </div>
               <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
                 <span className="text-xs font-bold text-gray-500">합계</span>
-                <span className="text-sm font-black text-green-600">{stats.totalPoints.toLocaleString()}P</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-black text-green-600">{stats.totalPoints.toLocaleString()}P</span>
+                  {stats.totalReward > 0 && (
+                    <span className="text-sm font-black text-amber-500">{stats.totalReward.toLocaleString()}원</span>
+                  )}
+                </div>
               </div>
             </div>
           )}

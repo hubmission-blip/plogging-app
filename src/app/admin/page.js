@@ -382,13 +382,23 @@ export default function AdminPage() {
     if (clubDeleteConfirm !== club.name) return;
     setClubDeleting(true);
     try {
-      // 하위 컬렉션 삭제 (history, notices)
+      // 하위 컬렉션 삭제 (history, notices) — 각각 실패해도 계속 진행
       const subCollections = ["history", "notices"];
       for (const sub of subCollections) {
-        const subSnap = await getDocs(collection(db, "clubs", club.code, sub));
-        const batch = writeBatch(db);
-        subSnap.docs.forEach((d) => batch.delete(d.ref));
-        if (subSnap.docs.length > 0) await batch.commit();
+        try {
+          const subSnap = await getDocs(collection(db, "clubs", club.code, sub));
+          if (subSnap.docs.length > 0) {
+            // writeBatch는 최대 500개까지만 → 분할 처리
+            const docs = subSnap.docs;
+            for (let i = 0; i < docs.length; i += 400) {
+              const batch = writeBatch(db);
+              docs.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+              await batch.commit();
+            }
+          }
+        } catch (subErr) {
+          console.warn(`[동아리삭제] ${sub} 하위 컬렉션 정리 실패(무시):`, subErr.message);
+        }
       }
       // 메인 문서 삭제
       await deleteDoc(doc(db, "clubs", club.code));
@@ -398,7 +408,7 @@ export default function AdminPage() {
       showMsg(`🗑️ "${club.name}" 동아리가 삭제되었습니다.`);
     } catch (e) {
       console.error("동아리 삭제 실패:", e);
-      showMsg("❌ 삭�� 실패: " + e.message);
+      showMsg("❌ 삭제 실패: " + e.message);
     } finally { setClubDeleting(false); }
   };
 

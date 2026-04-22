@@ -120,19 +120,21 @@ service cloud.firestore {
         (request.auth.uid == resource.data.hostUid || isAdmin());
 
       // ── 8-1. clubs > history — 동아리 플로깅 기록
-      //  읽기: 멤버만 | 생성: 본인이면서 멤버 | 수정/삭제: 불가
+      //  읽기: 멤버만 | 생성: 본인이면서 멤버
+      //  수정: 불가 | 삭제: 관리자만 (동아리 삭제 시)
       match /history/{entryId} {
         allow read: if request.auth != null
           && request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubCode)).data.memberUids;
         allow create: if request.auth != null
           && request.auth.uid == request.resource.data.uid
           && request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubCode)).data.memberUids;
-        allow update, delete: if false;
+        allow update: if false;
+        allow delete: if isAdmin();
       }
 
       // ── 8-2. clubs > notices — 동아리 알림 메시지
       //  읽기: 멤버만 | 생성: 동아리장만 | 수정(읽음처리): 멤버
-      //  삭제: 동아리장만
+      //  삭제: 동아리장 또는 관리자
       match /notices/{noticeId} {
         allow read: if request.auth != null
           && request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubCode)).data.memberUids;
@@ -140,8 +142,8 @@ service cloud.firestore {
           && request.auth.uid == get(/databases/$(database)/documents/clubs/$(clubCode)).data.hostUid;
         allow update: if request.auth != null
           && request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubCode)).data.memberUids;
-        allow delete: if request.auth != null
-          && request.auth.uid == get(/databases/$(database)/documents/clubs/$(clubCode)).data.hostUid;
+        allow delete: if isAdmin() || (request.auth != null
+          && request.auth.uid == get(/databases/$(database)/documents/clubs/$(clubCode)).data.hostUid);
       }
     }
 
