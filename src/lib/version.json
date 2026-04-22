@@ -1,7 +1,17 @@
 {
-  "version": "v1.100",
-  "build": 100,
+  "version": "v1.101",
+  "build": 101,
   "changelog": [
+    {
+      "version": "v1.101",
+      "build": 101,
+      "date": "2026-04-23",
+      "emoji": "🚀",
+      "title": "동아리 관리 + 내역 조회 수정",
+      "items": [
+        "Firestore 인덱스, 공지사항 fallback, 내역 삭제/사진뷰어, 관리자 동아리 삭제"
+      ]
+    },
     {
       "version": "v1.100",
       "build": 100,
