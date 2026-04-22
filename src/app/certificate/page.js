@@ -358,7 +358,7 @@ export default function CertificatePage() {
               <p style="font-size:13px;font-weight:700;color:#333;margin-bottom:2px">회장 장희재</p>
               <p style="font-size:12px;color:#666">Global Youth Environmental Association</p>
             </div>
-            <img src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png" alt="직인" style="width:100px;height:auto;position:absolute;right:12%;bottom:0" />
+            <img src="https://res.cloudinary.com/dqlvm572h/image/upload/w_200,q_auto,f_auto/sign_gyea_oydzt1.png" alt="직인" style="width:100px;height:auto;position:absolute;right:12%;bottom:0" />
           </div>
         </div>
       </div>`;
@@ -444,7 +444,7 @@ export default function CertificatePage() {
       {/* ── 헤더 ── */}
       <div className="bg-gray-50 px-4 pt-4 pb-1 flex justify-between items-center">
         <Link href="/">
-          <img src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+          <img src="https://res.cloudinary.com/dqlvm572h/image/upload/w_200,q_auto,f_auto/Intro_Logo_fuj1kt.png"
             alt="오백원의 행복" className="h-9 w-auto object-contain" />
         </Link>
         <p className="text-sm font-black text-gray-700">📜 봉사활동 증명서</p>
@@ -680,7 +680,7 @@ export default function CertificatePage() {
                           <p style={{ fontSize: 12, color: "#666" }}>Global Youth Environmental Association</p>
                         </div>
                         <img
-                          src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png"
+                          src="https://res.cloudinary.com/dqlvm572h/image/upload/w_200,q_auto,f_auto/sign_gyea_oydzt1.png"
                           alt="국제청년환경연합회 직인"
                           style={{ width: 100, height: "auto", position: "absolute", right: "12%", bottom: 0 }}
                         />
@@ -771,7 +771,7 @@ export default function CertificatePage() {
                           <p style={{ fontSize: 12, color: "#666" }}>Global Youth Environmental Association</p>
                         </div>
                         <img
-                          src="http://gyea.kr/wp/wp-content/uploads/2026/04/sign_gyea.png"
+                          src="https://res.cloudinary.com/dqlvm572h/image/upload/w_200,q_auto,f_auto/sign_gyea_oydzt1.png"
                           alt="국제청년환경연합회 직인"
                           style={{ width: 100, height: "auto", position: "absolute", right: "12%", bottom: 0 }}
                         />

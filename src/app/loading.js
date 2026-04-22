@@ -14,9 +14,9 @@ export default function Loading() {
         </div>
       ) : (
         <img
-          src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+          src="https://res.cloudinary.com/dqlvm572h/image/upload/w_400,q_auto,f_auto/Intro_Logo_fuj1kt.png"
           alt="오백원의 행복"
-          className="h-12 w-auto object-contain mb-6"
+          className="w-52 h-auto object-contain mb-8"
           onError={() => setImgError(true)}
         />
       )}

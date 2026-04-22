@@ -292,7 +292,7 @@ export default function ProfilePage() {
       <div className="bg-gray-50 px-4 pt-4 pb-1 flex justify-between items-center">
         <Link href="/">
           <img
-            src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+            src="https://res.cloudinary.com/dqlvm572h/image/upload/w_200,q_auto,f_auto/Intro_Logo_fuj1kt.png"
             alt="오백원의 행복"
             className="h-9 w-auto object-contain"
           />

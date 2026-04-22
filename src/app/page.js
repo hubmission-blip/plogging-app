@@ -374,7 +374,7 @@ export default function HomePage() {
                 <p className="text-lg font-black text-green-600">🌿 오백원의 행복</p>
               ) : (
                 <img
-                  src="https://gyea.kr/wp/wp-content/uploads/2025/12/500_subtitle_c.png"
+                  src="https://res.cloudinary.com/dqlvm572h/image/upload/w_200,q_auto,f_auto/Intro_Logo_fuj1kt.png"
                   alt="오백원의 행복"
                   className="h-9 w-auto object-contain"
                   onError={() => setLogoError(true)}
