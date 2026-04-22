@@ -21,23 +21,23 @@ const REFILL_STATION_BONUS = 30;
 
 // ─── 녹색생활 실천 항목 목록 (탄소중립포인트 공식 순서) ──
 const ECO_ACTIONS = [
-  { id: "ereceipt",       Icon: Receipt,           title: "전자영수증 발급",        desc: "종이 영수증 대신 전자영수증을 받고 인증하세요",             points: "+20P" },
-  { id: "tumbler",        Icon: Coffee,            title: "텀블러/다회용컵 이용",    desc: "카페에서 텀블러로 음료를 받고 인증하세요",                 points: "+30P" },
-  { id: "cupreturn",      Icon: CupSoda,           title: "일회용컵 반환",           desc: "반환기에 일회용컵을 반환하고 인증하세요",                  points: "컵당 +10P" },
-  { id: "refillstation",  Icon: Pipette,           title: "리필스테이션 이용",       desc: "세제·샴푸 등을 리필스테이션에서 리필하고 인증하세요",       points: "+30P" },
-  { id: "container",      Icon: Package,           title: "다회용기 배달 이용",      desc: "배달 주문 시 다회용기를 선택하고 인증하세요",              points: "+30P" },
-  { id: "evrental",       Icon: Car,               title: "무공해차 대여",           desc: "전기차·수소차를 대여하고 인증하세요",                     points: "+50P" },
-  { id: "ecoproduct",     Icon: ShieldCheck,       title: "친환경제품 구매",         desc: "환경마크 인증 친환경제품을 구매하고 인증하세요",            points: "+30P" },
-  { id: "qualityrecycle", Icon: Recycle,           title: "고품질 재활용품 배출",    desc: "깨끗하게 분리배출한 재활용품을 인증하세요",                points: "+20P" },
-  { id: "phonereturn",    Icon: Smartphone,        title: "폐휴대폰 반납",           desc: "사용하지 않는 폐휴대폰을 반납하고 인증하세요",            points: "+30P" },
-  { id: "futuregen",      Icon: Sprout,            title: "미래세대 실천행동",       desc: "환경 교육·캠페인 참여를 인증하세요",                      points: "+30P" },
-  { id: "sharedbike",     Icon: Bike,              title: "공유자전거 이용",         desc: "공유자전거를 이용하고 인증하세요",                        points: "+30P" },
-  { id: "zerowaste",      Icon: UtensilsCrossed,   title: "잔반제로 실천",           desc: "음식을 남기지 않고 깨끗이 비운 후 인증하세요",             points: "+20P" },
-  { id: "treeplanting",   Icon: TreePine,          title: "나무심기 캠페인 참여",    desc: "나무심기 캠페인에 참여하고 인증하세요",                   points: "+50P" },
-  { id: "solarpanel",     Icon: Sun,               title: "베란다 태양광 설치",      desc: "베란다 태양광 패널 설치를 인증하세요",                    points: "+50P" },
-  { id: "recycledproduct",Icon: RotateCcw,         title: "재생원료 제품구매",       desc: "재생원료로 만든 제품을 구매하고 인증하세요",               points: "+30P" },
-  { id: "ecobag",         Icon: ShoppingBag,       title: "개인장바구니 이용",       desc: "장보기 시 개인장바구니를 사용하고 인증하세요",             points: "+20P" },
-  { id: "owncontainer",   Icon: Container,         title: "개인용기 식품포장",       desc: "개인용기로 식품을 포장받고 인증하세요",                   points: "+20P" },
+  { id: "ereceipt",       Icon: Receipt,           title: "전자영수증 발급",        desc: "종이 영수증 대신 전자영수증을 받고 인증하세요",             points: "+20P", reward: 100 },
+  { id: "tumbler",        Icon: Coffee,            title: "텀블러/다회용컵 이용",    desc: "카페에서 텀블러로 음료를 받고 인증하세요",                 points: "+30P", reward: 300 },
+  { id: "cupreturn",      Icon: CupSoda,           title: "일회용컵 반환",           desc: "반환기에 일회용컵을 반환하고 인증하세요",                  points: "컵당 +10P", reward: 200 },
+  { id: "refillstation",  Icon: Pipette,           title: "리필스테이션 이용",       desc: "세제·샴푸 등을 리필스테이션에서 리필하고 인증하세요",       points: "+30P", reward: 2000 },
+  { id: "container",      Icon: Package,           title: "다회용기 배달 이용",      desc: "배달 주문 시 다회용기를 선택하고 인증하세요",              points: "+30P", reward: 1000 },
+  { id: "evrental",       Icon: Car,               title: "무공해차 대여",           desc: "전기차·수소차를 대여하고 인증하세요",                     points: "+50P", reward: 100 },
+  { id: "ecoproduct",     Icon: ShieldCheck,       title: "친환경제품 구매",         desc: "환경마크 인증 친환경제품을 구매하고 인증하세요",            points: "+30P", reward: 1000 },
+  { id: "qualityrecycle", Icon: Recycle,           title: "고품질 재활용품 배출",    desc: "깨끗하게 분리배출한 재활용품을 인증하세요",                points: "+20P", reward: 100 },
+  { id: "phonereturn",    Icon: Smartphone,        title: "폐휴대폰 반납",           desc: "사용하지 않는 폐휴대폰을 반납하고 인증하세요",            points: "+30P", reward: 1000 },
+  { id: "futuregen",      Icon: Sprout,            title: "미래세대 실천행동",       desc: "환경 교육·캠페인 참여를 인증하세요",                      points: "+30P", reward: 0 },
+  { id: "sharedbike",     Icon: Bike,              title: "공유자전거 이용",         desc: "공유자전거를 이용하고 인증하세요",                        points: "+30P", reward: 0 },
+  { id: "zerowaste",      Icon: UtensilsCrossed,   title: "잔반제로 실천",           desc: "음식을 남기지 않고 깨끗이 비운 후 인증하세요",             points: "+20P", reward: 0 },
+  { id: "treeplanting",   Icon: TreePine,          title: "나무심기 캠페인 참여",    desc: "나무심기 캠페인에 참여하고 인증하세요",                   points: "+50P", reward: 0 },
+  { id: "solarpanel",     Icon: Sun,               title: "베란다 태양광 설치",      desc: "베란다 태양광 패널 설치를 인증하세요",                    points: "+50P", reward: 0 },
+  { id: "recycledproduct",Icon: RotateCcw,         title: "재생원료 제품구매",       desc: "재생원료로 만든 제품을 구매하고 인증하세요",               points: "+30P", reward: 1000 },
+  { id: "ecobag",         Icon: ShoppingBag,       title: "개인장바구니 이용",       desc: "장보기 시 개인장바구니를 사용하고 인증하세요",             points: "+20P", reward: 0 },
+  { id: "owncontainer",   Icon: Container,         title: "개인용기 식품포장",       desc: "개인용기로 식품을 포장받고 인증하세요",                   points: "+20P", reward: 0 },
 ];
 
 // ─── 항목별 색상 (아이콘 색상 + 배경) ───────────────────
@@ -780,7 +780,10 @@ export default function EcoLifePage() {
                 <IconComp size={32} className={clr.icon} strokeWidth={1.8} />
                 <h4 className="font-black text-[13px] text-gray-800 mt-2 leading-tight">{action.title}</h4>
                 <p className="text-[10px] text-gray-400 mt-1 leading-snug line-clamp-2">{action.desc}</p>
-                <span className={`text-[11px] font-bold ${clr.text} mt-1.5`}>{action.points}</span>
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <span className={`text-[11px] font-bold ${clr.text}`}>{action.points}</span>
+                  {action.reward > 0 && <span className="text-[10px] font-bold text-amber-500">{action.reward.toLocaleString()}원</span>}
+                </div>
               </button>
             );
           })}
