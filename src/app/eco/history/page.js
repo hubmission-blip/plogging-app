@@ -335,9 +335,16 @@ export default function EcoHistoryPage() {
                       <p className="text-sm font-bold text-gray-700">{meta.title}</p>
                       <p className="text-[10px] text-gray-400">{dateStr} {timeStr}</p>
                     </div>
-                    <span className="text-xs font-black text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
-                      +{action.points || 0}P
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-black text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
+                        +{action.points || 0}P
+                      </span>
+                      {meta.reward > 0 && (
+                        <span className="text-xs font-black text-amber-500 bg-amber-50 px-2.5 py-1 rounded-full">
+                          {meta.reward.toLocaleString()}원
+                        </span>
+                      )}
+                    </div>
                     <button
                       onClick={() => setDeleteTarget(action)}
                       className="p-1.5 rounded-lg hover:bg-red-50 active:bg-red-100 transition-colors"
