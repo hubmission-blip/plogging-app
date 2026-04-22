@@ -16,7 +16,7 @@ export default function Loading() {
         <img
           src="https://res.cloudinary.com/dqlvm572h/image/upload/w_400,q_auto,f_auto/Intro_Logo_fuj1kt.png"
           alt="오백원의 행복"
-          className="w-52 h-auto object-contain mb-8"
+          className="w-36 h-auto object-contain mb-8"
           onError={() => setImgError(true)}
         />
       )}

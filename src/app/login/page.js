@@ -251,7 +251,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-800 flex flex-col items-center justify-center p-4 pt-10">
       <div className="text-center mb-5">
-        <img src="https://res.cloudinary.com/dqlvm572h/image/upload/w_400,q_auto,f_auto/Intro_Logo_fuj1kt.png" alt="오백원의 행복" className="w-48 h-auto object-contain mx-auto" />
+        <img src="https://res.cloudinary.com/dqlvm572h/image/upload/w_400,q_auto,f_auto/Intro_Logo_fuj1kt.png" alt="오백원의 행복" className="w-36 h-auto object-contain mx-auto" />
         <p className="text-gray-400 text-sm mt-1">즐거운 플로깅, 깨끗한 지구</p>
       </div>
 
