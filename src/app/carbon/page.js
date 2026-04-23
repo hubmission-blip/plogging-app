@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Zap, Car, Leaf, CreditCard, ChevronUp, ChevronDown, Globe, LinkIcon, Building2, ExternalLink, Waves, Apple, Plane, Palette, FlaskConical, Factory, Landmark, Wheat, Mountain, TreePine, Flower2, TreeDeciduous, Fish, Cherry, Citrus } from "lucide-react";
+import {
+  Zap, Car, Leaf, CreditCard, ChevronUp, ChevronDown, Globe, LinkIcon, Building2, ExternalLink,
+  Waves, Apple, Plane, Palette, FlaskConical, Factory, Landmark, Wheat, Mountain, TreePine,
+  Flower2, TreeDeciduous, Fish, Cherry, Citrus,
+  Receipt, Coffee, CupSoda, Pipette, Package, ShieldCheck, Recycle, Smartphone, Sprout,
+  Bike, UtensilsCrossed, Sun, RotateCcw, ShoppingBag, Container,
+} from "lucide-react";
 
 // 지역별 아이콘 매핑
 const REGION_ICONS = {
@@ -28,24 +34,24 @@ const REGION_ICONS = {
 // ── 녹색생활 실천 17개 항목 ─────────────────────────────
 const GREEN_ITEMS = [
   // 기존 12개
-  { icon: "🧾", name: "전자영수증 발급",       point: "100원/건",    tag: "기존" },
-  { icon: "☕", name: "텀블러·다회용컵 이용",  point: "300원/회",   tag: "기존" },
-  { icon: "🥤", name: "일회용컵 반환",          point: "200원/회",   tag: "기존" },
-  { icon: "🚿", name: "리필스테이션 이용",      point: "2,000원/회", tag: "기존" },
-  { icon: "📦", name: "다회용기 배달 이용",     point: "1,000원/회", tag: "기존" },
-  { icon: "🚗", name: "무공해차 대여",           point: "100원/회",   tag: "기존" },
-  { icon: "🌿", name: "친환경제품 구매",         point: "1,000원/건", tag: "기존" },
-  { icon: "♻️", name: "고품질 재활용품 배출",   point: "300원/회",   tag: "기존" },
-  { icon: "📱", name: "폐휴대폰 반납",           point: "1,000원/회", tag: "기존" },
-  { icon: "👦", name: "미래세대 실천행동",       point: "500원/회",   tag: "기존" },
-  { icon: "🚲", name: "공유자전거 이용",         point: "100원/회",   tag: "기존" },
-  { icon: "🍽️", name: "잔반제로 실천",          point: "1,000원/회", tag: "기존" },
+  { Icon: Receipt,         iconColor: "text-blue-500",    name: "전자영수증 발급",       point: "100원/건",    tag: "기존" },
+  { Icon: Coffee,          iconColor: "text-amber-500",   name: "텀블러·다회용컵 이용",  point: "300원/회",   tag: "기존" },
+  { Icon: CupSoda,         iconColor: "text-teal-500",    name: "일회용컵 반환",          point: "200원/회",   tag: "기존" },
+  { Icon: Pipette,         iconColor: "text-indigo-500",  name: "리필스테이션 이용",      point: "2,000원/회", tag: "기존" },
+  { Icon: Package,         iconColor: "text-violet-500",  name: "다회용기 배달 이용",     point: "1,000원/회", tag: "기존" },
+  { Icon: Car,             iconColor: "text-sky-500",     name: "무공해차 대여",           point: "100원/회",   tag: "기존" },
+  { Icon: ShieldCheck,     iconColor: "text-emerald-500", name: "친환경제품 구매",         point: "1,000원/건", tag: "기존" },
+  { Icon: Recycle,         iconColor: "text-cyan-500",    name: "고품질 재활용품 배출",   point: "300원/회",   tag: "기존" },
+  { Icon: Smartphone,      iconColor: "text-rose-500",    name: "폐휴대폰 반납",           point: "1,000원/회", tag: "기존" },
+  { Icon: Sprout,          iconColor: "text-green-500",   name: "미래세대 실천행동",       point: "500원/회",   tag: "기존" },
+  { Icon: Bike,            iconColor: "text-lime-500",    name: "공유자전거 이용",         point: "100원/회",   tag: "기존" },
+  { Icon: UtensilsCrossed, iconColor: "text-orange-500",  name: "잔반제로 실천",          point: "1,000원/회", tag: "기존" },
   // 2026 신규 5개
-  { icon: "🌳", name: "나무심기 캠페인 참여",   point: "3,000원/회",  tag: "신규" },
-  { icon: "☀️", name: "베란다 태양광 설치",     point: "10,000원/회", tag: "신규" },
-  { icon: "🔄", name: "재생원료 제품 구매",     point: "100원/건",    tag: "신규" },
-  { icon: "🛍️", name: "개인 장바구니 이용",    point: "50원/회",     tag: "신규" },
-  { icon: "🥡", name: "개인용기 식품포장",      point: "500원/회",    tag: "신규" },
+  { Icon: TreePine,        iconColor: "text-green-600",   name: "나무심기 캠페인 참여",   point: "3,000원/회",  tag: "신규" },
+  { Icon: Sun,             iconColor: "text-yellow-500",  name: "베란다 태양광 설치",     point: "10,000원/회", tag: "신규" },
+  { Icon: RotateCcw,       iconColor: "text-teal-500",    name: "재생원료 제품 구매",     point: "100원/건",    tag: "신규" },
+  { Icon: ShoppingBag,     iconColor: "text-pink-500",    name: "개인 장바구니 이용",    point: "50원/회",     tag: "신규" },
+  { Icon: Container,       iconColor: "text-purple-500",  name: "개인용기 식품포장",      point: "500원/회",    tag: "신규" },
 ];
 
 // ── 섹션 데이터 ─────────────────────────────────────────
@@ -241,7 +247,7 @@ function SectionCard({ sec, greenItems }) {
           {sec.id === "green" && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-bold text-gray-500">🌱 17개 실천 항목 (2026년 기준)</p>
+                <p className="text-xs font-bold text-gray-500 flex items-center gap-1"><Sprout size={13} className="text-green-500" strokeWidth={2} /> 17개 실천 항목 (2026년 기준)</p>
                 <span className="text-xs text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">
                   신규 5개 추가
                 </span>
@@ -250,7 +256,7 @@ function SectionCard({ sec, greenItems }) {
                 {(showAllGreen ? greenItems : greenItems.slice(0, 8)).map((item) => (
                   <div key={item.name} className="flex justify-between items-center bg-gray-50 rounded-xl px-3 py-2">
                     <span className="text-xs text-gray-600 flex items-center gap-1.5">
-                      <span>{item.icon}</span>{item.name}
+                      <item.Icon size={14} className={item.iconColor} strokeWidth={1.8} />{item.name}
                       {item.tag === "신규" && (
                         <span className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">NEW</span>
                       )}
