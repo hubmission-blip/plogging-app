@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { Rocket, KeyRound, Lock, Users, User, School, Clover } from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
   doc, setDoc, getDoc, updateDoc, deleteDoc,
@@ -230,7 +231,7 @@ export default function GroupPage() {
   // ─────────────────────────────────────────────────────────
   if (!user) return (
     <div className="flex flex-col items-center justify-center h-screen gap-4 text-center px-6">
-      <div className="text-5xl">🔑</div>
+      <div className="flex items-center justify-center"><Lock size={48} className="text-gray-300" strokeWidth={1.5} /></div>
       <p className="font-bold text-gray-700">로그인이 필요해요</p>
     </div>
   );
@@ -245,7 +246,7 @@ export default function GroupPage() {
           <img src="https://res.cloudinary.com/dqlvm572h/image/upload/w_200,q_auto,f_auto/Intro_Logo_fuj1kt.png"
             alt="오백원의 행복" className="h-9 w-auto object-contain" />
         </Link>
-        <p className="text-sm font-black text-gray-700">👥 그룹 플로깅</p>
+        <p className="text-sm font-black text-gray-700 flex items-center gap-1"><Users size={15} className="text-sky-500" strokeWidth={2} /> 그룹 플로깅</p>
       </div>
 
       <div className="px-4 mt-4 space-y-4">
@@ -263,12 +264,12 @@ export default function GroupPage() {
           <>
             <div className="flex gap-2">
               <button onClick={handleCreate} disabled={loading}
-                className="flex-1 bg-sky-500 text-white py-3.5 rounded-2xl shadow-md font-bold text-sm active:scale-95 transition-transform">
-                {loading ? "생성 중..." : "🚀 그룹 방 만들기"}
+                className="flex-1 bg-sky-500 text-white py-3.5 rounded-2xl shadow-md font-bold text-sm active:scale-95 transition-transform flex items-center justify-center gap-1.5">
+                {loading ? "생성 중..." : <><Rocket size={16} strokeWidth={2} /> 그룹 방 만들기</>}
               </button>
               <button onClick={() => setShowCodeInput((p) => !p)}
-                className="flex-shrink-0 bg-white border-2 border-sky-400 text-sky-600 px-4 py-3.5 rounded-2xl font-bold text-sm active:scale-95 transition-transform">
-                🔑 코드 참여
+                className="flex-shrink-0 bg-white border-2 border-sky-400 text-sky-600 px-4 py-3.5 rounded-2xl font-bold text-sm active:scale-95 transition-transform flex items-center gap-1.5">
+                <KeyRound size={15} strokeWidth={2} /> 코드 참여
               </button>
             </div>
             {showCodeInput && (
@@ -296,14 +297,16 @@ export default function GroupPage() {
 
             {/* 바로가기 링크 */}
             <div className="grid grid-cols-2 gap-2">
-              <Link href="/club" className="block bg-cyan-50 rounded-2xl p-4 text-center border-2 border-cyan-400 active:bg-cyan-100 transition-colors">
-                <p className="text-cyan-700 font-bold text-sm">🏅 플로깅 동아리</p>
-                <p className="text-cyan-400 text-xs mt-0.5">함께 뛰어보세요 →</p>
+              <Link href="/club" className="bg-cyan-50 rounded-2xl p-4 flex flex-col items-center gap-1.5 border-2 border-cyan-400 active:bg-cyan-100 transition-colors">
+                <School size={22} className="text-cyan-500" strokeWidth={1.8} />
+                <p className="text-cyan-700 font-bold text-sm">플로깅 동아리</p>
+                <p className="text-cyan-400 text-xs">함께 뛰어보세요 →</p>
               </Link>
-              <Link href="/shop" className="block rounded-2xl p-4 text-center border-2 active:opacity-80 transition-colors"
+              <Link href="/shop" className="rounded-2xl p-4 flex flex-col items-center gap-1.5 border-2 active:opacity-80 transition-colors"
                 style={{ backgroundColor: "#ef558b0c", borderColor: "#ef558b80" }}>
-                <p className="font-bold text-sm" style={{ color: "#ef3654" }}>🛒 친환경 쇼핑</p>
-                <p className="text-xs mt-0.5" style={{ color: "#ef558b99" }}>친환경 제품 보기 →</p>
+                <Clover size={22} className="text-pink-500" strokeWidth={1.8} />
+                <p className="font-bold text-sm" style={{ color: "#ef3654" }}>친환경 쇼핑</p>
+                <p className="text-xs" style={{ color: "#ef558b99" }}>친환경 제품 보기 →</p>
               </Link>
             </div>
           </>
@@ -333,7 +336,7 @@ export default function GroupPage() {
                     <div className="w-9 h-9 rounded-full bg-sky-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                       {member.photoURL
                         ? <img src={member.photoURL} alt="" className="w-full h-full object-cover" />
-                        : <span className="text-lg">😊</span>}
+                        : <User size={18} className="text-sky-300" strokeWidth={1.8} />}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-700 flex items-center gap-1 flex-wrap">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
-import { Trophy, Users, Map } from "lucide-react";
+import { Trophy, Users, Map, Coins, MapPin, Footprints, Medal, User, Loader } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
@@ -10,9 +10,9 @@ import { useSearchParams } from "next/navigation";
 import RankingMap from "@/components/RankingMap";
 
 const TABS      = [
-  { id: "points",   label: "포인트", icon: "💰" },
-  { id: "distance", label: "거리",   icon: "📍" },
-  { id: "count",    label: "횟수",   icon: "🏃" },
+  { id: "points",   label: "포인트", Icon: Coins },
+  { id: "distance", label: "거리",   Icon: MapPin },
+  { id: "count",    label: "횟수",   Icon: Footprints },
 ];
 const PERIOD_TABS = [
   { id: "weekly",  label: "주간" },
@@ -118,7 +118,8 @@ function RankingPageInner() {
     if (tab === "distance") return `${item.distance.toFixed(1)}km`;
     return `${item.count}회`;
   };
-  const medal = (r) => r === 1 ? "🥇" : r === 2 ? "🥈" : r === 3 ? "🥉" : null;
+  const medalColor = (r) => r === 1 ? "text-yellow-500" : r === 2 ? "text-gray-400" : r === 3 ? "text-amber-600" : null;
+  const medalLabel = (r) => r === 1 ? "1st" : r === 2 ? "2nd" : r === 3 ? "3rd" : null;
 
   return (
     <div
@@ -185,16 +186,18 @@ function RankingPageInner() {
             {/* 내 순위 카드 */}
             {myRank && (
               <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-lg overflow-hidden">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center overflow-hidden">
                   {myRank.photoURL
                     ? <img src={myRank.photoURL} alt="" className="w-full h-full object-cover" />
-                    : "😊"
+                    : <User size={20} className="text-green-400" strokeWidth={1.8} />
                   }
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-gray-400">내 순위</p>
-                  <p className="font-bold text-gray-800">
-                    {medal(myRank.rank) || `#${myRank.rank}`} {myRank.displayName}
+                  <p className="font-bold text-gray-800 flex items-center gap-1">
+                    {medalColor(myRank.rank)
+                      ? <><Medal size={16} className={medalColor(myRank.rank)} strokeWidth={2} /><span>{medalLabel(myRank.rank)}</span></>
+                      : `#${myRank.rank}`} {myRank.displayName}
                   </p>
                 </div>
                 <span className="font-bold text-green-600 text-sm">{fmt(myRank)}</span>
@@ -214,13 +217,16 @@ function RankingPageInner() {
 
             {/* 항목 탭 */}
             <div className="flex gap-2">
-              {TABS.map((t) => (
-                <button key={t.id} onClick={() => setTab(t.id)}
-                  className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-sm font-medium border
-                    ${tab === t.id ? "bg-green-500 text-white border-green-500" : "bg-white text-gray-500 border-gray-200"}`}>
-                  {t.icon} {t.label}
-                </button>
-              ))}
+              {TABS.map((t) => {
+                const TabIcon = t.Icon;
+                return (
+                  <button key={t.id} onClick={() => setTab(t.id)}
+                    className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-sm font-medium border
+                      ${tab === t.id ? "bg-green-500 text-white border-green-500" : "bg-white text-gray-500 border-gray-200"}`}>
+                    <TabIcon size={14} strokeWidth={2} /> {t.label}
+                  </button>
+                );
+              })}
             </div>
 
             {/* TOP 3 시상대 */}
@@ -228,18 +234,18 @@ function RankingPageInner() {
               <div className="flex items-end justify-center gap-3 mt-2 mb-1">
                 {[rankList[1], rankList[0], rankList[2]].map((item, pos) => {
                   const heights = ["h-20", "h-28", "h-16"];
-                  const medals  = ["🥈", "🥇", "🥉"];
+                  const mColors = ["text-gray-400", "text-yellow-500", "text-amber-600"];
                   const bgs     = ["bg-gray-200", "bg-yellow-100", "bg-orange-100"];
                   return (
                     <div key={item.uid} className="flex-1 min-w-0 text-center">
-                      <div className="w-12 h-12 rounded-full bg-gray-100 mx-auto overflow-hidden mb-1">
+                      <div className="w-12 h-12 rounded-full bg-gray-100 mx-auto overflow-hidden mb-1 flex items-center justify-center">
                         {item.photoURL
                           ? <img src={item.photoURL} alt="" className="w-full h-full object-cover" />
-                          : <div className="w-full h-full flex items-center justify-center text-xl">😊</div>
+                          : <User size={22} className="text-gray-300" strokeWidth={1.8} />
                         }
                       </div>
                       <div className={`${bgs[pos]} ${heights[pos]} rounded-t-xl flex flex-col items-center justify-center px-1 w-full`}>
-                        <span className="text-xl">{medals[pos]}</span>
+                        <Medal size={22} className={mColors[pos]} strokeWidth={2} />
                         <p className="text-xs font-bold text-gray-700 break-words w-full text-center px-1 leading-tight">{item.displayName}</p>
                         <p className="text-xs text-gray-500 w-full text-center">{fmt(item)}</p>
                       </div>
@@ -266,13 +272,14 @@ function RankingPageInner() {
                     <div key={item.uid}
                       className={`flex items-center gap-3 px-4 py-3 border-b last:border-0 ${isMe ? "bg-green-50" : ""}`}>
                       <div className="w-7 text-center">
-                        {medal(rank) ? <span className="text-lg">{medal(rank)}</span>
+                        {medalColor(rank)
+                          ? <Medal size={18} className={medalColor(rank)} strokeWidth={2} />
                           : <span className="text-sm font-bold text-gray-400">#{rank}</span>}
                       </div>
-                      <div className="w-9 h-9 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center text-lg">
+                      <div className="w-9 h-9 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
                         {item.photoURL
                           ? <img src={item.photoURL} alt="" className="w-full h-full object-cover" />
-                          : "😊"
+                          : <User size={18} className="text-gray-300" strokeWidth={1.8} />
                         }
                       </div>
                       <div className="flex-1 min-w-0">
@@ -304,7 +311,7 @@ export default function RankingPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center h-screen">
-        <p className="animate-pulse text-lg">🏆 랭킹 로딩 중...</p>
+        <p className="animate-pulse text-lg flex items-center gap-2 text-gray-500"><Trophy className="w-5 h-5 text-yellow-500" strokeWidth={2} /> 랭킹 로딩 중...</p>
       </div>
     }>
       <RankingPageInner />

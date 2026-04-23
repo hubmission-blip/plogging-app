@@ -2,6 +2,28 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Waves, Apple, Plane, Palette, FlaskConical, Factory, Landmark, Wheat, Mountain, TreePine, Flower2, Fish, Cherry, Citrus, Building2 } from "lucide-react";
+
+// 지역별 아이콘 매핑 (탄소중립포인트 페이지와 동일)
+const REGION_ICONS = {
+  seoul:     { Icon: Landmark,      color: "text-blue-500" },
+  busan:     { Icon: Waves,         color: "text-sky-500" },
+  daegu:     { Icon: Apple,         color: "text-red-500" },
+  incheon:   { Icon: Plane,         color: "text-indigo-500" },
+  gwangju:   { Icon: Palette,       color: "text-purple-500" },
+  daejeon:   { Icon: FlaskConical,  color: "text-cyan-500" },
+  ulsan:     { Icon: Factory,       color: "text-gray-600" },
+  sejong:    { Icon: Landmark,      color: "text-emerald-500" },
+  gyeonggi:  { Icon: Wheat,         color: "text-amber-500" },
+  gangwon:   { Icon: Mountain,      color: "text-teal-600" },
+  chungbuk:  { Icon: TreePine,      color: "text-green-600" },
+  chungnam:  { Icon: Flower2,       color: "text-yellow-500" },
+  jeonbuk:   { Icon: Wheat,         color: "text-lime-600" },
+  jeonnam:   { Icon: Waves,         color: "text-blue-500" },
+  gyeongbuk: { Icon: Cherry,        color: "text-pink-500" },
+  gyeongnam: { Icon: Fish,          color: "text-sky-600" },
+  jeju:      { Icon: Citrus,        color: "text-orange-500" },
+};
 
 // ── 17개 시/도 데이터 ──────────────────────────────────
 const REGIONS = [
@@ -239,7 +261,15 @@ function RegionCard({ region }) {
         onClick={() => setOpen((v) => !v)}
       >
         <div className="flex items-center gap-3">
-          <span className="text-2xl">{region.emoji}</span>
+          {(() => {
+            const ri = REGION_ICONS[region.id] || { Icon: Building2, color: "text-gray-500" };
+            const RIcon = ri.Icon;
+            return (
+              <div className={`w-10 h-10 rounded-xl ${region.type === "독자운영" ? "bg-blue-50" : "bg-green-50"} flex items-center justify-center flex-shrink-0`}>
+                <RIcon size={20} className={ri.color} strokeWidth={1.8} />
+              </div>
+            );
+          })()}
           <div className="text-left">
             <p className="font-bold text-sm text-gray-800">{region.name}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
@@ -321,7 +351,7 @@ export default function EcomileagePage() {
         <Link href="/" className="absolute top-4 left-4 text-white/80 text-sm flex items-center gap-1">
           ← 홈
         </Link>
-        <span className="absolute top-4 right-4 text-7xl opacity-80">🏙️</span>
+        <span className="absolute top-4 right-4 opacity-30"><Building2 size={72} strokeWidth={1} /></span>
         <div className="relative mt-8">
           <h1 className="text-2xl font-black leading-tight">지자체별 에코마일리지</h1>
           <p className="text-sky-100 text-sm mt-1">전국 17개 시/도 에너지 절감 인센티브 안내</p>

@@ -171,12 +171,25 @@ const CERT_CONFIG = {
   },
 };
 
-// ─── 최근 내역용 아이콘/이름 매핑 ──────────────────────
-const TYPE_META = {
-  tumbler:"☕", cup_return:"♻️", reusable_container:"🍱", ev_rental:"🚗", shared_bike:"🚲",
-  e_receipt:"🧾", future_gen:"🌱", zero_waste:"🍽️", eco_bag:"🛍️", own_container:"🥡",
-  recycled_product:"♻️", tree_planting:"🌳", solar_panel:"☀️", phone_return:"📱", refill_station:"🫧",
-  eco_product:"🌿", quality_recycle:"🔄",
+// ─── 최근 내역용 아이콘/이름 매핑 (lucide 아이콘 + 색상) ──
+const TYPE_ICON = {
+  tumbler:            { Icon: Coffee,          color: "text-amber-500",   bg: "bg-amber-50" },
+  cup_return:         { Icon: CupSoda,         color: "text-teal-500",    bg: "bg-teal-50" },
+  reusable_container: { Icon: Package,         color: "text-violet-500",  bg: "bg-violet-50" },
+  ev_rental:          { Icon: Car,             color: "text-sky-500",     bg: "bg-sky-50" },
+  shared_bike:        { Icon: Bike,            color: "text-lime-500",    bg: "bg-lime-50" },
+  e_receipt:          { Icon: Receipt,         color: "text-blue-500",    bg: "bg-blue-50" },
+  future_gen:         { Icon: Sprout,          color: "text-green-500",   bg: "bg-green-50" },
+  zero_waste:         { Icon: UtensilsCrossed, color: "text-orange-500",  bg: "bg-orange-50" },
+  eco_bag:            { Icon: ShoppingBag,     color: "text-pink-500",    bg: "bg-pink-50" },
+  own_container:      { Icon: Container,       color: "text-purple-500",  bg: "bg-purple-50" },
+  recycled_product:   { Icon: RotateCcw,       color: "text-teal-500",    bg: "bg-teal-50" },
+  tree_planting:      { Icon: TreePine,        color: "text-green-600",   bg: "bg-green-50" },
+  solar_panel:        { Icon: Sun,             color: "text-yellow-500",  bg: "bg-yellow-50" },
+  phone_return:       { Icon: Smartphone,      color: "text-rose-500",    bg: "bg-rose-50" },
+  refill_station:     { Icon: Pipette,         color: "text-indigo-500",  bg: "bg-indigo-50" },
+  eco_product:        { Icon: ShieldCheck,     color: "text-emerald-500", bg: "bg-emerald-50" },
+  quality_recycle:    { Icon: Recycle,          color: "text-cyan-500",    bg: "bg-cyan-50" },
 };
 const TYPE_NAME = {
   tumbler:"텀블러 사용", cup_return:"일회용컵 반환", reusable_container:"다회용기 배달",
@@ -798,7 +811,18 @@ export default function EcoLifePage() {
             <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm mb-6">
               {recentActions.map((action, i) => (
                 <div key={action.id} className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? "border-t border-gray-50" : ""}`}>
-                  <span className="text-xl">{TYPE_META[action.type] || "🌿"}</span>
+                  {(() => {
+                    const meta = TYPE_ICON[action.type];
+                    if (meta) {
+                      const IconComp = meta.Icon;
+                      return (
+                        <div className={`w-9 h-9 rounded-xl ${meta.bg} flex items-center justify-center flex-shrink-0`}>
+                          <IconComp size={18} className={meta.color} strokeWidth={1.8} />
+                        </div>
+                      );
+                    }
+                    return <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0"><Leaf size={18} className="text-green-500" strokeWidth={1.8} /></div>;
+                  })()}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-700">
                       {TYPE_NAME[action.type] || "녹색생활 실천"}

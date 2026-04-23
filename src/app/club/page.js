@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Plus, KeyRound, Trophy, Rocket, Lock, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
@@ -576,7 +577,7 @@ export default function ClubPage() {
   // ─── 로그인 필요 ────────────────────────────────────────
   if (!user) return (
     <div className="flex flex-col items-center justify-center h-screen gap-4 text-center px-6">
-      <div className="text-5xl">🔑</div>
+      <div className="flex items-center justify-center"><Lock size={48} className="text-gray-300" strokeWidth={1.5} /></div>
       <p className="font-bold text-gray-700">로그인이 필요해요</p>
       <p className="text-sm text-gray-400">동아리에 참여하려면 먼저 로그인해주세요</p>
       <Link href="/login" className="bg-green-500 text-white px-8 py-3 rounded-2xl font-bold">로그인</Link>
@@ -595,7 +596,7 @@ export default function ClubPage() {
             alt="오백원의 행복" className="h-9 w-auto object-contain" />
         </Link>
         <div className="flex items-center gap-2">
-          <p className="text-sm font-black text-gray-700">🏅 플로깅 동아리</p>
+          <p className="text-sm font-black text-gray-700 flex items-center gap-1"><Trophy size={15} className="text-cyan-500" strokeWidth={2} /> 플로깅 동아리</p>
           {(() => {
             const total = Object.values(unreadCounts).reduce((s, n) => s + n, 0);
             return total > 0 ? (
@@ -615,12 +616,12 @@ export default function ClubPage() {
             {/* ── 새 동아리 + 코드 참여 ── */}
             <div className="flex gap-2">
               <button onClick={() => { setMode("createClub"); setError(""); setClubForm(EMPTY_FORM); }}
-                className="flex-1 bg-cyan-500 text-white py-3.5 rounded-2xl shadow-md font-bold text-sm active:scale-95 transition-transform">
-                🏅 새 동아리 만들기
+                className="flex-1 bg-cyan-500 text-white py-3.5 rounded-2xl shadow-md font-bold text-sm active:scale-95 transition-transform flex items-center justify-center gap-1.5">
+                <Plus size={16} strokeWidth={2.5} /> 새 동아리 만들기
               </button>
               <button onClick={() => setShowCodeInput((p) => !p)}
-                className="flex-shrink-0 bg-white border-2 border-cyan-400 text-cyan-600 px-4 py-3.5 rounded-2xl font-bold text-sm active:scale-95 transition-transform">
-                🔑 코드 참여
+                className="flex-shrink-0 bg-white border-2 border-cyan-400 text-cyan-600 px-4 py-3.5 rounded-2xl font-bold text-sm active:scale-95 transition-transform flex items-center gap-1.5">
+                <KeyRound size={15} strokeWidth={2} /> 코드 참여
               </button>
             </div>
 
@@ -877,7 +878,7 @@ export default function ClubPage() {
                 {selectedClub.hostUid === user?.uid ? (
                   <button onClick={handleStartClubPlogging} disabled={loading}
                     className="w-full bg-green-500 text-white py-5 rounded-2xl font-bold text-lg shadow-md disabled:opacity-40 active:scale-95 transition-transform">
-                    {loading ? "시작 중..." : `🚀 오늘의 플로깅 시작 (${selectedClub.members?.length || 0}명)`}
+                    {loading ? "시작 중..." : <><Rocket size={16} strokeWidth={2} className="inline mr-1" /> 오늘의 플로깅 시작 ({selectedClub.members?.length || 0}명)</>}
                   </button>
                 ) : (
                   <div className="bg-white rounded-2xl p-4 text-center shadow-sm">

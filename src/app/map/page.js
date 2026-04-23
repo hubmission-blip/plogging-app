@@ -2,7 +2,7 @@
 
 import { notifyPloggingComplete } from "@/lib/notify";
 import Link from "next/link";
-import { MapPin as MapPinIcon, Timer, Gauge, Radio, CheckCircle, Square, Sun, Footprints as FootprintsIcon, AlertTriangle as AlertTriangleIcon, Flag as FlagIcon, Users as UsersIcon, Smartphone as SmartphoneIcon } from "lucide-react";
+import { MapPin as MapPinIcon, Timer, Gauge, Radio, CheckCircle, Square, Sun, Footprints as FootprintsIcon, AlertTriangle as AlertTriangleIcon, Flag as FlagIcon, Users as UsersIcon, Smartphone as SmartphoneIcon, Coffee } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -1809,15 +1809,15 @@ function MapPageInner() {
             <p className="text-xs text-white bg-black/40 rounded-full px-3 py-1 flex items-center gap-1">
               <Sun className="w-3.5 h-3.5 inline" strokeWidth={2} /> 시작 시 화면 꺼짐이 자동으로 방지돼요
             </p>
-            <div className="flex items-center gap-3">
+            <div className="relative w-full flex justify-center">
               <button onClick={() => setShowReadyCheck(true)}
                 className="text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform flex items-center gap-2"
                 style={{ backgroundColor: "#8dc63f" }}>
                 <FootprintsIcon className="w-5 h-5" strokeWidth={2} /> 플로깅 시작
               </button>
               <button onClick={() => setShowTumblerModal(true)}
-                className="w-14 h-14 rounded-full bg-white border-2 border-amber-300 shadow-lg flex flex-col items-center justify-center active:scale-95 transition-transform relative">
-                <span className="text-xl leading-none">☕</span>
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white border-2 border-amber-300 shadow-lg flex flex-col items-center justify-center active:scale-95 transition-transform">
+                <Coffee className="w-5 h-5 text-amber-500" strokeWidth={2} />
                 <span className="text-[8px] font-bold text-amber-700 leading-none mt-0.5">텀블러</span>
               </button>
             </div>
@@ -1835,14 +1835,14 @@ function MapPageInner() {
                 }
               </div>
             )}
-            <div className="flex items-center gap-3">
+            <div className="relative w-full flex justify-center">
               <button onClick={handleStop}
                 className="bg-red-500 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl active:scale-95 transition-transform flex items-center gap-2">
                 <FlagIcon className="w-5 h-5" strokeWidth={2} /> 플로깅 종료
               </button>
               <button onClick={() => setShowTumblerModal(true)}
-                className="w-14 h-14 rounded-full bg-white border-2 border-amber-300 shadow-lg flex flex-col items-center justify-center active:scale-95 transition-transform relative">
-                <span className="text-xl leading-none">☕</span>
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white border-2 border-amber-300 shadow-lg flex flex-col items-center justify-center active:scale-95 transition-transform">
+                <Coffee className="w-5 h-5 text-amber-500" strokeWidth={2} />
                 <span className="text-[8px] font-bold text-amber-700 leading-none mt-0.5">텀블러</span>
                 {sessionTumblerCerts.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">

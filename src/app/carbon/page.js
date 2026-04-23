@@ -2,7 +2,28 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Zap, Car, Leaf, CreditCard, ChevronUp, ChevronDown, Globe, LinkIcon, Building2, ExternalLink } from "lucide-react";
+import { Zap, Car, Leaf, CreditCard, ChevronUp, ChevronDown, Globe, LinkIcon, Building2, ExternalLink, Waves, Apple, Plane, Palette, FlaskConical, Factory, Landmark, Wheat, Mountain, TreePine, Flower2, TreeDeciduous, Fish, Cherry, Citrus } from "lucide-react";
+
+// 지역별 아이콘 매핑
+const REGION_ICONS = {
+  "서울특별시":     { Icon: Landmark,      color: "text-blue-500" },
+  "부산광역시":     { Icon: Waves,         color: "text-sky-500" },
+  "대구광역시":     { Icon: Apple,         color: "text-red-500" },
+  "인천광역시":     { Icon: Plane,         color: "text-indigo-500" },
+  "광주광역시":     { Icon: Palette,       color: "text-purple-500" },
+  "대전광역시":     { Icon: FlaskConical,  color: "text-cyan-500" },
+  "울산광역시":     { Icon: Factory,       color: "text-gray-600" },
+  "세종특별자치시": { Icon: Landmark,      color: "text-emerald-500" },
+  "경기도":         { Icon: Wheat,         color: "text-amber-500" },
+  "강원도":         { Icon: Mountain,      color: "text-teal-600" },
+  "충청북도":       { Icon: TreePine,      color: "text-green-600" },
+  "충청남도":       { Icon: Flower2,       color: "text-yellow-500" },
+  "전북특별자치도": { Icon: Wheat,         color: "text-lime-600" },
+  "전라남도":       { Icon: Waves,         color: "text-blue-500" },
+  "경상북도":       { Icon: Cherry,        color: "text-pink-500" },
+  "경상남도":       { Icon: Fish,          color: "text-sky-600" },
+  "제주특별자치도": { Icon: Citrus,        color: "text-orange-500" },
+};
 
 // ── 녹색생활 실천 17개 항목 ─────────────────────────────
 const GREEN_ITEMS = [
@@ -424,7 +445,9 @@ export default function CarbonPage() {
               className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 active:opacity-80"
             >
               <div className="flex items-center gap-2">
-                <span className="text-lg">🗼</span>
+                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <Landmark size={16} className="text-blue-500" strokeWidth={1.8} />
+                </div>
                 <div>
                   <p className="text-xs font-bold text-blue-700">서울특별시</p>
                   <p className="text-[10px] text-blue-400">서울시 에코마일리지</p>
@@ -439,36 +462,30 @@ export default function CarbonPage() {
             <p className="text-[10px] font-bold text-green-500 mb-1.5 px-1">🟢 탄소중립포인트 연계</p>
             <div className="grid grid-cols-2 gap-1.5">
               {[
-                { name: "부산광역시",     emoji: "🌊" },
-                { name: "대구광역시",     emoji: "🍎" },
-                { name: "인천광역시",     emoji: "✈️" },
-                { name: "광주광역시",     emoji: "🎨" },
-                { name: "대전광역시",     emoji: "🔬" },
-                { name: "울산광역시",     emoji: "🏭" },
-                { name: "세종특별자치시", emoji: "🏛️" },
-                { name: "경기도",         emoji: "🌾" },
-                { name: "강원도",         emoji: "🏔️" },
-                { name: "충청북도",       emoji: "🌲" },
-                { name: "충청남도",       emoji: "🌻" },
-                { name: "전북특별자치도", emoji: "🌾" },
-                { name: "전라남도",       emoji: "🌊" },
-                { name: "경상북도",       emoji: "🍑" },
-                { name: "경상남도",       emoji: "🐟" },
-                { name: "제주특별자치도", emoji: "🍊" },
-              ].map((r) => (
-                <a
-                  key={r.name}
-                  href="https://cpoint.or.kr"
-                  target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-2.5 py-2 active:opacity-80"
-                >
-                  <span className="text-base">{r.emoji}</span>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-gray-700 truncate">{r.name}</p>
-                    <p className="text-[10px] text-gray-400">cpoint.or.kr</p>
-                  </div>
-                </a>
-              ))}
+                "부산광역시", "대구광역시", "인천광역시", "광주광역시",
+                "대전광역시", "울산광역시", "세종특별자치시", "경기도",
+                "강원도", "충청북도", "충청남도", "전북특별자치도",
+                "전라남도", "경상북도", "경상남도", "제주특별자치도",
+              ].map((name) => {
+                const ri = REGION_ICONS[name] || { Icon: Building2, color: "text-gray-500" };
+                const RIcon = ri.Icon;
+                return (
+                  <a
+                    key={name}
+                    href="https://cpoint.or.kr"
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-2.5 py-2 active:opacity-80"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                      <RIcon size={14} className={ri.color} strokeWidth={1.8} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-gray-700 truncate">{name}</p>
+                      <p className="text-[10px] text-gray-400">cpoint.or.kr</p>
+                    </div>
+                  </a>
+                );
+              })}
             </div>
           </div>
         </div>

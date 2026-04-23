@@ -9,14 +9,18 @@ import {
   doc, getDoc, updateDoc, addDoc,
   collection, serverTimestamp, runTransaction
 } from "firebase/firestore";
-import { Coins, Target, Zap, ChevronDown } from "lucide-react";
+import {
+  Coins, Target, Zap, ChevronDown, Gift,
+  HeartHandshake, Trash2, Coffee, ShoppingBag, TreePine,
+  Waves, Bolt, Watch, Fish, Camera, CircleDollarSign,
+} from "lucide-react";
 
 // ─── 리워드 아이템 목록 ────────────────────────────────────
 const REWARDS = [
   {
     id: "donate_gia",
     category: "기부",
-    icon: "🌿",
+    Icon: HeartHandshake, iconColor: "text-green-600", iconBg: "bg-green-100",
     title: "기아대책 후원",
     desc: "온마을 프로젝트 — 소외된 이웃을 위한 기부",
     cost: 1000,
@@ -27,7 +31,7 @@ const REWARDS = [
   {
     id: "bag_1000",
     category: "환경",
-    icon: "🛍️",
+    Icon: Trash2, iconColor: "text-emerald-600", iconBg: "bg-emerald-100",
     title: "종량제 봉투 500원권",
     desc: "20리터 종량제 쓰레기봉투 구매 지원",
     cost: 1000,
@@ -38,7 +42,7 @@ const REWARDS = [
   {
     id: "coffee_2000",
     category: "음료",
-    icon: "☕",
+    Icon: Coffee, iconColor: "text-orange-600", iconBg: "bg-orange-100",
     title: "커피 쿠폰 2,000P",
     desc: "파트너 카페 아메리카노 1잔 교환권",
     cost: 2000,
@@ -49,7 +53,7 @@ const REWARDS = [
   {
     id: "eco_bag",
     category: "환경",
-    icon: "👜",
+    Icon: ShoppingBag, iconColor: "text-purple-600", iconBg: "bg-purple-100",
     title: "에코백 교환권",
     desc: "GYEA 공식 에코백 (로고 인쇄)",
     cost: 3000,
@@ -60,7 +64,7 @@ const REWARDS = [
   {
     id: "donate_forest",
     category: "기부",
-    icon: "🌲",
+    Icon: TreePine, iconColor: "text-green-700", iconBg: "bg-green-100",
     title: "나무 한 그루 심기",
     desc: "파트너 기관에 나무 식수 기부",
     cost: 1000,
@@ -71,7 +75,7 @@ const REWARDS = [
   {
     id: "donate_ocean",
     category: "기부",
-    icon: "🌊",
+    Icon: Waves, iconColor: "text-sky-600", iconBg: "bg-sky-100",
     title: "해양 정화 기부",
     desc: "해양 쓰레기 수거 캠페인 후원",
     cost: 500,
@@ -82,7 +86,7 @@ const REWARDS = [
   {
     id: "bonus_points",
     category: "포인트",
-    icon: "⚡",
+    Icon: Bolt, iconColor: "text-blue-600", iconBg: "bg-blue-100",
     title: "포인트 2배 부스터",
     desc: "다음 1회 플로깅 포인트 2배 적용",
     cost: 1000,
@@ -93,7 +97,7 @@ const REWARDS = [
     {
     id: "donate_product",
     category: "환경",
-    icon: "📟️",
+    Icon: Watch, iconColor: "text-indigo-600", iconBg: "bg-indigo-100",
     title: "교정밴드 교환권",
     desc: "지능형, 교정밴드를 드립니다(소진시까지)",
     cost: 1000,
@@ -104,7 +108,7 @@ const REWARDS = [
   {
     id: "donate_dokdo",
     category: "기부",
-    icon: "🐟",
+    Icon: Fish, iconColor: "text-cyan-600", iconBg: "bg-cyan-100",
     title: "독도 프로젝트 기부",
     desc: "독도,수중정화 & 플로깅 프로젝트 후원",
     cost: 500,
@@ -115,7 +119,7 @@ const REWARDS = [
       {
     id: "donate_photo",
     category: "환경",
-    icon: "📷",
+    Icon: Camera, iconColor: "text-rose-600", iconBg: "bg-rose-100",
     title: "가족사진 촬영권",
     desc: "GYEA 스튜디오에서 촬영가능",
     cost: 5000,
@@ -126,7 +130,7 @@ const REWARDS = [
   {
     id: "bonus_painting",
     category: "기부",
-    icon: "🪙",
+    Icon: CircleDollarSign, iconColor: "text-amber-600", iconBg: "bg-amber-100",
     title: "오백원의 행복 기부",
     desc: "오백원의 행복 플로깅 프로젝트 후원",
     cost: 500,
@@ -217,7 +221,7 @@ export default function RewardPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen">
-      <p className="animate-pulse text-lg">🎁 리워드 불러오는 중...</p>
+      <p className="animate-pulse text-lg flex items-center gap-2 text-gray-500"><Gift className="w-5 h-5 text-purple-500" strokeWidth={2} /> 리워드 불러오는 중...</p>
     </div>
   );
 
@@ -235,14 +239,14 @@ export default function RewardPage() {
             className="h-9 w-auto object-contain"
           />
         </Link>
-        <p className="text-sm font-black text-gray-700">🎁 포인트 교환</p>
+        <p className="text-sm font-black text-gray-700 flex items-center gap-1"><Gift className="w-4 h-4" strokeWidth={1.8} /> 포인트 교환</p>
       </div>
 
       {/* ── 내 보유 포인트 카드 ── */}
       <div className="px-4 pt-3 pb-1">
         <div className="bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl px-4 py-3 flex items-center justify-between text-white shadow-sm">
           <div className="flex items-center gap-2">
-            <span className="text-xl">💰</span>
+            <Coins className="w-5 h-5 text-purple-200" strokeWidth={2} />
             <div className="text-left">
               <p className="text-[10px] text-purple-200 leading-none mb-0.5">내 보유 포인트</p>
               <p className="text-sm font-black text-white">
@@ -304,7 +308,9 @@ export default function RewardPage() {
                 </span>
               )}
 
-              <div className="text-3xl mb-2">{item.icon}</div>
+              <div className={`w-12 h-12 rounded-xl ${item.iconBg} flex items-center justify-center mb-2`}>
+                <item.Icon size={24} className={item.iconColor} strokeWidth={1.8} />
+              </div>
               <p className="font-bold text-gray-800 text-sm leading-tight">{item.title}</p>
               <p className="text-xs text-gray-400 mt-1 leading-snug">{item.desc}</p>
 
@@ -395,7 +401,9 @@ export default function RewardPage() {
         <div className="fixed inset-0 bg-black/50 flex items-end z-[200]" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
           <div className="bg-white w-full rounded-3xl p-6 shadow-2xl mb-0">
             <div className="text-center mb-4">
-              <div className="text-5xl mb-2">{selectedItem.icon}</div>
+              <div className={`w-16 h-16 rounded-2xl ${selectedItem.iconBg} flex items-center justify-center mb-2 mx-auto`}>
+                <selectedItem.Icon size={32} className={selectedItem.iconColor} strokeWidth={1.8} />
+              </div>
               <h2 className="text-lg font-bold text-gray-800">{selectedItem.title}</h2>
               <p className="text-sm text-gray-500 mt-1">{selectedItem.desc}</p>
             </div>
