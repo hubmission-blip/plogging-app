@@ -1042,6 +1042,7 @@ function MapPageInner() {
   // ── 텀블러/다회용컵 인증 ──────────────────────────────────
   const [showTumblerModal, setShowTumblerModal]     = useState(false);
   const [sessionTumblerCerts, setSessionTumblerCerts] = useState([]); // 플로깅 중 텀블러 인증 기록
+  const [sessionCupReturnCerts, setSessionCupReturnCerts] = useState([]); // 플로깅 중 컵 반환 인증 기록
 
   // 메인 퀵메뉴에서 텀블러 인증 진입 시 자동 오픈
   useEffect(() => {
