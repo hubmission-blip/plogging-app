@@ -17,6 +17,14 @@
       ]
     },
     {
+      "collectionGroup": "routes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "notices",
       "queryScope": "COLLECTION",
       "fields": [

@@ -1106,13 +1106,43 @@ function MapPageInner() {
     try {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
-      const q = query(
-        collection(db, "routes"),
-        where("userId", "==", user.uid),
-        where("createdAt", ">=", todayStart)
+
+      // 타임아웃 5초 — 인덱스 미생성 등으로 쿼리가 멈추면 무시하고 진행
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 5000)
       );
-      const snap = await getDocs(q);
-      const todayCount = snap.size;
+
+      let todayCount = 0;
+      try {
+        // 복합 인덱스 필요: userId + createdAt
+        const q = query(
+          collection(db, "routes"),
+          where("userId", "==", user.uid),
+          where("createdAt", ">=", todayStart)
+        );
+        const snap = await Promise.race([getDocs(q), timeoutPromise]);
+        todayCount = snap.size;
+      } catch (indexErr) {
+        // 인덱스 없으면 userId만으로 조회 후 클라이언트 필터
+        console.warn("복합쿼리 실패, 폴백:", indexErr.message);
+        try {
+          const fallbackQ = query(
+            collection(db, "routes"),
+            where("userId", "==", user.uid)
+          );
+          const fallbackSnap = await Promise.race([getDocs(fallbackQ), timeoutPromise]);
+          fallbackSnap.forEach(d => {
+            const ca = d.data().createdAt;
+            if (ca) {
+              const docDate = ca.toDate ? ca.toDate() : new Date(ca);
+              if (docDate >= todayStart) todayCount++;
+            }
+          });
+        } catch {
+          // 폴백도 실패하면 체크 건너뜀
+          return null;
+        }
+      }
 
       if (todayCount >= DAILY_MAX) {
         return `오늘 이미 ${todayCount}회 플로깅을 완료했어요.\n하루 최대 ${DAILY_MAX}회까지 포인트가 지급돼요.\n(추가 플로깅은 기록되지만 포인트 0)`;
@@ -1351,8 +1381,16 @@ function MapPageInner() {
             totalPloggings: increment(1),
             totalDistance:  increment(routeDistance),
             totalDuration:  increment(routeDuration),
+            status: "active", // 플로깅 종료 → 대기 상태로 복귀
           }).catch(() => {}); // 필드 없으면 무시
         } catch (e2) { console.error("클럽 기록 저장 실패:", e2); }
+      }
+
+      // ── 1회성 그룹 플로깅 종료 처리 ──────────────────────
+      if (groupId && groupType !== "club") {
+        try {
+          await updateDoc(doc(db, "groups", groupId), { status: "finished" }).catch(() => {});
+        } catch (e3) { console.error("그룹 상태 업데이트 실패:", e3); }
       }
 
       notifyPloggingComplete(routeDistance, points);
@@ -1361,7 +1399,7 @@ function MapPageInner() {
       console.error("저장 실패:", e);
       alert("저장 중 오류가 발생했습니다");
     }
-  }, [user, fetchPastRoutes]);
+  }, [user, fetchPastRoutes, groupId, groupType]);
 
   // ─── 시작 버튼 (시간 체크 → 중복 체크 포함) ──────────
   const handleStart = async () => {

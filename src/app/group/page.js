@@ -81,6 +81,7 @@ export default function GroupPage() {
       const data = snap.data();
       if (data.status !== "waiting") { setError("이미 플로깅이 시작된 그룹이에요."); return; }
       if (data.members.length >= 10) { setError("그룹 최대 인원(10명)을 초과했어요."); return; }
+      if (data.members.some((m) => m.uid === user.uid)) { setError("이미 참여 중인 그룹이에요."); setGroupCode(code); setMode("waiting"); return; }
       const name = user.displayName || user.email?.split("@")[0] || "멤버";
       await updateDoc(doc(db, "groups", code), {
         members: arrayUnion({ uid: user.uid, name, photoURL: user.photoURL || "" }),

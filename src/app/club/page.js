@@ -263,7 +263,15 @@ export default function ClubPage() {
         query(collection(db, "clubs", code, "history"), orderBy("createdAt", "desc"))
       );
       setClubHistory(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    } catch (e) { console.error("기록 로드 실패:", e); }
+    } catch (e) {
+      console.error("기록 로드 실패(인덱스 폴백):", e);
+      try {
+        const snap = await getDocs(collection(db, "clubs", code, "history"));
+        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        setClubHistory(list);
+      } catch { setClubHistory([]); }
+    }
     finally { setHistoryLoading(false); }
   }, []);
 
