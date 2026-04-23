@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { CalendarDays, MapPin } from "lucide-react";
+import {
+  CalendarDays, MapPin, Building2, Wheat, Mountain, Waves, MountainSnow,
+  Citrus, Users, UserRound, Pencil, Trash2, Save, CircleCheck, ClipboardList,
+  Leaf, Calendar,
+} from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
@@ -15,12 +19,12 @@ const ADMIN_EMAILS = ["hubmission@gmail.com", "boonma@nate.com"];
 
 // ─── 17개 시도 (권역별 그룹) ──────────────────────────────────
 const REGION_GROUPS = [
-  { name: "수도권",  color: "bg-blue-500",   light: "bg-blue-50   border-blue-200   text-blue-700",   icon: "🏙️", regions: ["서울", "인천", "경기"] },
-  { name: "충청권",  color: "bg-yellow-500", light: "bg-yellow-50 border-yellow-200 text-yellow-700", icon: "🌾", regions: ["대전", "세종", "충북", "충남"] },
-  { name: "강원권",  color: "bg-cyan-500",   light: "bg-cyan-50   border-cyan-200   text-cyan-700",   icon: "⛰️", regions: ["강원"] },
-  { name: "호남권",  color: "bg-green-500",  light: "bg-green-50  border-green-200  text-green-700",  icon: "🌊", regions: ["광주", "전북", "전남"] },
-  { name: "영남권",  color: "bg-red-500",    light: "bg-red-50    border-red-200    text-red-700",    icon: "🏔️", regions: ["부산", "대구", "울산", "경북", "경남"] },
-  { name: "제주권",  color: "bg-orange-500", light: "bg-orange-50 border-orange-200 text-orange-700", icon: "🍊", regions: ["제주"] },
+  { name: "수도권",  color: "bg-blue-500",   light: "bg-blue-50   border-blue-200   text-blue-700",   Icon: Building2,     iconColor: "text-blue-500",   regions: ["서울", "인천", "경기"] },
+  { name: "충청권",  color: "bg-yellow-500", light: "bg-yellow-50 border-yellow-200 text-yellow-700", Icon: Wheat,         iconColor: "text-yellow-500", regions: ["대전", "세종", "충북", "충남"] },
+  { name: "강원권",  color: "bg-cyan-500",   light: "bg-cyan-50   border-cyan-200   text-cyan-700",   Icon: Mountain,      iconColor: "text-cyan-500",   regions: ["강원"] },
+  { name: "호남권",  color: "bg-green-500",  light: "bg-green-50  border-green-200  text-green-700",  Icon: Waves,         iconColor: "text-green-500",  regions: ["광주", "전북", "전남"] },
+  { name: "영남권",  color: "bg-red-500",    light: "bg-red-50    border-red-200    text-red-700",    Icon: MountainSnow,  iconColor: "text-red-500",    regions: ["부산", "대구", "울산", "경북", "경남"] },
+  { name: "제주권",  color: "bg-orange-500", light: "bg-orange-50 border-orange-200 text-orange-700", Icon: Citrus,        iconColor: "text-orange-500", regions: ["제주"] },
 ];
 
 // 평탄화된 전체 지역 목록 (기존 코드 호환용)
@@ -79,7 +83,7 @@ function RegionSheet({ current, onSelect, onClose }) {
             <div key={group.name}>
               {/* 권역 헤더 */}
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-base">{group.icon}</span>
+                <group.Icon size={18} className={group.iconColor} strokeWidth={1.8} />
                 <span className={`text-xs font-black px-2 py-0.5 rounded-full text-white ${group.color}`}>
                   {group.name}
                 </span>
@@ -151,18 +155,18 @@ function EventModal({ event, user, onClose, onJoin, onLeave, onEdit, onDelete, f
         {/* 날짜·지역·장소 */}
         <div className="space-y-1.5 mb-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span>📅</span>
+            <CalendarDays size={14} className="text-gray-400 flex-shrink-0" strokeWidth={1.8} />
             <span>{event.date}</span>
             {event.time && <span className="text-gray-400">· {event.time}</span>}
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span>📍</span>
+            <MapPin size={14} className="text-gray-400 flex-shrink-0" strokeWidth={1.8} />
             <span>{event.region}</span>
             {event.location && <span className="text-gray-400">· {event.location}</span>}
           </div>
           {event.type === "group" && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span>👥</span>
+              <Users size={14} className="text-gray-400 flex-shrink-0" strokeWidth={1.8} />
               <span>
                 {event.participants?.length || 0}명 참여 중
                 {event.maxParticipants > 0 && ` / 최대 ${event.maxParticipants}명`}
@@ -171,7 +175,7 @@ function EventModal({ event, user, onClose, onJoin, onLeave, onEdit, onDelete, f
           )}
           {event.hostName && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span>🙋</span>
+              <UserRound size={14} className="text-gray-400 flex-shrink-0" strokeWidth={1.8} />
               <span>주최자 : {event.hostName}</span>
             </div>
           )}
@@ -219,7 +223,7 @@ function EventModal({ event, user, onClose, onJoin, onLeave, onEdit, onDelete, f
                 onClick={() => onJoin(event)}
                 className="w-full py-3.5 rounded-2xl font-bold text-sm bg-green-500 text-white shadow active:scale-95 transition-transform"
               >
-                🌿 참여하기
+                <span className="flex items-center justify-center gap-1"><Leaf size={14} strokeWidth={2} /> 참여하기</span>
               </button>
             )}
           </div>
@@ -236,13 +240,13 @@ function EventModal({ event, user, onClose, onJoin, onLeave, onEdit, onDelete, f
               onClick={() => onEdit(event)}
               className="flex-1 py-2.5 rounded-2xl text-sm font-bold bg-blue-50 text-blue-600 active:scale-95 transition-transform"
             >
-              ✏️ 수정
+              <span className="flex items-center justify-center gap-1"><Pencil size={13} strokeWidth={2} /> 수정</span>
             </button>
             <button
               onClick={() => onDelete(event)}
               className="flex-1 py-2.5 rounded-2xl text-sm font-bold bg-red-50 text-red-500 active:scale-95 transition-transform"
             >
-              🗑 삭제
+              <span className="flex items-center justify-center gap-1"><Trash2 size={13} strokeWidth={2} /> 삭제</span>
             </button>
           </div>
         )}
@@ -312,7 +316,7 @@ function CreateEventModal({ user, selectedDate, defaultRegion, onClose, onCreate
       >
         <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
         <h2 className="text-base font-black text-gray-800 mb-4">
-          {isEditMode ? "✏️ 플로깅 일정 수정" : "📅 플로깅 일정 등록"}
+          <span className="flex items-center gap-1">{isEditMode ? <><Pencil size={14} strokeWidth={2} /> 플로깅 일정 수정</> : <><CalendarDays size={14} strokeWidth={2} /> 플로깅 일정 등록</>}</span>
         </h2>
 
         <div className="space-y-3">
@@ -411,7 +415,7 @@ function CreateEventModal({ user, selectedDate, defaultRegion, onClose, onCreate
           >
             {submitting
               ? (isEditMode ? "저장 중..." : "등록 중...")
-              : (isEditMode ? "💾 저장하기" : "✅ 등록하기")}
+              : (isEditMode ? "저장하기" : "등록하기")}
           </button>
         </div>
       </div>
@@ -627,7 +631,7 @@ export default function CalendarPage() {
           style={{ backgroundImage: "linear-gradient(to right, #8dc63f, #4cb748)" }}
         >
           <div className="flex items-center gap-2">
-            <span className="text-xl">{REGION_COLOR_MAP[selectedRegion]?.icon || "📍"}</span>
+            {(() => { const g = REGION_COLOR_MAP[selectedRegion]; return g?.Icon ? <g.Icon size={20} className="text-white/80" strokeWidth={1.8} /> : <MapPin size={20} className="text-white/80" strokeWidth={1.8} />; })()}
             <div className="text-left">
               <p className="text-[10px] text-green-100 leading-none mb-0.5">선택된 지역</p>
               <p className="text-sm font-black text-white">{selectedRegion}</p>
@@ -755,7 +759,7 @@ export default function CalendarPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-bold text-gray-700 text-sm">
-                📋 {selectedDate.replace(/-/g, ".")} 일정
+                <span className="flex items-center gap-1"><ClipboardList size={14} strokeWidth={1.8} /> {selectedDate.replace(/-/g, ".")} 일정</span>
               </h2>
               {user && (
                 <button
@@ -771,7 +775,7 @@ export default function CalendarPage() {
               <div className="text-center py-6 text-gray-400 text-sm animate-pulse">로딩 중...</div>
             ) : dayEvents.length === 0 ? (
               <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
-                <p className="text-3xl mb-2">🌿</p>
+                <div className="mb-2"><Leaf size={30} className="text-green-300 mx-auto" strokeWidth={1.5} /></div>
                 <p className="text-sm text-gray-400">이 날엔 등록된 일정이 없어요</p>
                 {user && (
                   <button
@@ -815,7 +819,7 @@ export default function CalendarPage() {
                       <div className="text-right flex-shrink-0">
                         {ev.type === "group" && (
                           <p className="text-xs text-gray-400">
-                            👥 {ev.participants?.length || 0}
+                            <span className="inline-flex items-center gap-0.5"><Users size={11} strokeWidth={2} /> {ev.participants?.length || 0}</span>
                             {ev.maxParticipants > 0 ? `/${ev.maxParticipants}` : ""}명
                           </p>
                         )}
@@ -833,7 +837,7 @@ export default function CalendarPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-bold text-gray-700 text-sm">
-                🗓 {viewMonth + 1}월 {selectedRegion} 전체 일정
+                <span className="flex items-center gap-1"><Calendar size={14} strokeWidth={1.8} /> {viewMonth + 1}월 {selectedRegion} 전체 일정</span>
               </h2>
               {user && (
                 <button
@@ -849,7 +853,7 @@ export default function CalendarPage() {
               <div className="text-center py-6 text-gray-400 text-sm animate-pulse">로딩 중...</div>
             ) : events.length === 0 ? (
               <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
-                <p className="text-3xl mb-2">🌿</p>
+                <div className="mb-2"><Leaf size={30} className="text-green-300 mx-auto" strokeWidth={1.5} /></div>
                 <p className="text-sm text-gray-400">{viewMonth + 1}월 {selectedRegion} 일정이 없어요</p>
                 <p className="text-xs text-gray-300 mt-1">날짜를 클릭해서 일정을 등록해보세요!</p>
               </div>
@@ -883,7 +887,7 @@ export default function CalendarPage() {
                       {ev.type === "group" && (
                         <div className="text-right flex-shrink-0">
                           <p className="text-xs text-gray-400">
-                            👥 {ev.participants?.length || 0}
+                            <span className="inline-flex items-center gap-0.5"><Users size={11} strokeWidth={2} /> {ev.participants?.length || 0}</span>
                             {ev.maxParticipants > 0 ? `/${ev.maxParticipants}` : ""}명
                           </p>
                           {!isPast && !isJoined && (

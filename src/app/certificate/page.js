@@ -7,7 +7,7 @@ import { db } from "@/lib/firebase";
 import {
   collection, query, where, getDocs, addDoc, serverTimestamp,
 } from "firebase/firestore";
-import { FileCheck, Download, ChevronLeft, CalendarDays, Clock, MapPin, Award, AlertCircle, History, RotateCcw, Printer } from "lucide-react";
+import { FileCheck, Download, ChevronLeft, CalendarDays, Clock, MapPin, Award, AlertCircle, History, RotateCcw, Printer, Lock, ScrollText, ClipboardList, BarChart3, FileText, PenLine } from "lucide-react";
 
 // ─── 상수: 인정 기준 ─────────────────────────────────────────
 const MIN_DISTANCE_KM  = 0.5;    // 최소 500m
@@ -426,7 +426,7 @@ export default function CertificatePage() {
   // ─── 로그인 필요 ──────────────────────────────────────────
   if (!user) return (
     <div className="flex flex-col items-center justify-center h-screen gap-4 text-center px-6">
-      <div className="text-5xl">🔑</div>
+      <div><Lock size={48} className="text-gray-300" strokeWidth={1.5} /></div>
       <p className="font-bold text-gray-700">로그인이 필요해요</p>
       <Link href="/login" className="text-sm text-green-600 font-bold underline">로그인하기</Link>
     </div>
@@ -447,14 +447,14 @@ export default function CertificatePage() {
           <img src="https://res.cloudinary.com/dqlvm572h/image/upload/w_200,q_auto,f_auto/Intro_Logo_fuj1kt.png"
             alt="오백원의 행복" className="h-9 w-auto object-contain" />
         </Link>
-        <p className="text-sm font-black text-gray-700">📜 봉사활동 증명서</p>
+        <p className="text-sm font-black text-gray-700 flex items-center gap-1"><ScrollText className="w-4 h-4" strokeWidth={1.8} /> 봉사활동 증명서</p>
       </div>
 
       <div className="px-4 mt-4 space-y-4">
 
         {/* ── 안내 카드 ── */}
         <div className="bg-green-50 rounded-2xl p-4 border border-green-200">
-          <h2 className="font-bold text-green-800 text-sm mb-2">📋 발급 기준 안내</h2>
+          <h2 className="font-bold text-green-800 text-sm mb-2 flex items-center gap-1"><ClipboardList className="w-4 h-4" strokeWidth={1.8} /> 발급 기준 안내</h2>
           <div className="space-y-1 text-xs text-green-700">
             <p>• 1회 플로깅: 최소 <b>500m</b> 이상 이동 + <b>10분</b> 이상 활동</p>
             <p>• 1회 최대 인정 시간: <b>4시간</b> / 하루 최대: <b>6시간</b></p>
@@ -486,7 +486,7 @@ export default function CertificatePage() {
         {summary && (
           <>
             <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <h2 className="font-bold text-gray-700 text-sm mb-3">📊 조회 결과</h2>
+              <h2 className="font-bold text-gray-700 text-sm mb-3 flex items-center gap-1"><BarChart3 className="w-4 h-4" strokeWidth={1.8} /> 조회 결과</h2>
               <div className="grid grid-cols-3 gap-3 mb-3">
                 <div className="bg-green-50 rounded-xl p-3 text-center">
                   <p className="text-xl font-black text-green-700">{summary.totalSessions}</p>
@@ -528,7 +528,7 @@ export default function CertificatePage() {
 
             {/* ── 상세 기록 리스트 ── */}
             <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <h2 className="font-bold text-gray-700 text-sm mb-2">📝 인정된 활동 목록</h2>
+              <h2 className="font-bold text-gray-700 text-sm mb-2 flex items-center gap-1"><FileText className="w-4 h-4" strokeWidth={1.8} /> 인정된 활동 목록</h2>
               <div className="space-y-1.5 max-h-60 overflow-y-auto">
                 {records.map((r, i) => (
                   <div key={r.id} className="flex items-center gap-2 py-1.5 border-b border-gray-50 last:border-0 text-xs">
@@ -564,7 +564,7 @@ export default function CertificatePage() {
             {/* ── 실명 입력 단계 ── */}
             {showNameInput && (
               <div className="bg-white rounded-2xl p-5 shadow-sm border-2 border-green-300">
-                <h2 className="font-bold text-gray-800 text-sm mb-1">✍️ 실명 입력</h2>
+                <h2 className="font-bold text-gray-800 text-sm mb-1 flex items-center gap-1"><PenLine className="w-4 h-4" strokeWidth={1.8} /> 실명 입력</h2>
                 <p className="text-xs text-gray-400 mb-4">증명서에 표기될 본인 실명을 정확히 입력해주세요.</p>
 
                 <div className="space-y-3">

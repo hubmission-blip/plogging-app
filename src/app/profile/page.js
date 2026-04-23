@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Coins, MapPin, Footprints, UserPlus, Pencil, BarChart3, Trophy, Map, Users, Gift, Shield, Settings, FileCheck, LogOut, UserX } from "lucide-react";
+import {
+  Coins, MapPin, Footprints, UserPlus, Pencil, BarChart3, Trophy, Map, Users, Gift,
+  Shield, Settings, FileCheck, LogOut, UserX, Sprout, PersonStanding, Flame,
+  Swords, Award, Leaf, ClipboardList, Check, AlertTriangle, Frown,
+} from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
@@ -22,22 +26,22 @@ const ADMIN_EMAILS = ["hubmission@gmail.com", "boonma@nate.com"];
 
 // ─── 뱃지 기준 ────────────────────────────────────────────
 const BADGES = [
-  { id: "first",   icon: "🌱", label: "첫 플로깅",  condition: (s) => s.ploggingCount >= 1 },
-  { id: "walker",  icon: "🚶", label: "5km 달성",   condition: (s) => s.totalDistance >= 5 },
-  { id: "runner",  icon: "🏃", label: "10km 달성",  condition: (s) => s.totalDistance >= 10 },
-  { id: "hero",    icon: "🦸", label: "환경 영웅",  condition: (s) => s.totalDistance >= 50 },
-  { id: "tenner",  icon: "🔥", label: "10회 달성",  condition: (s) => s.ploggingCount >= 10 },
-  { id: "rich",    icon: "💰", label: "부자",        condition: (s) => s.totalPoints >= 1000 },
+  { id: "first",   Icon: Sprout,           iconColor: "text-green-500",  label: "첫 플로깅",  condition: (s) => s.ploggingCount >= 1 },
+  { id: "walker",  Icon: PersonStanding,   iconColor: "text-blue-500",   label: "5km 달성",   condition: (s) => s.totalDistance >= 5 },
+  { id: "runner",  Icon: Footprints,       iconColor: "text-indigo-500", label: "10km 달성",  condition: (s) => s.totalDistance >= 10 },
+  { id: "hero",    Icon: Shield,           iconColor: "text-purple-500", label: "환경 영웅",  condition: (s) => s.totalDistance >= 50 },
+  { id: "tenner",  Icon: Flame,            iconColor: "text-orange-500", label: "10회 달성",  condition: (s) => s.ploggingCount >= 10 },
+  { id: "rich",    Icon: Coins,            iconColor: "text-yellow-500", label: "부자",        condition: (s) => s.totalPoints >= 1000 },
 ];
 
 // ─── 레벨 계산 ────────────────────────────────────────────
 function getLevel(points) {
-  if (points < 100)  return { level: 1, name: "새싹",   icon: "🌱", next: 100 };
-  if (points < 300)  return { level: 2, name: "걸음마", icon: "🚶", next: 300 };
-  if (points < 600)  return { level: 3, name: "러너",   icon: "🏃", next: 600 };
-  if (points < 1000) return { level: 4, name: "용사",   icon: "⚔️",  next: 1000 };
-  if (points < 2000) return { level: 5, name: "영웅",   icon: "🦸", next: 2000 };
-  return               { level: 6, name: "전설",   icon: "🏆", next: null };
+  if (points < 100)  return { level: 1, name: "새싹",   Icon: Sprout,           iconColor: "text-green-400",  next: 100 };
+  if (points < 300)  return { level: 2, name: "걸음마", Icon: PersonStanding,   iconColor: "text-blue-400",   next: 300 };
+  if (points < 600)  return { level: 3, name: "러너",   Icon: Footprints,       iconColor: "text-indigo-400", next: 600 };
+  if (points < 1000) return { level: 4, name: "용사",   Icon: Swords,           iconColor: "text-red-400",    next: 1000 };
+  if (points < 2000) return { level: 5, name: "영웅",   Icon: Shield,           iconColor: "text-purple-400", next: 2000 };
+  return               { level: 6, name: "전설",   Icon: Trophy,           iconColor: "text-yellow-400", next: null };
 }
 
 export default function ProfilePage() {
@@ -273,7 +277,7 @@ export default function ProfilePage() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen">
-      <p className="text-lg animate-pulse">🌿 프로필 불러오는 중...</p>
+      <p className="text-lg animate-pulse flex items-center gap-2 text-gray-500"><Leaf className="w-5 h-5 text-green-400" strokeWidth={2} /> 프로필 불러오는 중...</p>
     </div>
   );
 
@@ -306,7 +310,7 @@ export default function ProfilePage() {
           <div className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-lg overflow-hidden shadow-sm">
             {stats.photoURL
               ? <img src={stats.photoURL} alt="프로필" className="w-full h-full object-cover" />
-              : <span>{levelInfo.icon}</span>
+              : <levelInfo.Icon size={20} className={levelInfo.iconColor} strokeWidth={1.8} />
             }
           </div>
         </div>
@@ -321,7 +325,7 @@ export default function ProfilePage() {
             <div className="flex-1 min-w-0">
               <p className="font-black text-base text-white truncate">{stats.displayName}</p>
               <p className="text-green-100 text-xs mt-0.5">
-                {levelInfo.icon} Lv.{levelInfo.level} {levelInfo.name}
+                <span className="inline-flex items-center gap-1"><levelInfo.Icon size={14} className="text-green-100" strokeWidth={2} /> Lv.{levelInfo.level} {levelInfo.name}</span>
               </p>
             </div>
           </div>
@@ -334,7 +338,7 @@ export default function ProfilePage() {
             <p className="text-xs text-green-100">
               {levelInfo.next
                 ? `다음 레벨까지 ${levelInfo.next - stats.totalPoints}P 남았어요`
-                : "최고 레벨 달성! 🎉"}
+                : "최고 레벨 달성!"}
             </p>
             <p className="text-xs font-bold text-white">
               {stats.totalPoints.toLocaleString()}P
@@ -358,7 +362,7 @@ export default function ProfilePage() {
                   className={`text-[10px] px-2 py-0.5 rounded-lg font-bold flex-shrink-0 transition-all
                     ${refCopied ? "bg-white text-green-600" : "bg-white/20 text-white active:bg-white/40"}`}
                 >
-                  {refCopied ? "✅" : "복사"}
+                  {refCopied ? <Check size={12} strokeWidth={2} /> : "복사"}
                 </button>
               </div>
             </div>
@@ -387,7 +391,7 @@ export default function ProfilePage() {
                 className={`flex-shrink-0 text-[10px] px-2 py-0.5 rounded-lg font-bold transition-all
                   ${uidCopied ? "bg-green-500 text-white" : "bg-green-100 text-green-600"}`}
               >
-                {uidCopied ? "✅" : "복사"}
+                {uidCopied ? <Check size={12} strokeWidth={2} /> : "복사"}
               </button>
             </div>
             <p className="text-[10px] text-gray-400">포인트·리워드 문의 시 고유번호를 알려주세요</p>
@@ -414,7 +418,7 @@ export default function ProfilePage() {
 
         {/* ── 획득 뱃지 ── */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h2 className="font-bold text-gray-700 mb-3">🏅 획득 뱃지</h2>
+          <h2 className="font-bold text-gray-700 mb-3 flex items-center gap-1"><Award className="w-4 h-4 text-yellow-500" strokeWidth={1.8} /> 획득 뱃지</h2>
           {earnedBadges.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-2">첫 플로깅을 완료하면 뱃지를 받아요!</p>
           ) : (
@@ -425,7 +429,7 @@ export default function ProfilePage() {
                   <div key={badge.id}
                     className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm
                       ${earned ? "bg-green-50 border border-green-200 text-green-700" : "bg-gray-100 text-gray-300"}`}>
-                    <span>{badge.icon}</span>
+                    <badge.Icon size={16} className={earned ? badge.iconColor : "text-gray-300"} strokeWidth={1.8} />
                     <span className="font-medium">{badge.label}</span>
                   </div>
                 );
@@ -445,11 +449,11 @@ export default function ProfilePage() {
         {/* ── 최근 플로깅 기록 ── */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <div className="flex justify-between items-center mb-3">
-            <h2 className="font-bold text-gray-700">📋 최근 플로깅</h2>
+            <h2 className="font-bold text-gray-700 flex items-center gap-1"><ClipboardList className="w-4 h-4" strokeWidth={1.8} /> 최근 플로깅</h2>
             <Link href="/history" className="text-xs text-green-500 font-medium">전체 보기 →</Link>
           </div>
           {recentRoutes.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-3">아직 플로깅 기록이 없어요. 지금 시작해볼까요? 🌿</p>
+            <p className="text-sm text-gray-400 text-center py-3">아직 플로깅 기록이 없어요. 지금 시작해볼까요?</p>
           ) : (
             <div className="space-y-2">
               {recentRoutes.map((route) => {
@@ -462,7 +466,7 @@ export default function ProfilePage() {
                 return (
                   <div key={route.id} className="flex justify-between items-center py-2 border-b last:border-0">
                     <div>
-                      <p className="text-sm font-medium text-gray-700">📍 {(route.distance || 0).toFixed(2)} km</p>
+                      <p className="text-sm font-medium text-gray-700 flex items-center gap-0.5"><MapPin size={13} className="text-green-500" strokeWidth={1.8} /> {(route.distance || 0).toFixed(2)} km</p>
                       <p className="text-xs text-gray-400">
                         <span className="text-green-600 font-medium">{weekLabel}</span>
                         {" · "}{dateStr}
@@ -505,7 +509,7 @@ export default function ProfilePage() {
                     return (
                       <div key={u.uid} className="flex justify-between items-center py-2 border-b last:border-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">🌿</span>
+                          <Leaf size={18} className="text-green-500" strokeWidth={1.8} />
                           <div>
                             <p className="text-sm font-medium text-gray-700">{u.displayName}</p>
                             {dateStr && <p className="text-xs text-gray-400">{dateStr} 가입</p>}
@@ -584,7 +588,7 @@ export default function ProfilePage() {
             {deleteStep === 1 && (
               <>
                 <div className="text-center mb-4">
-                  <p className="text-4xl mb-2">😢</p>
+                  <div className="mb-2"><Frown size={40} className="text-gray-400 mx-auto" strokeWidth={1.5} /></div>
                   <h2 className="text-lg font-black text-gray-800">정말 탈퇴하시겠어요?</h2>
                   <p className="text-sm text-gray-500 mt-2 leading-relaxed">
                     탈퇴하면 아래 데이터가 모두 삭제되며<br />
@@ -618,7 +622,7 @@ export default function ProfilePage() {
             {deleteStep === 2 && (
               <>
                 <div className="text-center mb-4">
-                  <p className="text-4xl mb-2">⚠️</p>
+                  <div className="mb-2"><AlertTriangle size={40} className="text-red-400 mx-auto" strokeWidth={1.5} /></div>
                   <h2 className="text-lg font-black text-red-600">최종 확인</h2>
                   <p className="text-sm text-gray-500 mt-2 leading-relaxed">
                     이 작업은 되돌릴 수 없습니다.<br />

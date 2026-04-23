@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Rocket, KeyRound, Lock, Users, User, School, Clover } from "lucide-react";
+import { Rocket, KeyRound, Lock, Users, User, School, Clover, Gift, ClipboardCopy, Check, Hourglass, Loader } from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
   doc, setDoc, getDoc, updateDoc, deleteDoc,
@@ -254,7 +254,7 @@ export default function GroupPage() {
         {/* ═══════════ 복원 중 로딩 ═══════════ */}
         {restoring && (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <div className="text-4xl animate-bounce">👥</div>
+            <div className="animate-bounce"><Users size={40} className="text-sky-400" strokeWidth={1.5} /></div>
             <p className="text-sm text-gray-400">내 그룹 확인 중...</p>
           </div>
         )}
@@ -286,7 +286,7 @@ export default function GroupPage() {
             )}
 
             <div className="bg-sky-50 rounded-2xl p-4 border border-sky-100">
-              <h2 className="font-bold text-sky-700 mb-2">🎁 그룹 보너스 포인트</h2>
+              <h2 className="font-bold text-sky-700 mb-2 flex items-center gap-1"><Gift size={16} className="text-sky-500" strokeWidth={2} /> 그룹 보너스 포인트</h2>
               {[{ s:"2명", b:"+10P" },{ s:"3명", b:"+15P" },{ s:"5명", b:"+25P" },{ s:"10명", b:"+50P" }].map(({s,b}) => (
                 <div key={s} className="flex justify-between text-sm py-1 border-b border-sky-100 last:border-0">
                   <span className="text-gray-600">그룹 {s}</span>
@@ -321,7 +321,9 @@ export default function GroupPage() {
               <button onClick={() => handleCopyCode(groupCode)}
                 className={`w-full py-3 rounded-xl font-medium text-sm transition-colors
                   ${copied ? "bg-green-100 text-green-600" : "bg-sky-50 text-sky-600 border border-sky-200"}`}>
-                {copied ? "✅ 복사됨!" : "📋 코드 및 링크 복사하기"}
+                <span className="flex items-center justify-center gap-1">
+                  {copied ? <><Check size={14} strokeWidth={2} /> 복사됨!</> : <><ClipboardCopy size={14} strokeWidth={2} /> 코드 및 링크 복사하기</>}
+                </span>
               </button>
             </div>
 
@@ -368,11 +370,11 @@ export default function GroupPage() {
                 {loading ? "시작 중..." :
                   (groupData.members?.length || 0) < 2
                     ? "멤버를 기다리는 중... (최소 2명)"
-                    : `🚀 플로깅 시작 (${groupData.members?.length}명)`}
+                    : `플로깅 시작 (${groupData.members?.length}명)`}
               </button>
             ) : (
               <div className="bg-white rounded-2xl p-5 text-center shadow-sm">
-                <div className="text-3xl mb-2 animate-bounce">⏳</div>
+                <div className="mb-2 animate-bounce"><Hourglass size={30} className="text-sky-400" strokeWidth={1.5} /></div>
                 <p className="text-gray-600 font-medium">방장이 시작하길 기다리는 중...</p>
                 <p className="text-sm text-gray-400 mt-1">시작되면 자동으로 이동해요</p>
               </div>
