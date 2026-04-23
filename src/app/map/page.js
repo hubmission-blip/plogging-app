@@ -1107,41 +1107,24 @@ function MapPageInner() {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
-      // 타임아웃 5초 — 인덱스 미생성 등으로 쿼리가 멈추면 무시하고 진행
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("timeout")), 5000)
-      );
-
       let todayCount = 0;
       try {
-        // 복합 인덱스 필요: userId + createdAt
+        // userId만으로 조회 후 클라이언트에서 날짜 필터 (인덱스 불필요)
         const q = query(
           collection(db, "routes"),
-          where("userId", "==", user.uid),
-          where("createdAt", ">=", todayStart)
+          where("userId", "==", user.uid)
         );
-        const snap = await Promise.race([getDocs(q), timeoutPromise]);
-        todayCount = snap.size;
-      } catch (indexErr) {
-        // 인덱스 없으면 userId만으로 조회 후 클라이언트 필터
-        console.warn("복합쿼리 실패, 폴백:", indexErr.message);
-        try {
-          const fallbackQ = query(
-            collection(db, "routes"),
-            where("userId", "==", user.uid)
-          );
-          const fallbackSnap = await Promise.race([getDocs(fallbackQ), timeoutPromise]);
-          fallbackSnap.forEach(d => {
-            const ca = d.data().createdAt;
-            if (ca) {
-              const docDate = ca.toDate ? ca.toDate() : new Date(ca);
-              if (docDate >= todayStart) todayCount++;
-            }
-          });
-        } catch {
-          // 폴백도 실패하면 체크 건너뜀
-          return null;
-        }
+        const snap = await getDocs(q);
+        snap.forEach(d => {
+          const ca = d.data().createdAt;
+          if (ca) {
+            const docDate = ca.toDate ? ca.toDate() : new Date(ca);
+            if (docDate >= todayStart) todayCount++;
+          }
+        });
+      } catch {
+        // 쿼리 실패 시 체크 건너뜀
+        return null;
       }
 
       if (todayCount >= DAILY_MAX) {
@@ -1415,12 +1398,16 @@ function MapPageInner() {
       startTracking();
       return;
     }
-    // 2. 중복 플로깅 체크
-    const msg = await checkPloggingLimit();
-    if (msg) {
-      setDuplicateMsg(msg);
-      setShowDuplicateWarning(true);
-      return;
+    // 2. 중복 플로깅 체크 (실패해도 시작은 진행)
+    try {
+      const msg = await checkPloggingLimit();
+      if (msg) {
+        setDuplicateMsg(msg);
+        setShowDuplicateWarning(true);
+        return;
+      }
+    } catch (e) {
+      console.error("중복 체크 실패, 무시하고 진행:", e);
     }
     setSessionTumblerCerts([]); // 텀블러 인증 초기화
     setSessionCupReturnCerts([]); // 컵 반환 인증 초기화
