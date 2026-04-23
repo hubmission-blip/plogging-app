@@ -8,6 +8,7 @@ import {
   Flower2, TreeDeciduous, Fish, Cherry, Citrus,
   Receipt, Coffee, CupSoda, Pipette, Package, ShieldCheck, Recycle, Smartphone, Sprout,
   Bike, UtensilsCrossed, Sun, RotateCcw, ShoppingBag, Container,
+  Flame, Droplets, Gauge, Award, Trophy, Bus, Coins, Lightbulb, AlertTriangle,
 } from "lucide-react";
 
 // 지역별 아이콘 매핑
@@ -76,9 +77,9 @@ const SECTIONS = [
       { label: "지급 방법", value: "현금·상품권·지역화폐 (지자체별 상이)" },
     ],
     incentives: [
-      { icon: "💡", label: "전기 절감 5% 이상",    point: "최대 90,000원/년" },
-      { icon: "🔥", label: "도시가스 절감 5% 이상", point: "최대 90,000원/년" },
-      { icon: "💧", label: "상수도 절감 5% 이상",   point: "최대 30,000원/년" },
+      { Icon: Zap,      iconColor: "text-yellow-500", label: "전기 절감 5% 이상",    point: "최대 90,000원/년" },
+      { Icon: Flame,    iconColor: "text-orange-500", label: "도시가스 절감 5% 이상", point: "최대 90,000원/년" },
+      { Icon: Droplets, iconColor: "text-blue-400",   label: "상수도 절감 5% 이상",   point: "최대 30,000원/년" },
     ],
     howto: [
       "cpoint.or.kr 접속 후 회원가입",
@@ -86,7 +87,7 @@ const SECTIONS = [
       "에너지 사용량 자동 집계",
       "반기별 절감량 확인 후 인센티브 수령",
     ],
-    tip: "💡 감축률 5% 이상이면 감축 인센티브, 5% 미만이라도 연속 달성 시 유지 인센티브 지급",
+    tip: "감축률 5% 이상이면 감축 인센티브, 5% 미만이라도 연속 달성 시 유지 인센티브 지급",
   },
   {
     id: "car",
@@ -108,9 +109,9 @@ const SECTIONS = [
       { label: "지급 주기", value: "연 1회 (10월 기준 정산)" },
     ],
     incentives: [
-      { icon: "🅰️", label: "감축량/감축률 중 유리한 방식 적용", point: "최소 20,000원" },
-      { icon: "🥈", label: "주행거리 감축 달성",                 point: "20,000~100,000원" },
-      { icon: "🏆", label: "최대 인센티브",                      point: "최대 100,000원/년" },
+      { Icon: Gauge,   iconColor: "text-orange-500", label: "감축량/감축률 중 유리한 방식 적용", point: "최소 20,000원" },
+      { Icon: Award,   iconColor: "text-gray-400",   label: "주행거리 감축 달성",                 point: "20,000~100,000원" },
+      { Icon: Trophy,  iconColor: "text-yellow-500",  label: "최대 인센티브",                      point: "최대 100,000원/년" },
     ],
     howto: [
       "car.cpoint.or.kr 접속 후 회원가입",
@@ -118,7 +119,7 @@ const SECTIONS = [
       "신청 시 계기판 주행거리 사진 등록",
       "10월 확인 시 계기판 사진 재등록 후 인센티브 수령",
     ],
-    tip: "⚠️ 전기·수소·하이브리드 등 친환경 차량과 영업용 차량은 참여 불가",
+    tip: "전기·수소·하이브리드 등 친환경 차량과 영업용 차량은 참여 불가",
   },
   {
     id: "green",
@@ -145,7 +146,7 @@ const SECTIONS = [
       "제휴 매장에서 실천 후 앱으로 인증",
       "적립된 포인트로 현금·상품권 교환 또는 기부",
     ],
-    tip: "💡 항목별 포인트는 예산 및 실적에 따라 변동될 수 있으니 공식 누리집에서 최신 단가를 확인하세요",
+    tip: "항목별 포인트는 예산 및 실적에 따라 변동될 수 있으니 공식 누리집에서 최신 단가를 확인하세요",
   },
   {
     id: "greencard",
@@ -168,10 +169,10 @@ const SECTIONS = [
       { label: "연계 제도", value: "탄소중립포인트·에코마일리지 연동 가능" },
     ],
     incentives: [
-      { icon: "🌿", label: "친환경 인증제품 구매 시",     point: "추가 포인트 적립" },
-      { icon: "🚌", label: "대중교통 이용 시",             point: "최대 20% 적립" },
-      { icon: "⚡", label: "전기차 충전 시 (V3 카드)",     point: "최대 40% 적립" },
-      { icon: "🏞️", label: "국립공원·휴양림 이용 시",    point: "무료입장 또는 할인" },
+      { Icon: ShieldCheck, iconColor: "text-emerald-500", label: "친환경 인증제품 구매 시",     point: "추가 포인트 적립" },
+      { Icon: Bus,         iconColor: "text-blue-500",    label: "대중교통 이용 시",             point: "최대 20% 적립" },
+      { Icon: Zap,         iconColor: "text-yellow-500",  label: "전기차 충전 시 (V3 카드)",     point: "최대 40% 적립" },
+      { Icon: TreeDeciduous, iconColor: "text-green-500", label: "국립공원·휴양림 이용 시",    point: "무료입장 또는 할인" },
     ],
     howto: [
       "green-card.co.kr 접속 후 카드사 선택",
@@ -179,7 +180,7 @@ const SECTIONS = [
       "탄소중립포인트·에코마일리지 계정과 연동",
       "친환경 소비 시 에코머니 포인트 자동 적립",
     ],
-    tip: "💡 그린카드로 탄소중립포인트 인센티브를 에코머니 포인트로 받으면 현금처럼 사용 가능",
+    tip: "그린카드로 탄소중립포인트 인센티브를 에코머니 포인트로 받으면 현금처럼 사용 가능",
   },
 ];
 
@@ -227,12 +228,12 @@ function SectionCard({ sec, greenItems }) {
           {/* 인센티브 */}
           {sec.incentives && sec.incentives.length > 0 && (
             <div>
-              <p className="text-xs font-bold text-gray-500 mb-2">💰 인센티브 혜택</p>
+              <p className="text-xs font-bold text-gray-500 mb-2 flex items-center gap-1"><Coins size={13} className="text-yellow-500" strokeWidth={2} /> 인센티브 혜택</p>
               <div className="space-y-1.5">
                 {sec.incentives.map((item) => (
                   <div key={item.label} className="flex justify-between items-center bg-gray-50 rounded-xl px-3 py-2">
                     <span className="text-xs text-gray-600 flex items-center gap-1.5">
-                      <span>{item.icon}</span>{item.label}
+                      <item.Icon size={14} className={item.iconColor} strokeWidth={1.8} />{item.label}
                     </span>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${sec.badgeBg}`}>
                       {item.point}
@@ -294,7 +295,8 @@ function SectionCard({ sec, greenItems }) {
           </div>
 
           {/* 팁 */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2 flex items-start gap-1.5">
+            <Lightbulb size={14} className="text-yellow-500 flex-shrink-0 mt-0.5" strokeWidth={2} />
             <p className="text-xs text-yellow-700 leading-relaxed">{sec.tip}</p>
           </div>
 
