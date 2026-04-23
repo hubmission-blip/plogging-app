@@ -39,26 +39,30 @@ export const RECYCLED_PRODUCT_BONUS = 30; // 재생원료 제품구매 보너스
 export const ECO_PRODUCT_BONUS = 30; // 친환경제품 구매 보너스
 export const QUALITY_RECYCLE_BONUS = 20; // 고품질 재활용품 배출 보너스
 
-export function calculatePoints({ distanceKm, groupSize = 1, ecomileageLinked = false, trashCategories = [], tumblerUsed = false }) {
+export function calculatePoints({ distanceKm = 0, groupSize = 1, ecomileageLinked = false, trashCategories = [], tumblerUsed = false }) {
+  // 입력값 방어: undefined, NaN, 음수 → 0으로 치환
+  const safeDist = Math.max(Number(distanceKm) || 0, 0);
+  const safeGroupSize = Math.min(Math.max(Math.floor(Number(groupSize) || 1), 1), 100);
+
   let points = 0;
   let breakdown = [];
 
-  // 거리 포인트: 1km = 50점
-  const distancePoints = Math.floor(distanceKm * 50);
+  // 거리 포��트: 1km = 50점
+  const distancePoints = Math.floor(safeDist * 50);
   points += distancePoints;
-  breakdown.push({ label: `거리 (${distanceKm.toFixed(2)}km)`, points: distancePoints });
+  breakdown.push({ label: `거리 (${safeDist.toFixed(2)}km)`, points: distancePoints });
 
   // 완주 보너스: 2km 이상
-  if (distanceKm >= 2) {
+  if (safeDist >= 2) {
     points += 100;
     breakdown.push({ label: "완주 보너스 🎉", points: 100 });
   }
 
   // 그룹 참여 보너스: 그룹원 수 × 5
-  if (groupSize > 1) {
-    const groupBonus = groupSize * 5;
+  if (safeGroupSize > 1) {
+    const groupBonus = safeGroupSize * 5;
     points += groupBonus;
-    breakdown.push({ label: `그룹 참여 보너스 (${groupSize}명)`, points: groupBonus });
+    breakdown.push({ label: `그룹 참여 보너스 (${safeGroupSize}명)`, points: groupBonus });
   }
 
   // 분리수거 보너스: 재활용 카테고리 수량 × 5점 (일반쓰레기 제외)

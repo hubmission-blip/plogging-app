@@ -1039,6 +1039,28 @@ function MapPageInner() {
   const [uploading, setUploading]                   = useState(false);
   const pendingDataRef = useRef(null);
 
+  // ── 플로깅 종료 후 인증 대기 데이터 복원 ─────────────────────
+  const PENDING_KEY = "pendingPloggingData";
+  const PENDING_EXPIRY_MS = 60 * 60 * 1000; // 1시간
+
+  // 페이지 마운트 시 pending 데이터가 있으면 복원
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PENDING_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      // 만료 체크
+      if (Date.now() - saved.savedAt > PENDING_EXPIRY_MS) {
+        localStorage.removeItem(PENDING_KEY);
+        return;
+      }
+      // 유효한 데이터 → 복원
+      pendingDataRef.current = saved.data;
+      if (saved.tumblerCerts) setSessionTumblerCerts(saved.tumblerCerts);
+      setShowPhotoModal(true);
+    } catch { /* 파싱 실패 → 무시 */ }
+  }, []);
+
   // ── 텀블러/다회용컵 인증 ──────────────────────────────────
   const [showTumblerModal, setShowTumblerModal]     = useState(false);
   const [sessionTumblerCerts, setSessionTumblerCerts] = useState([]); // 플로깅 중 텀블러 인증 기록
@@ -1374,6 +1396,8 @@ function MapPageInner() {
       if (groupId && groupType !== "club") {
         try {
           await updateDoc(doc(db, "groups", groupId), { status: "finished" }).catch(() => {});
+          // 그룹 종료 → localStorage 정리 (그룹 페이지 복귀 시 복원 방지)
+          try { localStorage.removeItem("activeGroupCode"); } catch {}
         } catch (e3) { console.error("그룹 상태 업데이트 실패:", e3); }
       }
 
@@ -1416,9 +1440,16 @@ function MapPageInner() {
   };
 
   // ─── 종료 버튼 ───────────────────────────────────────
-  const handleStop = () => {
+  const stoppingRef = useRef(false); // 더블탭 방지
+  const handleStop = async () => {
+    if (stoppingRef.current) return; // 중복 클릭 방지
+    stoppingRef.current = true;
     stopTracking();
-    if (path.length < 2) return;
+
+    if (path.length < 2) {
+      stoppingRef.current = false;
+      return;
+    }
 
     const errors = [];
     if (!noPointsOverride.current) {
@@ -1433,10 +1464,11 @@ function MapPageInner() {
     if (errors.length > 0) {
       setValidationErrors(errors);
       setShowValidationFail(true);
+      stoppingRef.current = false;
       return;
     }
 
-    const { total, breakdown } = calculatePoints({ distanceKm: distance, groupSize, ecomileageLinked });
+    const { total, breakdown } = calculatePoints({ distanceKm: distance, groupSize: Math.max(1, groupSize || 1), ecomileageLinked });
     const earnedPoints = noPointsOverride.current ? 0 : total;
     const earnedBreakdown = noPointsOverride.current
       ? [{ label: "하루 횟수 초과 (포인트 미지급)", points: 0 }]
@@ -1450,14 +1482,37 @@ function MapPageInner() {
 
     if (earnedPoints === 0) {
       // 포인트 없음 → 사진 건너뛰고 바로 저장
-      saveRoute({ routePath: [...path], routeDistance: distance,
-        routeDuration: duration, routeStopCount: stopCount,
-        points: 0, photoUrl: null });
+      try {
+        await saveRoute({ routePath: [...path], routeDistance: distance,
+          routeDuration: duration, routeStopCount: stopCount,
+          points: 0, photoUrl: null });
+      } catch (e) { console.error("저장 실패:", e); }
       setResult({ distance, total: 0, breakdown: earnedBreakdown, verified: false });
       pendingDataRef.current = null;
+      try { localStorage.removeItem(PENDING_KEY); } catch {}
+      noPointsOverride.current = false; // 다음 세션을 위해 초기화
     } else {
+      // localStorage에 인증 대기 데이터 저장 (페이지 이탈 대비)
+      try {
+        const toSave = { ...pendingDataRef.current };
+        // 좌표 경량화: 소수점 5자리 (약 1m 정밀도)
+        if (toSave.routePath) {
+          toSave.routePath = toSave.routePath.map(p => ({
+            lat: Math.round(p.lat * 1e5) / 1e5,
+            lng: Math.round(p.lng * 1e5) / 1e5,
+          }));
+        }
+        localStorage.setItem(PENDING_KEY, JSON.stringify({
+          data: toSave,
+          tumblerCerts: sessionTumblerCerts.length > 0 ? sessionTumblerCerts : null,
+          groupId: groupId || null,
+          groupType: groupType || null,
+          savedAt: Date.now(),
+        }));
+      } catch {}
       setShowPhotoModal(true);
     }
+    stoppingRef.current = false;
   };
 
   const handlePhotoConfirm = async (file, trashCategories = []) => {
@@ -1493,7 +1548,11 @@ function MapPageInner() {
       setShowPhotoModal(false);
       setResult({ distance: p.routeDistance, total: finalPoints, breakdown: finalBreakdown, verified: true });
     } catch (e) { alert("사진 업로드 실패: " + e.message); }
-    finally { setUploading(false); pendingDataRef.current = null; }
+    finally {
+      setUploading(false);
+      pendingDataRef.current = null;
+      try { localStorage.removeItem(PENDING_KEY); } catch {}
+    }
   };
 
   const handlePhotoSkip = async () => {
@@ -1504,6 +1563,7 @@ function MapPageInner() {
     setResult({ distance: p.routeDistance, total: 0,
       breakdown: [{ label: "사진 미인증 (포인트 미지급)", points: 0 }], verified: false });
     pendingDataRef.current = null;
+    try { localStorage.removeItem(PENDING_KEY); } catch {}
   };
 
   // ─── 텀블러 인증 처리 (플로깅 중 / 독립) ──────────────
@@ -1813,6 +1873,8 @@ function MapPageInner() {
           onContinue={() => {
             setShowDuplicateWarning(false);
             noPointsOverride.current = true;
+            setSessionTumblerCerts([]);
+            setSessionCupReturnCerts([]);
             startTracking();
           }}
           onCancel={() => setShowDuplicateWarning(false)}

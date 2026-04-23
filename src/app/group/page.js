@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-  doc, setDoc, getDoc, updateDoc,
+  doc, setDoc, getDoc, updateDoc, deleteDoc,
   serverTimestamp, arrayUnion,
   onSnapshot,
 } from "firebase/firestore";
@@ -33,12 +33,71 @@ export default function GroupPage() {
   const [error,   setError]   = useState("");
   const [copied,  setCopied]  = useState(false);
   const [showCodeInput, setShowCodeInput] = useState(false);
+  const [restoring, setRestoring] = useState(true); // 초기 복원 중 여부
+
+  // ── 페이지 진입 시 활성 그룹 자동 복원 ─────────────────────
+  useEffect(() => {
+    if (!user) { setRestoring(false); return; }
+    try {
+      const saved = localStorage.getItem("activeGroupCode");
+      if (!saved) { setRestoring(false); return; }
+      // Firestore에서 그룹 유효성 확인
+      getDoc(doc(db, "groups", saved)).then((snap) => {
+        if (!snap.exists()) {
+          localStorage.removeItem("activeGroupCode");
+          setRestoring(false);
+          return;
+        }
+        const data = snap.data();
+        // 만료 또는 종료된 그룹 → 정리
+        if (data.status === "finished") {
+          localStorage.removeItem("activeGroupCode");
+          setRestoring(false);
+          return;
+        }
+        // 내가 멤버인지 확인
+        const isMember = (data.members || []).some((m) => m.uid === user.uid);
+        if (!isMember) {
+          localStorage.removeItem("activeGroupCode");
+          setRestoring(false);
+          return;
+        }
+        // 30분 이상 plogging 상태 → 만료 처리
+        if (data.status === "plogging") {
+          const ts = data.updatedAt?.toDate?.() || data.createdAt?.toDate?.() || null;
+          const stuckMin = ts ? (Date.now() - ts.getTime()) / 60000 : 999;
+          if (stuckMin > 30) {
+            updateDoc(doc(db, "groups", saved), { status: "finished" }).catch(() => {});
+            localStorage.removeItem("activeGroupCode");
+            setRestoring(false);
+            return;
+          }
+        }
+        // 유효한 그룹 → 복원
+        setGroupCode(saved);
+        setMode("waiting");
+        setRestoring(false);
+      }).catch(() => {
+        localStorage.removeItem("activeGroupCode");
+        setRestoring(false);
+      });
+    } catch {
+      setRestoring(false);
+    }
+  }, [user]);
 
   // ── 1회성: 실시간 리슨 ────────────────────────────────────
   useEffect(() => {
     if (!groupCode) return;
     const unsub = onSnapshot(doc(db, "groups", groupCode), (snap) => {
-      if (snap.exists()) setGroupData({ id: snap.id, ...snap.data() });
+      if (snap.exists()) {
+        setGroupData({ id: snap.id, ...snap.data() });
+      } else {
+        // 그룹 문서가 삭제됨 → 홈으로 이동
+        setError("그룹이 삭제되었어요.");
+        setMode("home"); setGroupCode(""); setGroupData(null);
+        try { localStorage.removeItem("activeGroupCode"); } catch {}
+      }
     });
     return () => unsub();
   }, [groupCode]);
@@ -46,11 +105,12 @@ export default function GroupPage() {
   useEffect(() => {
     if (groupData?.status === "plogging" && mode === "waiting") {
       // 30분 이상 plogging 상태면 방치된 것 → 만료 처리
-      const created = groupData.createdAt?.toDate?.() || null;
-      const stuckMinutes = created ? (Date.now() - created.getTime()) / 60000 : 999;
+      const ts = groupData.updatedAt?.toDate?.() || groupData.createdAt?.toDate?.() || null;
+      const stuckMinutes = ts ? (Date.now() - ts.getTime()) / 60000 : 999;
       if (stuckMinutes > 30) {
         updateDoc(doc(db, "groups", groupCode), { status: "finished" }).catch(() => {});
         setError("이 그룹은 시간이 만료되었어요.");
+        try { localStorage.removeItem("activeGroupCode"); } catch {}
         setMode("home"); setGroupCode(""); setGroupData(null);
         return;
       }
@@ -58,6 +118,7 @@ export default function GroupPage() {
     }
     if (groupData?.status === "finished" && mode === "waiting") {
       setError("이 그룹은 종료되었어요.");
+      try { localStorage.removeItem("activeGroupCode"); } catch {}
       setMode("home"); setGroupCode(""); setGroupData(null);
     }
   }, [groupData, mode, groupCode, router]);
@@ -80,6 +141,7 @@ export default function GroupPage() {
         expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
       });
       setGroupCode(code); setMode("waiting");
+      try { localStorage.setItem("activeGroupCode", code); } catch {}
     } catch (e) { setError("그룹 생성 실패: " + e.message); }
     finally { setLoading(false); }
   };
@@ -108,12 +170,17 @@ export default function GroupPage() {
       if (data.status !== "waiting") { setError("이미 플로깅이 시작된 그룹이에요."); return; }
 
       if (data.members.length >= 10) { setError("그룹 최대 인원(10명)을 초과했어요."); return; }
-      if (data.members.some((m) => m.uid === user.uid)) { setError("이미 참여 중인 그룹이에요."); setGroupCode(code); setMode("waiting"); return; }
+      if (data.members.some((m) => m.uid === user.uid)) {
+        setError("이미 참여 중인 그룹이에요."); setGroupCode(code); setMode("waiting");
+        try { localStorage.setItem("activeGroupCode", code); } catch {}
+        return;
+      }
       const name = user.displayName || user.email?.split("@")[0] || "멤버";
       await updateDoc(doc(db, "groups", code), {
         members: arrayUnion({ uid: user.uid, name, photoURL: user.photoURL || "" }),
       });
       setGroupCode(code); setMode("waiting");
+      try { localStorage.setItem("activeGroupCode", code); } catch {}
     } catch (e) { setError("참여 실패: " + e.message); }
     finally { setLoading(false); }
   };
@@ -122,13 +189,33 @@ export default function GroupPage() {
     if (!groupData || groupData.hostUid !== user?.uid) return;
     setLoading(true);
     try {
-      await updateDoc(doc(db, "groups", groupCode), { status: "plogging" });
+      await updateDoc(doc(db, "groups", groupCode), { status: "plogging", updatedAt: serverTimestamp() });
       router.push(`/map?groupId=${groupCode}&groupSize=${groupData.members.length}`);
     } catch (e) { setError("시작 실패: " + e.message); }
     finally { setLoading(false); }
   };
 
-  const handleLeave = () => {
+  const handleLeave = async () => {
+    if (!groupCode || !user) {
+      setGroupCode(""); setGroupData(null); setMode("home"); setJoinCode(""); setError("");
+      return;
+    }
+    try {
+      const isHost = groupData?.hostUid === user.uid;
+      if (isHost) {
+        // 방장이 나가면 그룹 전체 종료
+        await updateDoc(doc(db, "groups", groupCode), { status: "finished" }).catch(() => {});
+      } else {
+        // 멤버가 나가면 members 배열에서 제거
+        const snap = await getDoc(doc(db, "groups", groupCode));
+        if (snap.exists()) {
+          const data = snap.data();
+          const newMembers = (data.members || []).filter((m) => m.uid !== user.uid);
+          await updateDoc(doc(db, "groups", groupCode), { members: newMembers });
+        }
+      }
+    } catch (e) { console.error("그룹 나가기 실패:", e); }
+    try { localStorage.removeItem("activeGroupCode"); } catch {}
     setGroupCode(""); setGroupData(null); setMode("home"); setJoinCode(""); setError("");
   };
 
@@ -163,8 +250,16 @@ export default function GroupPage() {
 
       <div className="px-4 mt-4 space-y-4">
 
+        {/* ═══════════ 복원 중 로딩 ═══════════ */}
+        {restoring && (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <div className="text-4xl animate-bounce">👥</div>
+            <p className="text-sm text-gray-400">내 그룹 확인 중...</p>
+          </div>
+        )}
+
         {/* ═══════════ ⚡ 1회성 그룹 홈 ═══════════ */}
-        {mode === "home" && (
+        {!restoring && mode === "home" && (
           <>
             <div className="flex gap-2">
               <button onClick={handleCreate} disabled={loading}
@@ -215,7 +310,7 @@ export default function GroupPage() {
         )}
 
         {/* ═══════════ ⚡ 1회성 대기실 ═══════════ */}
-        {mode === "waiting" && groupData && (
+        {!restoring && mode === "waiting" && groupData && (
           <>
             <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
               <p className="text-sm text-gray-400 mb-1">그룹 코드</p>

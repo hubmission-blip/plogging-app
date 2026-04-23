@@ -499,7 +499,7 @@ export default function ClubPage() {
     if (!selectedClub || selectedClub.hostUid !== user?.uid) return;
     setLoading(true);
     try {
-      await updateDoc(doc(db, "clubs", selectedClub.code), { status: "plogging" });
+      await updateDoc(doc(db, "clubs", selectedClub.code), { status: "plogging", updatedAt: serverTimestamp() });
       router.push(`/map?groupId=${selectedClub.code}&groupSize=${selectedClub.members?.length || 1}&groupType=club`);
     } catch (e) { setError("시작 실패: " + e.message); }
     finally { setLoading(false); }

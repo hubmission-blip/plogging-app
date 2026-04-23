@@ -391,6 +391,11 @@ export function useLocation({ onSpeedViolation, backgroundModeEnabled = false } 
     }
 
     // ── 웹 기본 GPS 추적 (항상 실행) ────────────────────
+    if (!navigator.geolocation) {
+      console.error("GPS를 지원하지 않는 환경입니다.");
+      stopTracking();
+      return;
+    }
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         processPosition(
@@ -406,7 +411,14 @@ export function useLocation({ onSpeedViolation, backgroundModeEnabled = false } 
           onSpeedViolation();
         }
       },
-      (err) => console.error("GPS 오류:", err),
+      (err) => {
+        console.error("GPS 오류:", err);
+        // 권한 거부(PERMISSION_DENIED) → 추적 중단
+        if (err.code === 1) {
+          stopTracking();
+          alert("위치 권한이 거부되었어요. 설정에서 위치 권한을 허용해주세요.");
+        }
+      },
       {
         enableHighAccuracy: true,
         maximumAge: 1000,
