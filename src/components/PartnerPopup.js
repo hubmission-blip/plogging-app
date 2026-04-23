@@ -23,7 +23,7 @@ const PARTNERS = [
     name: "큐엠씨코리아",
     desc: "친환경 소재 제조 및 에코 리워드 파트너사",
     benefit: "에코백·친환경 제품 포인트 교환 가능",
-    contact: "https://example.com",
+    contact: "https://smartsmpa.tistory.com/9626",
     badge: "공식 파트너",
     badgeColor: "bg-green-100 text-green-700",
   },

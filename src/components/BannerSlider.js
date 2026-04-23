@@ -54,7 +54,7 @@ const BANNERS = [
     id: 8, priority: 8, region: "전국",
     bg: "from-yellow-400 to-yellow-500", emoji: "⭐",
     title: "큐엠씨코리아 파트너", sub: "에코 리워드 파트너십",
-    link: "https://example.com", tag: "파트너",
+    link: "https://smartsmpa.tistory.com/9626", tag: "파트너",
   },
   {
     id: 9, priority: 9, region: "전국",
