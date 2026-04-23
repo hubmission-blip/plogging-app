@@ -45,7 +45,20 @@ export default function GroupPage() {
 
   useEffect(() => {
     if (groupData?.status === "plogging" && mode === "waiting") {
+      // 30분 이상 plogging 상태면 방치된 것 → 만료 처리
+      const created = groupData.createdAt?.toDate?.() || null;
+      const stuckMinutes = created ? (Date.now() - created.getTime()) / 60000 : 999;
+      if (stuckMinutes > 30) {
+        updateDoc(doc(db, "groups", groupCode), { status: "finished" }).catch(() => {});
+        setError("이 그룹은 시간이 만료되었어요.");
+        setMode("home"); setGroupCode(""); setGroupData(null);
+        return;
+      }
       router.push(`/map?groupId=${groupCode}&groupSize=${groupData.members.length}`);
+    }
+    if (groupData?.status === "finished" && mode === "waiting") {
+      setError("이 그룹은 종료되었어요.");
+      setMode("home"); setGroupCode(""); setGroupData(null);
     }
   }, [groupData, mode, groupCode, router]);
 
@@ -79,7 +92,21 @@ export default function GroupPage() {
       const snap = await getDoc(doc(db, "groups", code));
       if (!snap.exists()) { setError("존재하지 않는 그룹 코드예요."); return; }
       const data = snap.data();
+
+      // ── 방치된 그룹 처리 (30분 이상 plogging 상태) ──
+      if (data.status === "plogging") {
+        const created = data.createdAt?.toDate?.() || null;
+        const stuckMinutes = created ? (Date.now() - created.getTime()) / 60000 : 999;
+        if (stuckMinutes > 30) {
+          // 오래된 그룹 → 만료 처리 후 안내
+          try { await updateDoc(doc(db, "groups", code), { status: "finished" }); } catch {}
+          setError("이 그룹은 시간이 만료되었어요. 새 그룹을 만들어주세요."); return;
+        }
+        setError("현재 플로깅이 진행 중인 그룹이에요."); return;
+      }
+      if (data.status === "finished") { setError("이미 종료된 그룹이에요. 새 그룹을 만들어주세요."); return; }
       if (data.status !== "waiting") { setError("이미 플로깅이 시작된 그룹이에요."); return; }
+
       if (data.members.length >= 10) { setError("그룹 최대 인원(10명)을 초과했어요."); return; }
       if (data.members.some((m) => m.uid === user.uid)) { setError("이미 참여 중인 그룹이에요."); setGroupCode(code); setMode("waiting"); return; }
       const name = user.displayName || user.email?.split("@")[0] || "멤버";

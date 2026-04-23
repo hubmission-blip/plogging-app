@@ -250,7 +250,24 @@ export default function ClubPage() {
     setBrowseLoading(true);
     try {
       const snap = await getDocs(collection(db, "clubs"));
-      setAllClubs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const clubs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+      // ── plogging 상태가 30분 이상 방치된 동아리 자동 복구 ──
+      clubs.forEach(async (club) => {
+        if (club.status === "plogging") {
+          const updatedAt = club.updatedAt?.toDate?.() || club.createdAt?.toDate?.() || null;
+          const stuckMinutes = updatedAt ? (Date.now() - updatedAt.getTime()) / 60000 : 999;
+          if (stuckMinutes > 30) {
+            try {
+              await updateDoc(doc(db, "clubs", club.code || club.id), { status: "active" });
+              club.status = "active"; // 로컬 상태도 즉시 반영
+              console.log("[Club] 방치된 plogging 상태 복구:", club.code || club.id);
+            } catch {}
+          }
+        }
+      });
+
+      setAllClubs(clubs);
     } catch (e) { console.error("동아리 탐색 로드 실패:", e); }
     finally { setBrowseLoading(false); }
   }, []);
@@ -343,12 +360,26 @@ export default function ClubPage() {
   // ─── 실시간 리스너 (상세 모드) ───────────────────────────
   useEffect(() => {
     if (!selectedClub?.code) return;
-    const unsub = onSnapshot(doc(db, "clubs", selectedClub.code), (snap) => {
+    const unsub = onSnapshot(doc(db, "clubs", selectedClub.code), async (snap) => {
       if (!snap.exists()) return;
       const data = { id: snap.id, ...snap.data() };
+
+      // ── plogging 상태가 30분 이상 방치되면 자동 복구 ──
+      if (data.status === "plogging") {
+        const updatedAt = data.updatedAt?.toDate?.() || data.createdAt?.toDate?.() || null;
+        const stuckMinutes = updatedAt ? (Date.now() - updatedAt.getTime()) / 60000 : 999;
+        if (stuckMinutes > 30) {
+          try {
+            await updateDoc(doc(db, "clubs", data.code), { status: "active" });
+            console.log("[Club] plogging 상태 30분 초과 → active 복구:", data.code);
+          } catch (e) { console.error("상태 복구 실패:", e); }
+          return; // 복구 후 다음 스냅샷에서 처리
+        }
+      }
+
       setSelectedClub(data);
       setMyClubs((prev) => prev.map((c) => c.code === data.code ? data : c));
-      // 플로깅 시작 감지 → 자동 이동
+      // 플로깅 시작 감지 → 자동 이동 (방금 상태가 바뀐 경우만)
       if (data.status === "plogging" && prevClubStatusRef.current !== "plogging") {
         prevClubStatusRef.current = "plogging";
         router.push(`/map?groupId=${data.code}&groupSize=${data.members?.length || 1}&groupType=club`);
