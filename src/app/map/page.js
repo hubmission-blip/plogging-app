@@ -1056,7 +1056,7 @@ function MapPageInner() {
       }
       // 유효한 데이터 → 복원
       pendingDataRef.current = saved.data;
-      if (saved.tumblerCerts) setSessionTumblerCerts(saved.tumblerCerts);
+      if (Array.isArray(saved.tumblerCerts) && saved.tumblerCerts.length > 0) setSessionTumblerCerts(saved.tumblerCerts);
       setShowPhotoModal(true);
     } catch { /* 파싱 실패 → 무시 */ }
   }, []);

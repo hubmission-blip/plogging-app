@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, KeyRound, Trophy, Rocket, Lock, User } from "lucide-react";
@@ -343,6 +343,14 @@ export default function ClubPage() {
       });
     } catch (e) { console.error("읽음 처리 실패:", e); }
   };
+
+  // ─── 알림 자동 읽음 처리 (렌더 중 호출 방지) ──────────────
+  useEffect(() => {
+    if (!user || !notices.length || !selectedClub) return;
+    notices.forEach((n) => {
+      if (!n.readBy?.includes(user.uid)) markNoticeRead(n);
+    });
+  }, [notices, user, selectedClub]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── 알림 삭제 (동아리장만) ─────────────────────────────
   const handleDeleteNotice = async (noticeId) => {
@@ -801,7 +809,6 @@ export default function ClubPage() {
                         const timeStr = n.createdAt?.toDate
                           ? n.createdAt.toDate().toLocaleDateString("ko-KR", { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" })
                           : "";
-                        if (!isRead) markNoticeRead(n);
                         return (
                           <div key={n.id}
                             className={`rounded-xl px-3 py-2.5 ${isRead ? "bg-gray-50" : "bg-cyan-50 border border-cyan-200"}`}>

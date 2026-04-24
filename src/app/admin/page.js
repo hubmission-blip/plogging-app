@@ -485,13 +485,23 @@ export default function AdminPage() {
 
   const handleDeleteProduct = async (id) => {
     if (!confirm("상품을 삭제하시겠어요?")) return;
-    await deleteDoc(doc(db, "products", id));
-    fetchProducts();
+    try {
+      await deleteDoc(doc(db, "products", id));
+      fetchProducts();
+    } catch (e) {
+      console.error("상품 삭제 실패:", e);
+      alert("삭제 중 오류가 발생했습니다.");
+    }
   };
 
   const handleToggleProduct = async (id, active) => {
-    await updateDoc(doc(db, "products", id), { active: !active });
-    fetchProducts();
+    try {
+      await updateDoc(doc(db, "products", id), { active: !active });
+      fetchProducts();
+    } catch (e) {
+      console.error("상품 상태 변경 실패:", e);
+      alert("상태 변경 중 오류가 발생했습니다.");
+    }
   };
 
   // ── 탭 전환 시 데이터 로드 ─────────────────────────────

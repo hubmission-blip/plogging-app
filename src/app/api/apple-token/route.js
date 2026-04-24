@@ -5,6 +5,7 @@ async function generateClientSecret() {
   const teamId    = process.env.APPLE_TEAM_ID;
   const keyId     = process.env.APPLE_KEY_ID;
   const serviceId = process.env.APPLE_SERVICE_ID;
+  if (!process.env.APPLE_PRIVATE_KEY) throw new Error("APPLE_PRIVATE_KEY 환경변수가 설정되지 않았습니다.");
   const privateKey = process.env.APPLE_PRIVATE_KEY.replace(/\\n/g, "\n");
 
   const key = await importPKCS8(privateKey, "ES256");

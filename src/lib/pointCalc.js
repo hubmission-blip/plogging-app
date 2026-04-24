@@ -47,7 +47,7 @@ export function calculatePoints({ distanceKm = 0, groupSize = 1, ecomileageLinke
   let points = 0;
   let breakdown = [];
 
-  // 거리 포��트: 1km = 50점
+  // 거리 포인트: 1km = 50점
   const distancePoints = Math.floor(safeDist * 50);
   points += distancePoints;
   breakdown.push({ label: `거리 (${safeDist.toFixed(2)}km)`, points: distancePoints });

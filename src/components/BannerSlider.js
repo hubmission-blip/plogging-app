@@ -165,10 +165,12 @@ export default function BannerSlider({ userRegion = null, autoInterval = 4000 })
   const total = bannerList.length;
 
   const next = useCallback(() => {
+    if (total === 0) return;
     setCurrent((prev) => (prev + 1) % total);
   }, [total]);
 
   const prev = useCallback(() => {
+    if (total === 0) return;
     setCurrent((prev) => (prev - 1 + total) % total);
   }, [total]);
 
