@@ -1,7 +1,17 @@
 {
-  "version": "v1.122",
-  "build": 122,
+  "version": "v1.123",
+  "build": 123,
   "changelog": [
+    {
+      "version": "v1.123",
+      "build": 123,
+      "date": "2026-04-26",
+      "emoji": "🎯",
+      "title": "탄소중립포인트 녹색생활 기능",
+      "items": [
+        "Firestore 인덱스, 사진뷰어, 메인로고 수정"
+      ]
+    },
     {
       "version": "v1.122",
       "build": 122,

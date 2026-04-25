@@ -123,11 +123,30 @@ export default function KakaoCallbackPage() {
             });
             console.log("📌 users 컬렉션 문서 생성 완료");
           } else {
-            // 기존 사용자: 이메일이 갱신되었으면 업데이트
+            // 기존 사용자: 이메일/닉네임 갱신
+            const existingData = userSnap.data();
             const realEmail = kakaoUser.email || "";
+            const updates = {};
+
+            // 이메일 갱신
             if (realEmail && !realEmail.match(/^kakao_\d+@kakao\.com$/)) {
-              await updateDoc(userRef, { email: realEmail });
-              console.log("📌 이메일 갱신:", realEmail);
+              updates.email = realEmail;
+            }
+
+            // 닉네임이 "카카오유저"인데 카카오에서 실제 닉네임을 받았으면 갱신
+            if (
+              (existingData.nickname === "카카오유저" || existingData.displayName === "카카오유저") &&
+              displayName !== "카카오유저"
+            ) {
+              updates.nickname = displayName;
+              updates.displayName = displayName;
+              // Firebase Auth 프로필도 업데이트
+              await updateProfile(firebaseUser, { displayName });
+            }
+
+            if (Object.keys(updates).length > 0) {
+              await updateDoc(userRef, updates);
+              console.log("📌 사용자 정보 갱신:", updates);
             }
           }
         } catch (fsErr) {

@@ -184,7 +184,7 @@ export default function LoginPage() {
       `?client_id=${KAKAO_CLIENT_ID}` +
       `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
       `&response_type=code` +
-      `&scope=account_email`;
+      `&scope=profile_nickname,account_email`;
   };
 
   // 네이버 로그인
