@@ -291,7 +291,21 @@ service cloud.firestore {
     }
 
     // ════════════════════════════════════════════════════════════
-    //  23. ecoActions — 녹색생활 실천 기록 (텀블러, 장바구니 등)
+    //  24. giftHistory — 포인트 선물 이력
+    //  읽기: 보낸 사람 또는 받는 사람 또는 관리자 | 생성: 로그인 (트랜잭션 내)
+    //  수정/삭제: 관리자
+    // ════════════════════════════════════════════════════════════
+    match /giftHistory/{docId} {
+      allow read: if isAuth() &&
+        (resource.data.fromUid == request.auth.uid ||
+         resource.data.toUid == request.auth.uid ||
+         isAdmin());
+      allow create: if isAuth();
+      allow update, delete: if isAdmin();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  25. ecoActions — 녹색생활 실천 기록 (텀블러, 장바구니 등)
     //  읽기: 본인 또는 관리자 | 생성: 로그인
     //  삭제: 본인 또는 관리자 | 수정: 관리자
     // ════════════════════════════════════════════════════════════
