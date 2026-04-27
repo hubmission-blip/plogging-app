@@ -264,6 +264,15 @@ export default function RewardPage() {
         </div>
       </div>
 
+      {/* ── 포인트 선물하기 버튼 ── */}
+      <div className="px-4 pt-2">
+        <Link href="/gift"
+          className="flex items-center justify-center gap-2 bg-pink-50 border border-pink-200 rounded-2xl py-3 active:bg-pink-100 transition-colors">
+          <Gift className="w-4 h-4 text-pink-500" strokeWidth={2} />
+          <span className="text-sm font-bold text-pink-600">친구에게 포인트 선물하기</span>
+        </Link>
+      </div>
+
       {/* ── 성공 메시지 ── */}
       {successMsg && (
         <div className="mx-4 mt-4 bg-green-50 border border-green-200 rounded-xl p-3">

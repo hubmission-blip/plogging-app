@@ -535,6 +535,7 @@ export default function ProfilePage() {
             { href: "/ranking?view=map", icon: <Map className="w-5 h-5 text-gray-500" strokeWidth={1.8} />, label: "행정구역별 랭킹 지도" },
             { href: "/group",        icon: <Users className="w-5 h-5 text-gray-500" strokeWidth={1.8} />, label: "그룹 플로깅" },
             { href: "/reward",       icon: <Gift className="w-5 h-5 text-gray-500" strokeWidth={1.8} />, label: "포인트 리워드 교환" },
+            { href: "/gift",         icon: <Gift className="w-5 h-5 text-pink-400" strokeWidth={1.8} />, label: "포인트 선물하기" },
             { href: "/certificate",  icon: <FileCheck className="w-5 h-5 text-gray-500" strokeWidth={1.8} />, label: "봉사활동 증명서 발급" },
           ].map((item) => (
             <Link key={item.href} href={item.href}
