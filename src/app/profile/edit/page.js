@@ -391,16 +391,16 @@ export default function ProfileEditPage() {
               </p>
             </div>
 
-            {/* 탄소중립포인트 회원번호 */}
+            {/* 탄소중립포인트 회원번호(발급번호) */}
             <div>
               <label className="text-xs font-bold text-gray-500 mb-1.5 block">
-                탄소중립포인트 회원번호
+                탄소중립포인트 회원번호(발급번호)
               </label>
               <input
                 value={form.cpointNo}
-                onChange={(e) => set("cpointNo", e.target.value.replace(/\D/g, ""))}
-                placeholder="숫자만 입력"
-                maxLength={20}
+                onChange={(e) => set("cpointNo", e.target.value.replace(/[^0-9a-zA-Z-]/g, ""))}
+                placeholder="예: 20260414-2154519-9fH"
+                maxLength={25}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-400"
               />
               <p className="text-gray-400 text-xs mt-1">
@@ -413,7 +413,7 @@ export default function ProfileEditPage() {
                 >
                   cpoint.or.kr
                 </a>
-                )에서 가입 후 확인할 수 있어요
+                ) 마이페이지 &gt; 나의정보에서 확인할 수 있어요
               </p>
             </div>
 
@@ -451,7 +451,7 @@ export default function ProfileEditPage() {
               <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center gap-3">
                 <span className="text-2xl">✅</span>
                 <div>
-                  <p className="text-green-700 text-xs font-bold">탄소중립포인트 회원번호 등록됨</p>
+                  <p className="text-green-700 text-xs font-bold">탄소중립포인트 회원번호(발급번호) 등록됨</p>
                   <p className="text-green-600 text-xs">
                     번호: {form.cpointNo}
                     {form.greenCardNo ? ` · 그린카드 연동` : ""}
@@ -463,7 +463,7 @@ export default function ProfileEditPage() {
                 <span className="text-2xl">⬜</span>
                 <div>
                   <p className="text-gray-500 text-xs font-bold">탄소중립포인트 미연동</p>
-                  <p className="text-gray-400 text-xs">회원번호를 등록하면 정부 포인트 연계가 가능해요</p>
+                  <p className="text-gray-400 text-xs">회원번호(발급번호)를 등록하면 정부 포인트 연계가 가능해요</p>
                 </div>
               </div>
             )}
