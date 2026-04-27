@@ -155,6 +155,7 @@ export default function HomePage() {
   const [logoError, setLogoError] = useState(false); // 로고 이미지 로드 실패 여부
   const [userRegion, setUserRegion] = useState(null); // 감지된 사용자 지역 (예: "부산광역시")
   const [pointAccordion, setPointAccordion] = useState(false); // 포인트 적립 기준 아코디언
+  const [profileIncomplete, setProfileIncomplete] = useState(false); // 실명/전화번호 미입력
 
   // 첫 방문 시에만 캐릭터 가이드 표시
   useEffect(() => {
@@ -165,6 +166,21 @@ export default function HomePage() {
       // localStorage 미지원 환경 무시
     }
   }, []);
+
+  // ── 프로필 완성 여부 체크 (실명/전화번호) ─────────────────
+  useEffect(() => {
+    if (!user) { setProfileIncomplete(false); return; }
+    const checkProfile = async () => {
+      try {
+        const snap = await getDoc(doc(db, "users", user.uid));
+        if (snap.exists()) {
+          const d = snap.data();
+          setProfileIncomplete(!d.realName || !d.phone);
+        }
+      } catch {}
+    };
+    checkProfile();
+  }, [user]);
 
   // ── 사용자 위치 기반 지역 감지 ────────────────────────────
   useEffect(() => {
@@ -553,19 +569,35 @@ export default function HomePage() {
                 <span className="text-white/60 text-xs font-bold">바로가기 →</span>
               </div>
             </Link>
-            <Link
-              href="/ecomileage"
-              className="bg-gradient-to-br from-sky-500 to-cyan-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between min-h-[120px]"
-            >
-              <div className="text-right">
-                <p className="font-black text-sm text-white leading-tight">지자체 에코마일리지</p>
-                <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">전국 17개 시/도 안내</p>
-              </div>
-              <div className="flex justify-between items-end">
-                <Building2 className="w-12 h-12 text-white/80" strokeWidth={1.5} />
-                <span className="text-white/60 text-xs font-bold">바로가기 →</span>
-              </div>
-            </Link>
+            {user && profileIncomplete ? (
+              <Link
+                href="/profile/edit"
+                className="bg-gradient-to-br from-orange-400 to-amber-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between min-h-[120px]"
+              >
+                <div className="text-right">
+                  <p className="font-black text-sm text-white leading-tight">프로필 완성하기</p>
+                  <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">실명 · 전화번호 등록</p>
+                </div>
+                <div className="flex justify-between items-end">
+                  <UserCheck className="w-12 h-12 text-white/80" strokeWidth={1.5} />
+                  <span className="text-white/60 text-xs font-bold">등록하기 →</span>
+                </div>
+              </Link>
+            ) : (
+              <Link
+                href="/ecomileage"
+                className="bg-gradient-to-br from-sky-500 to-cyan-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between min-h-[120px]"
+              >
+                <div className="text-right">
+                  <p className="font-black text-sm text-white leading-tight">지자체 에코마일리지</p>
+                  <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">전국 17개 시/도 안내</p>
+                </div>
+                <div className="flex justify-between items-end">
+                  <Building2 className="w-12 h-12 text-white/80" strokeWidth={1.5} />
+                  <span className="text-white/60 text-xs font-bold">바로가기 →</span>
+                </div>
+              </Link>
+            )}
             <Link
               href="/shop"
               className="rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between min-h-[120px]"

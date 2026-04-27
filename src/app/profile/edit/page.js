@@ -34,10 +34,13 @@ export default function ProfileEditPage() {
   const router   = useRouter();
 
   const [form, setForm] = useState({
+    realName:     "", // 실명 (탄소중립포인트 연계용)
     displayName:  "",
     phone:        "",
     region:       "",
     volunteerNo:  "", // 1365 회원번호
+    cpointNo:     "", // 탄소중립포인트 회원번호
+    greenCardNo:  "", // 그린카드 번호
     bio:          "",
     refInput:     "", // 추천인 코드 (1회 입력용)
   });
@@ -58,10 +61,13 @@ export default function ProfileEditPage() {
       if (snap.exists()) {
         const d = snap.data();
         setForm({
+          realName:    d.realName    || "",
           displayName: d.displayName || user.displayName || "",
           phone:       d.phone       || "",
           region:      d.region      || "",
           volunteerNo: d.volunteerNo || "",
+          cpointNo:    d.cpointNo    || "",
+          greenCardNo: d.greenCardNo || "",
           bio:         d.bio         || "",
           refInput:    "",
         });
@@ -108,10 +114,13 @@ export default function ProfileEditPage() {
     setSaving(true);
     try {
       const updates = {
+        realName:    form.realName.trim(),
         displayName: form.displayName.trim(),
         phone:       form.phone.trim(),
         region:      form.region,
         volunteerNo: form.volunteerNo.trim(),
+        cpointNo:    form.cpointNo.trim(),
+        greenCardNo: form.greenCardNo.replace(/\s/g, "").trim(),
         bio:         form.bio.trim(),
       };
 
@@ -207,6 +216,21 @@ export default function ProfileEditPage() {
             <p className="font-black text-gray-700 text-sm">기본 정보</p>
           </div>
           <div className="px-4 py-4 space-y-4">
+
+            {/* 실명 */}
+            <div>
+              <label className="text-xs font-bold text-gray-500 mb-1.5 block">
+                실명 <span className="text-orange-400 font-normal text-[10px]">탄소중립포인트 연계 시 필수</span>
+              </label>
+              <input
+                value={form.realName}
+                onChange={(e) => set("realName", e.target.value)}
+                maxLength={20}
+                placeholder="정부 기관 제출용 실명 (예: 홍길동)"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-400"
+              />
+              <p className="text-gray-400 text-xs mt-1">탄소중립포인트·에코마일리지 연계 시 필요한 정보예요</p>
+            </div>
 
             {/* 닉네임 */}
             <div>
@@ -342,6 +366,104 @@ export default function ProfileEditPage() {
                 <div>
                   <p className="text-gray-500 text-xs font-bold">1365 미연동</p>
                   <p className="text-gray-400 text-xs">회원번호를 등록하면 봉사시간 신청이 가능해요</p>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+
+        {/* ── 탄소중립포인트 연동 카드 ── */}
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+            <span className="text-base">🌱</span>
+            <p className="font-black text-gray-700 text-sm">탄소중립포인트 연동</p>
+          </div>
+          <div className="px-4 py-4 space-y-4">
+
+            {/* 안내 배너 */}
+            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+              <p className="text-green-700 text-xs font-bold mb-1">♻️ 탄소중립포인트 녹색생활 실천이란?</p>
+              <p className="text-green-600 text-xs leading-relaxed">
+                환경부·한국환경공단 운영 녹색생활 실천 인센티브 제도입니다.
+                회원번호를 등록하면 앱에서 인증한 녹색생활 실천 내역을
+                정부 탄소중립포인트로 연계할 수 있어요.
+              </p>
+            </div>
+
+            {/* 탄소중립포인트 회원번호 */}
+            <div>
+              <label className="text-xs font-bold text-gray-500 mb-1.5 block">
+                탄소중립포인트 회원번호
+              </label>
+              <input
+                value={form.cpointNo}
+                onChange={(e) => set("cpointNo", e.target.value.replace(/\D/g, ""))}
+                placeholder="숫자만 입력"
+                maxLength={20}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-400"
+              />
+              <p className="text-gray-400 text-xs mt-1">
+                탄소중립포인트 녹색생활(
+                <a
+                  href="https://www.cpoint.or.kr/netzero/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 underline"
+                >
+                  cpoint.or.kr
+                </a>
+                )에서 가입 후 확인할 수 있어요
+              </p>
+            </div>
+
+            {/* 그린카드 번호 */}
+            <div>
+              <label className="text-xs font-bold text-gray-500 mb-1.5 block">
+                그린카드 번호 <span className="text-gray-400 font-normal text-[10px]">선택</span>
+              </label>
+              <input
+                value={form.greenCardNo}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/[^0-9-]/g, "");
+                  set("greenCardNo", v);
+                }}
+                placeholder="카드번호 16자리 (예: 1234-5678-9012-3456)"
+                maxLength={19}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-400 tracking-wide"
+              />
+              <p className="text-gray-400 text-xs mt-1">
+                그린카드 에코머니로 포인트를 받으려면 카드번호를 등록하세요 (
+                <a
+                  href="https://www.green-card.co.kr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 underline"
+                >
+                  green-card.co.kr
+                </a>
+                )
+              </p>
+            </div>
+
+            {/* 연동 상태 표시 */}
+            {form.cpointNo ? (
+              <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                <span className="text-2xl">✅</span>
+                <div>
+                  <p className="text-green-700 text-xs font-bold">탄소중립포인트 회원번호 등록됨</p>
+                  <p className="text-green-600 text-xs">
+                    번호: {form.cpointNo}
+                    {form.greenCardNo ? ` · 그린카드 연동` : ""}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                <span className="text-2xl">⬜</span>
+                <div>
+                  <p className="text-gray-500 text-xs font-bold">탄소중립포인트 미연동</p>
+                  <p className="text-gray-400 text-xs">회원번호를 등록하면 정부 포인트 연계가 가능해요</p>
                 </div>
               </div>
             )}

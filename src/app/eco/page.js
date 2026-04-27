@@ -8,7 +8,7 @@ import { ArrowLeft, Leaf, Receipt, Coffee, CupSoda, Pipette, Package, Car, Shiel
 import { useState, useEffect, useRef } from "react";
 import { auth, db } from "@/lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { collection, query, where, orderBy, getDocs, limit, addDoc, doc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, orderBy, getDocs, limit, addDoc, doc, getDoc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { extractText, parseReceiptInfo } from "@/lib/ocr";
 import { TUMBLER_BONUS, CUP_RETURN_PER_CUP, REUSABLE_CONTAINER_BONUS, EV_RENTAL_BONUS, SHARED_BIKE_BONUS, E_RECEIPT_BONUS, FUTURE_GEN_BONUS, ZERO_WASTE_BONUS, ECO_BAG_BONUS, OWN_CONTAINER_BONUS, RECYCLED_PRODUCT_BONUS, ECO_PRODUCT_BONUS, QUALITY_RECYCLE_BONUS } from "@/lib/pointCalc";
@@ -716,7 +716,21 @@ export default function EcoLifePage() {
     alert(`${action?.title} 인증 완료!\n+${certData.points} 포인트가 적립되었습니다.`);
   };
 
-  const handleCardClick = (action) => {
+  const handleCardClick = async (action) => {
+    // 실명/전화번호 미입력 시 프로필 편집으로 안내
+    try {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      if (snap.exists()) {
+        const d = snap.data();
+        if (!d.realName || !d.phone) {
+          const go = confirm(
+            "탄소중립포인트 연계를 위해 실명과 전화번호가 필요합니다.\n\n프로필 편집 페이지로 이동할까요?"
+          );
+          if (go) router.push("/profile/edit");
+          return;
+        }
+      }
+    } catch {}
     setActiveModal(action.id);
   };
 
