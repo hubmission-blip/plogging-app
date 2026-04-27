@@ -357,9 +357,11 @@ export default function GiftPage() {
                         <User className="w-4 h-4 text-gray-400" strokeWidth={2} />
                       </div>
                     )}
-                    <div className="text-left">
+                    <div className="text-left flex-1 min-w-0">
                       <p className="text-sm font-bold text-gray-700">{u.displayName || "사용자"}</p>
-                      {u.realName && <p className="text-[10px] text-gray-400">{u.realName}</p>}
+                      <p className="text-[10px] text-gray-400 truncate">
+                        {u.realName ? `${u.realName} · ` : ""}{u.email ? u.email.replace(/(.{3}).*(@.*)/, "$1***$2") : ""}
+                      </p>
                     </div>
                   </button>
                 ))}
