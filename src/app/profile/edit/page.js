@@ -399,7 +399,7 @@ export default function ProfileEditPage() {
               <input
                 value={form.cpointNo}
                 onChange={(e) => set("cpointNo", e.target.value.replace(/[^0-9a-zA-Z-]/g, ""))}
-                placeholder="예: 20260414-2154519-9fH"
+                placeholder="예: 20250101-1234567-0aB"
                 maxLength={25}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-400"
               />
