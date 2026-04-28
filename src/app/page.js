@@ -515,7 +515,7 @@ export default function HomePage() {
           </div>
 
           {/* ── 빠른 메뉴 (라이트 컬러 카드) ── */}
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <Link
               href="/club"
               className="bg-cyan-50 border border-cyan-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
@@ -536,13 +536,6 @@ export default function HomePage() {
             >
               <Gift className="w-5 h-5 text-purple-600" strokeWidth={1.8} />
               <span className="text-[11px] text-purple-700 font-bold">리워드</span>
-            </Link>
-            <Link
-              href="/eco"
-              className="bg-green-50 border border-green-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
-            >
-              <Leaf className="w-5 h-5 text-green-600" strokeWidth={1.8} />
-              <span className="text-[11px] text-green-700 font-bold">녹색생활</span>
             </Link>
             <button
               onClick={() => setShowManual(true)}
@@ -585,15 +578,15 @@ export default function HomePage() {
               </Link>
             ) : (
               <Link
-                href="/ecomileage"
-                className="bg-gradient-to-br from-sky-500 to-cyan-500 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between min-h-[120px]"
+                href="/eco"
+                className="bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between min-h-[120px]"
               >
                 <div className="text-right">
-                  <p className="font-black text-sm text-white leading-tight">지자체 에코마일리지</p>
-                  <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">전국 17개 시/도 안내</p>
+                  <p className="font-black text-sm text-white leading-tight">녹색생활 실천</p>
+                  <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">인증하고 포인트 적립</p>
                 </div>
                 <div className="flex justify-between items-end">
-                  <Building2 className="w-12 h-12 text-white/80" strokeWidth={1.5} />
+                  <Leaf className="w-12 h-12 text-white/80" strokeWidth={1.5} />
                   <span className="text-white/60 text-xs font-bold">바로가기 →</span>
                 </div>
               </Link>
