@@ -31,7 +31,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow create: if isAuth();
-      allow update: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin()
+        || (isAuth() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalPoints']));
       allow delete: if isOwner(userId) || isAdmin();
     }
 
