@@ -3,15 +3,19 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
-  collection, getDocs, query, orderBy,
+  collection, getDocs, query, orderBy, where, doc, getDoc,
+  addDoc, writeBatch, serverTimestamp,
 } from "firebase/firestore";
 import {
   HeartHandshake, TreePine, Waves, Fish, CircleDollarSign,
   ChevronLeft, TrendingUp, MapPin, Calendar, Users, Award,
-  ChevronDown,
+  ChevronDown, RefreshCw, DatabaseZap,
 } from "lucide-react";
+
+const ADMIN_EMAILS = ["hubmission@gmail.com", "boonma@nate.com"];
 
 // ─── 기부처 메타 ───────────────────────────────────────────
 const DONATE_META = {
@@ -33,10 +37,14 @@ const REGION_SHORT = {
 
 export default function DonateDashboardPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const isAdmin = user && ADMIN_EMAILS.includes(user.email);
 
   const [loading, setLoading]       = useState(true);
   const [rewards, setRewards]       = useState([]);   // donations 컬렉션
   const [selectedOrg, setSelectedOrg] = useState("all");
+  const [migrating, setMigrating]   = useState(false);
+  const [migrateMsg, setMigrateMsg] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -58,6 +66,95 @@ export default function DonateDashboardPage() {
       console.error("후원 데이터 로드 실패:", e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ── 기존 reward_history → donations 마이그레이션 (관리자 전용) ──
+  const handleMigrate = async () => {
+    if (!isAdmin) return;
+    if (!confirm("기존 reward_history의 기부 데이터를 donations로 마이그레이션합니다. 진행할까요?")) return;
+    setMigrating(true);
+    setMigrateMsg("");
+    try {
+      // 1. reward_history에서 기부형 데이터 조회
+      const rhSnap = await getDocs(query(
+        collection(db, "reward_history"),
+        orderBy("createdAt", "desc"),
+      ));
+      const donateEntries = rhSnap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((r) => DONATE_IDS.includes(r.rewardId));
+
+      if (donateEntries.length === 0) {
+        setMigrateMsg("마이그레이션할 기부 데이터가 없습니다.");
+        return;
+      }
+
+      // 2. 이미 donations에 있는 데이터 확인 (중복 방지)
+      const existSnap = await getDocs(collection(db, "donations"));
+      const existSet = new Set();
+      existSnap.docs.forEach((d) => {
+        const data = d.data();
+        // userId + rewardId + createdAt 조합으로 중복 체크
+        const key = `${data.userId}_${data.rewardId}_${data.createdAt?.toMillis?.() || 0}`;
+        existSet.add(key);
+      });
+
+      // 3. 유저 지역 정보 수집
+      const uids = [...new Set(donateEntries.map((r) => r.userId))];
+      const regionMap = {};
+      for (let i = 0; i < uids.length; i += 10) {
+        const batch = uids.slice(i, i + 10);
+        try {
+          const uSnap = await getDocs(query(
+            collection(db, "users"),
+            where("__name__", "in", batch),
+          ));
+          uSnap.docs.forEach((d) => {
+            regionMap[d.id] = d.data().region || "";
+          });
+        } catch {}
+      }
+
+      // 4. 배치로 donations에 추가
+      let migrated = 0;
+      let skipped = 0;
+      const batchSize = 400;
+      let batch = writeBatch(db);
+      let batchCount = 0;
+
+      for (const entry of donateEntries) {
+        const key = `${entry.userId}_${entry.rewardId}_${entry.createdAt?.toMillis?.() || 0}`;
+        if (existSet.has(key)) { skipped++; continue; }
+
+        const newRef = doc(collection(db, "donations"));
+        batch.set(newRef, {
+          userId:      entry.userId,
+          userName:    entry.userName || "",
+          userRegion:  regionMap[entry.userId] || "",
+          rewardId:    entry.rewardId,
+          rewardTitle: entry.rewardTitle,
+          points:      entry.cost || 0,
+          createdAt:   entry.createdAt || serverTimestamp(),
+        });
+        migrated++;
+        batchCount++;
+
+        if (batchCount >= batchSize) {
+          await batch.commit();
+          batch = writeBatch(db);
+          batchCount = 0;
+        }
+      }
+      if (batchCount > 0) await batch.commit();
+
+      setMigrateMsg(`완료! ${migrated}건 마이그레이션, ${skipped}건 중복 건너뜀`);
+      fetchData(); // 데이터 새로고침
+    } catch (e) {
+      console.error("마이그레이션 실패:", e);
+      setMigrateMsg("마이그레이션 실패: " + e.message);
+    } finally {
+      setMigrating(false);
     }
   };
 
@@ -156,6 +253,30 @@ export default function DonateDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* ── 관리자: 데이터 마이그레이션 ── */}
+      {isAdmin && (
+        <div className="px-4 mt-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DatabaseZap className="w-4 h-4 text-amber-600" strokeWidth={2} />
+                <span className="text-xs font-bold text-amber-700">기존 후원 데이터 동기화</span>
+              </div>
+              <button
+                onClick={handleMigrate}
+                disabled={migrating}
+                className="bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg disabled:opacity-50"
+              >
+                {migrating ? "처리 중..." : "동기화 실행"}
+              </button>
+            </div>
+            {migrateMsg && (
+              <p className="text-xs text-amber-600 mt-2">{migrateMsg}</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── 기부처 필터 ── */}
       <div className="flex gap-2 px-4 mt-4 overflow-x-auto pb-1 no-scrollbar">
