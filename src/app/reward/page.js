@@ -186,7 +186,7 @@ export default function RewardPage() {
     fetchPoints();
   }, [user, fetchPoints, router]);
 
-  // ── 교환 실행 ─────────────────────────────────────────────
+  // ── 교환 실행 (모든 쓰기를 하나의 트랜잭션으로) ────────────
   const handleExchange = async () => {
     if (!user || !selectedItem) return;
     if (myPoints < selectedItem.cost) return;
@@ -199,67 +199,79 @@ export default function RewardPage() {
       // 사용자 지역 정보 가져오기 (기부형에서 사용)
       let userRegion = "";
       if (isDonate) {
-        const uSnap = await getDoc(doc(db, "users", user.uid));
-        userRegion = uSnap.data()?.region || "";
+        try {
+          const uSnap = await getDoc(doc(db, "users", user.uid));
+          userRegion = uSnap.data()?.region || "";
+        } catch {}
       }
 
+      // 쿠폰형이면 코드를 미리 생성
+      if (isCoupon) {
+        couponCode = generateCouponCode();
+      }
+
+      // ★ 핵심: 모든 쓰기를 하나의 트랜잭션으로 묶어 원자적 처리
+      //   → 하나라도 실패하면 전체 롤백 (포인트도 복원됨)
       await runTransaction(db, async (tx) => {
+        // 1. 포인트 차감
         const userRef  = doc(db, "users", user.uid);
         const userSnap = await tx.get(userRef);
         const current  = userSnap.data()?.totalPoints || 0;
-        if (current < selectedItem.cost) throw new Error("포인트 부족");
+        if (current < selectedItem.cost) throw new Error("포인트가 부족합니다.");
         tx.update(userRef, { totalPoints: current - selectedItem.cost });
-      });
 
-      // 쿠폰형 리워드: 쿠폰코드 생성 & coupons 컬렉션에 저장
-      if (isCoupon) {
-        couponCode = generateCouponCode();
-        await addDoc(collection(db, "coupons"), {
-          code:        couponCode,
+        // 2. 쿠폰형 리워드: coupons 컬렉션에 저장
+        if (isCoupon && couponCode) {
+          const couponRef = doc(collection(db, "coupons"));
+          tx.set(couponRef, {
+            code:        couponCode,
+            userId:      user.uid,
+            userName:    myName || user.displayName || "",
+            rewardId:    selectedItem.id,
+            rewardTitle: selectedItem.title,
+            points:      selectedItem.cost,
+            status:      "active",
+            createdAt:   serverTimestamp(),
+            expiresAt:   null,
+            usedAt:      null,
+            usedByStore: null,
+          });
+        }
+
+        // 3. 기부형 리워드: donations 컬렉션에 기록
+        if (isDonate) {
+          const donateRef = doc(collection(db, "donations"));
+          tx.set(donateRef, {
+            userId:      user.uid,
+            userName:    myName || user.displayName || "",
+            userRegion:  userRegion,
+            rewardId:    selectedItem.id,
+            rewardTitle: selectedItem.title,
+            points:      selectedItem.cost,
+            createdAt:   serverTimestamp(),
+          });
+        }
+
+        // 4. 교환 내역 기록
+        const historyStatus = isCoupon ? "coupon_issued" : isDonate ? "donated" : "pending";
+        const historyRef = doc(collection(db, "reward_history"));
+        tx.set(historyRef, {
           userId:      user.uid,
           userName:    myName || user.displayName || "",
           rewardId:    selectedItem.id,
           rewardTitle: selectedItem.title,
-          points:      selectedItem.cost,
-          status:      "active", // active → used → expired
+          cost:        selectedItem.cost,
           createdAt:   serverTimestamp(),
-          expiresAt:   null,
-          usedAt:      null,
-          usedByStore: null,
+          status:      historyStatus,
+          couponCode:  couponCode || null,
         });
-      }
-
-      // 기부형 리워드: donations 컬렉션에 기록 (대시보드용)
-      if (isDonate) {
-        await addDoc(collection(db, "donations"), {
-          userId:      user.uid,
-          userName:    myName || user.displayName || "",
-          userRegion:  userRegion,
-          rewardId:    selectedItem.id,
-          rewardTitle: selectedItem.title,
-          points:      selectedItem.cost,
-          createdAt:   serverTimestamp(),
-        });
-      }
-
-      // 교환 내역 기록
-      const historyStatus = isCoupon ? "coupon_issued" : isDonate ? "donated" : "pending";
-      await addDoc(collection(db, "reward_history"), {
-        userId:      user.uid,
-        userName:    myName || user.displayName || "",
-        rewardId:    selectedItem.id,
-        rewardTitle: selectedItem.title,
-        cost:        selectedItem.cost,
-        createdAt:   serverTimestamp(),
-        status:      historyStatus,
-        couponCode:  couponCode || null,
       });
 
+      // 트랜잭션 성공 후 UI 업데이트
       setMyPoints((prev) => prev - selectedItem.cost);
       setConfirming(false);
 
       if (isCoupon && couponCode) {
-        // 쿠폰 발급 모달 표시
         setCouponModal({ code: couponCode, title: selectedItem.title });
         setSelectedItem(null);
       } else if (isDonate) {
