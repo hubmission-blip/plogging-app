@@ -48,19 +48,102 @@ export default function DonateDashboardPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [user]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // donations 컬렉션 조회 (전체 공개)
+      // ── 1. donations 컬렉션 조회 (전체 공개) ──
       const rSnap = await getDocs(query(
         collection(db, "donations"),
         orderBy("createdAt", "desc"),
       ));
-      const allRewards = rSnap.docs
+      let allRewards = rSnap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
         .filter((r) => DONATE_IDS.includes(r.rewardId));
+
+      // ── 2. 관리자인 경우 reward_history에서 자동 마이그레이션 ──
+      const adminLoggedIn = user && ADMIN_EMAILS.includes(user.email);
+      if (adminLoggedIn) {
+        try {
+          const rhSnap = await getDocs(query(
+            collection(db, "reward_history"),
+            orderBy("createdAt", "desc"),
+          ));
+          const donateEntries = rhSnap.docs
+            .map((d) => ({ id: d.id, ...d.data() }))
+            .filter((r) => DONATE_IDS.includes(r.rewardId));
+
+          if (donateEntries.length > 0) {
+            // 이미 donations에 있는 키 수집
+            const existSet = new Set();
+            allRewards.forEach((d) => {
+              const key = `${d.userId}_${d.rewardId}_${d.createdAt?.toMillis?.() || d.createdAt?.seconds || 0}`;
+              existSet.add(key);
+            });
+
+            // 누락된 항목 찾기
+            const missing = donateEntries.filter((entry) => {
+              const key = `${entry.userId}_${entry.rewardId}_${entry.createdAt?.toMillis?.() || entry.createdAt?.seconds || 0}`;
+              return !existSet.has(key);
+            });
+
+            if (missing.length > 0) {
+              // 유저 지역 정보 수집
+              const uids = [...new Set(missing.map((r) => r.userId))];
+              const regionMap = {};
+              for (let i = 0; i < uids.length; i += 10) {
+                const batch = uids.slice(i, i + 10);
+                try {
+                  const uSnap = await getDocs(query(
+                    collection(db, "users"),
+                    where("__name__", "in", batch),
+                  ));
+                  uSnap.docs.forEach((d) => {
+                    regionMap[d.id] = d.data().region || "";
+                  });
+                } catch {}
+              }
+
+              // 배치로 donations에 추가
+              let wb = writeBatch(db);
+              let cnt = 0;
+              for (const entry of missing) {
+                const newRef = doc(collection(db, "donations"));
+                wb.set(newRef, {
+                  userId:      entry.userId,
+                  userName:    entry.userName || "",
+                  userRegion:  regionMap[entry.userId] || "",
+                  rewardId:    entry.rewardId,
+                  rewardTitle: entry.rewardTitle,
+                  points:      entry.cost || 0,
+                  createdAt:   entry.createdAt || serverTimestamp(),
+                });
+                cnt++;
+                if (cnt % 400 === 0) {
+                  await wb.commit();
+                  wb = writeBatch(db);
+                }
+              }
+              if (cnt % 400 !== 0) await wb.commit();
+
+              setMigrateMsg(`자동 동기화 완료: ${missing.length}건 추가됨`);
+
+              // 마이그레이션 후 다시 조회
+              const freshSnap = await getDocs(query(
+                collection(db, "donations"),
+                orderBy("createdAt", "desc"),
+              ));
+              allRewards = freshSnap.docs
+                .map((d) => ({ id: d.id, ...d.data() }))
+                .filter((r) => DONATE_IDS.includes(r.rewardId));
+            }
+          }
+        } catch (migErr) {
+          console.warn("자동 마이그레이션 스킵:", migErr.message);
+        }
+      }
+
       setRewards(allRewards);
     } catch (e) {
       console.error("후원 데이터 로드 실패:", e);
