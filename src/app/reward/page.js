@@ -12,7 +12,7 @@ import {
 import {
   Coins, Target, Zap, ChevronDown, Gift,
   HeartHandshake, Trash2, Coffee, ShoppingBag, TreePine,
-  Waves, Bolt, Watch, Fish, Camera, CircleDollarSign,
+  Waves, Watch, Fish, Camera, CircleDollarSign,
 } from "lucide-react";
 
 // ─── 리워드 아이템 목록 ────────────────────────────────────
@@ -96,17 +96,6 @@ const REWARDS = [
     badge: null,
     badgeColor: "",
   },
-  {
-    id: "bonus_points",
-    category: "포인트",
-    Icon: Bolt, iconColor: "text-blue-600", iconBg: "bg-blue-100",
-    title: "포인트 2배 부스터",
-    desc: "다음 1회 플로깅 포인트 2배 적용",
-    cost: 1000,
-    stock: 50,
-    badge: "NEW",
-    badgeColor: "bg-blue-100 text-blue-700",
-  },
     {
     id: "donate_product",
     category: "환경",
@@ -153,7 +142,7 @@ const REWARDS = [
   },
 ];
 
-const CATEGORIES = ["전체", "환경", "음료", "기부", "포인트"];
+const CATEGORIES = ["전체", "환경", "음료", "기부"];
 
 export default function RewardPage() {
   const { user } = useAuth();

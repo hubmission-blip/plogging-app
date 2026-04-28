@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Coins, MapPin, Footprints, UserPlus, Pencil, BarChart3, Trophy, Map, Users, Gift,
   Shield, Settings, FileCheck, LogOut, UserX, Sprout, PersonStanding, Flame,
-  Swords, Award, Leaf, ClipboardList, Check, AlertTriangle, Frown,
+  Swords, Award, Leaf, ClipboardList, Check, AlertTriangle, Frown, Store,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
@@ -85,6 +85,9 @@ export default function ProfilePage() {
   // ── 관리자 여부 ──────────────────────────────────────────
   const isAdmin = user && (ADMIN_EMAILS.includes(user.email) || ADMIN_EMAILS.includes(stats?.realEmail));
 
+  // ── 파트너 매장 담당자 여부 ─────────────────────────────
+  const [isPartnerStore, setIsPartnerStore] = useState(false);
+
   // ── 데이터 로드 ──────────────────────────────────────────
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -155,6 +158,13 @@ export default function ProfilePage() {
         .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0))
         .slice(0, 5);
       setRecentRoutes(routes);
+
+      // 파트너 매장 담당자 여부 확인
+      try {
+        const psQ = query(collection(db, "partnerStores"), where("ownerUid", "==", user.uid));
+        const psSnap = await getDocs(psQ);
+        setIsPartnerStore(!psSnap.empty);
+      } catch { setIsPartnerStore(false); }
     } catch (e) {
       console.error("데이터 로드 실패:", e);
     } finally {
@@ -546,6 +556,18 @@ export default function ProfilePage() {
             </Link>
           ))}
         </div>
+
+        {/* ── 파트너 매장 메뉴 (매장 담당자 전용) ── */}
+        {isPartnerStore && (
+          <div className="bg-emerald-600 rounded-2xl shadow-sm overflow-hidden">
+            <Link href="/partner/redeem"
+              className="flex items-center gap-3 px-4 py-4 active:bg-emerald-700">
+              <Store className="w-5 h-5 text-white/80" strokeWidth={1.8} />
+              <span className="flex-1 text-sm font-bold text-white">매장 쿠폰 사용처리</span>
+              <span className="text-white/50">›</span>
+            </Link>
+          </div>
+        )}
 
         {/* ── 관리자 메뉴 (hubmission@gmail.com 전용) ── */}
         {isAdmin && (
