@@ -168,7 +168,7 @@ export default function DonateDashboardPage() {
   rewards.forEach((r) => {
     if (!orgTotals[r.rewardId]) orgTotals[r.rewardId] = { count: 0, points: 0 };
     orgTotals[r.rewardId].count++;
-    orgTotals[r.rewardId].points += r.cost || 0;
+    orgTotals[r.rewardId].points += r.points || 0;
   });
 
   // 월별 집계 (최근 6개월)
@@ -185,7 +185,7 @@ export default function DonateDashboardPage() {
     const key = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}`;
     if (monthlyData[key]) {
       monthlyData[key].count++;
-      monthlyData[key].points += r.cost || 0;
+      monthlyData[key].points += r.points || 0;
     }
   });
   const months = Object.keys(monthlyData);
@@ -198,14 +198,14 @@ export default function DonateDashboardPage() {
     const short = REGION_SHORT[region] || region;
     if (!regionData[short]) regionData[short] = { count: 0, points: 0 };
     regionData[short].count++;
-    regionData[short].points += r.cost || 0;
+    regionData[short].points += r.points || 0;
   });
   const regionSorted = Object.entries(regionData)
     .sort((a, b) => b[1].points - a[1].points);
   const maxRegionPoints = regionSorted.length > 0 ? regionSorted[0][1].points : 1;
 
   // 전체 합산
-  const totalPoints = filtered.reduce((s, r) => s + (r.cost || 0), 0);
+  const totalPoints = filtered.reduce((s, r) => s + (r.points || 0), 0);
   const totalCount  = filtered.length;
   const uniqueDonors = new Set(filtered.map((r) => r.userId)).size;
 
@@ -426,7 +426,7 @@ export default function DonateDashboardPage() {
                   <p className="text-xs text-gray-400">{meta.name}{region ? ` · ${region}` : ""}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-green-600">{(r.cost || 0).toLocaleString()}P</p>
+                  <p className="text-sm font-bold text-green-600">{(r.points || 0).toLocaleString()}P</p>
                   <p className="text-xs text-gray-400">{dateStr}</p>
                 </div>
               </div>
