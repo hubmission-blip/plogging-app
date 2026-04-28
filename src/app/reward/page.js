@@ -16,6 +16,19 @@ import {
 } from "lucide-react";
 
 // ─── 리워드 아이템 목록 ────────────────────────────────────
+// ─── 쿠폰 코드 생성 함수 ─────────────────────────────────
+function generateCouponCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 혼동 문자 제외
+  const seg = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  return `${seg(4)}-${seg(4)}-${seg(4)}`; // 예: A3K7-B9H2-X5M4
+}
+
+// ─── 쿠폰형 리워드 ID 목록 (코드 발급 대상) ─────────────
+const COUPON_REWARD_IDS = ["coffee_2000", "bag_1000", "eco_bag", "donate_product", "donate_photo"];
+
+// ─── 기부형 리워드 ID 목록 (후원 대시보드 연동) ──────────
+const DONATE_REWARD_IDS = ["donate_gia", "donate_forest", "donate_ocean", "donate_dokdo", "bonus_painting"];
+
 const REWARDS = [
   {
     id: "donate_gia",
@@ -155,6 +168,8 @@ export default function RewardPage() {
   const [exchanging, setExchanging]   = useState(false);
   const [successMsg, setSuccessMsg]   = useState("");
   const [pointAccordion, setPointAccordion] = useState(false);
+  const [couponModal, setCouponModal] = useState(null); // 발급된 쿠폰코드 표시용
+  const [couponCopied, setCouponCopied] = useState(false);
 
   // ── 내 포인트 조회 ────────────────────────────────────────
   const fetchPoints = useCallback(async () => {
@@ -184,6 +199,17 @@ export default function RewardPage() {
     if (myPoints < selectedItem.cost) return;
     setExchanging(true);
     try {
+      const isCoupon  = COUPON_REWARD_IDS.includes(selectedItem.id);
+      const isDonate  = DONATE_REWARD_IDS.includes(selectedItem.id);
+      let couponCode  = null;
+
+      // 사용자 지역 정보 가져오기 (기부형에서 사용)
+      let userRegion = "";
+      if (isDonate) {
+        const uSnap = await getDoc(doc(db, "users", user.uid));
+        userRegion = uSnap.data()?.region || "";
+      }
+
       await runTransaction(db, async (tx) => {
         const userRef  = doc(db, "users", user.uid);
         const userSnap = await tx.get(userRef);
@@ -192,7 +218,39 @@ export default function RewardPage() {
         tx.update(userRef, { totalPoints: current - selectedItem.cost });
       });
 
+      // 쿠폰형 리워드: 쿠폰코드 생성 & coupons 컬렉션에 저장
+      if (isCoupon) {
+        couponCode = generateCouponCode();
+        await addDoc(collection(db, "coupons"), {
+          code:        couponCode,
+          userId:      user.uid,
+          userName:    myName || user.displayName || "",
+          rewardId:    selectedItem.id,
+          rewardTitle: selectedItem.title,
+          points:      selectedItem.cost,
+          status:      "active", // active → used → expired
+          createdAt:   serverTimestamp(),
+          expiresAt:   null,
+          usedAt:      null,
+          usedByStore: null,
+        });
+      }
+
+      // 기부형 리워드: donations 컬렉션에 기록 (대시보드용)
+      if (isDonate) {
+        await addDoc(collection(db, "donations"), {
+          userId:      user.uid,
+          userName:    myName || user.displayName || "",
+          userRegion:  userRegion,
+          rewardId:    selectedItem.id,
+          rewardTitle: selectedItem.title,
+          points:      selectedItem.cost,
+          createdAt:   serverTimestamp(),
+        });
+      }
+
       // 교환 내역 기록
+      const historyStatus = isCoupon ? "coupon_issued" : isDonate ? "donated" : "pending";
       await addDoc(collection(db, "reward_history"), {
         userId:      user.uid,
         userName:    myName || user.displayName || "",
@@ -200,14 +258,26 @@ export default function RewardPage() {
         rewardTitle: selectedItem.title,
         cost:        selectedItem.cost,
         createdAt:   serverTimestamp(),
-        status:      "pending", // 관리자 처리 대기
+        status:      historyStatus,
+        couponCode:  couponCode || null,
       });
 
       setMyPoints((prev) => prev - selectedItem.cost);
       setConfirming(false);
-      setSelectedItem(null);
-      setSuccessMsg(`🎉 "${selectedItem.title}" 교환 신청 완료! 3~5 영업일 내 처리됩니다.`);
-      setTimeout(() => setSuccessMsg(""), 5000);
+
+      if (isCoupon && couponCode) {
+        // 쿠폰 발급 모달 표시
+        setCouponModal({ code: couponCode, title: selectedItem.title });
+        setSelectedItem(null);
+      } else if (isDonate) {
+        setSelectedItem(null);
+        setSuccessMsg(`💚 "${selectedItem.title}" 후원 완료! 소중한 마음이 전달됩니다.`);
+        setTimeout(() => setSuccessMsg(""), 5000);
+      } else {
+        setSelectedItem(null);
+        setSuccessMsg(`🎉 "${selectedItem.title}" 교환 신청 완료! 3~5 영업일 내 처리됩니다.`);
+        setTimeout(() => setSuccessMsg(""), 5000);
+      }
     } catch (e) {
       alert("교환 실패: " + e.message);
     } finally {
@@ -264,12 +334,26 @@ export default function RewardPage() {
         </div>
       </div>
 
-      {/* ── 포인트 선물하기 버튼 ── */}
-      <div className="px-4 pt-2">
+      {/* ── 포인트 선물하기 & 내 쿠폰함 ── */}
+      <div className="px-4 pt-2 flex gap-2">
         <Link href="/gift"
-          className="flex items-center justify-center gap-2 bg-pink-50 border border-pink-200 rounded-2xl py-3 active:bg-pink-100 transition-colors">
+          className="flex-1 flex items-center justify-center gap-2 bg-pink-50 border border-pink-200 rounded-2xl py-3 active:bg-pink-100 transition-colors">
           <Gift className="w-4 h-4 text-pink-500" strokeWidth={2} />
-          <span className="text-sm font-bold text-pink-600">친구에게 포인트 선물하기</span>
+          <span className="text-sm font-bold text-pink-600">포인트 선물</span>
+        </Link>
+        <Link href="/coupon"
+          className="flex-1 flex items-center justify-center gap-2 bg-orange-50 border border-orange-200 rounded-2xl py-3 active:bg-orange-100 transition-colors">
+          <Coffee className="w-4 h-4 text-orange-500" strokeWidth={2} />
+          <span className="text-sm font-bold text-orange-600">내 쿠폰함</span>
+        </Link>
+      </div>
+
+      {/* ── 후원 현황 바로가기 ── */}
+      <div className="px-4 pt-2">
+        <Link href="/donate/dashboard"
+          className="flex items-center justify-center gap-2 bg-green-50 border border-green-200 rounded-2xl py-2.5 active:bg-green-100 transition-colors">
+          <HeartHandshake className="w-4 h-4 text-green-600" strokeWidth={2} />
+          <span className="text-sm font-bold text-green-700">후원 현황 보기</span>
         </Link>
       </div>
 
@@ -440,6 +524,48 @@ export default function RewardPage() {
                 {exchanging ? "처리 중..." : "교환 신청"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 쿠폰 발급 완료 모달 ── */}
+      {couponModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[300] px-6">
+          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+              <Coffee className="w-8 h-8 text-green-600" strokeWidth={1.8} />
+            </div>
+            <h2 className="text-lg font-bold text-gray-800 mb-1">쿠폰이 발급되었습니다!</h2>
+            <p className="text-sm text-gray-500 mb-4">{couponModal.title}</p>
+
+            <div className="bg-gray-50 rounded-2xl p-4 mb-4 border-2 border-dashed border-gray-300">
+              <p className="text-[10px] text-gray-400 mb-1">쿠폰 코드</p>
+              <p className="text-2xl font-black text-gray-800 tracking-widest">{couponModal.code}</p>
+            </div>
+
+            <button
+              onClick={() => {
+                navigator.clipboard?.writeText(couponModal.code);
+                setCouponCopied(true);
+                setTimeout(() => setCouponCopied(false), 2000);
+              }}
+              className="w-full bg-green-500 text-white py-3 rounded-2xl font-bold mb-2"
+            >
+              {couponCopied ? "복사 완료!" : "쿠폰 코드 복사"}
+            </button>
+            <button
+              onClick={() => { setCouponModal(null); setCouponCopied(false); }}
+              className="w-full bg-gray-100 text-gray-600 py-3 rounded-2xl font-bold mb-2"
+            >
+              닫기
+            </button>
+            <Link
+              href="/coupon"
+              className="block text-sm text-purple-500 font-medium"
+              onClick={() => setCouponModal(null)}
+            >
+              내 쿠폰함 보기 →
+            </Link>
           </div>
         </div>
       )}

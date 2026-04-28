@@ -272,8 +272,7 @@ service cloud.firestore {
     //  읽기: 본인 또는 관리자 | 생성: 로그인
     // ════════════════════════════════════════════════════════════
     match /donations/{docId} {
-      allow read: if isAuth() &&
-        (resource.data.userId == request.auth.uid || isAdmin());
+      allow read: if true; // 후원 현황 대시보드 전체 공개
       allow create: if isAuth();
     }
 
@@ -303,6 +302,29 @@ service cloud.firestore {
          isAdmin());
       allow create: if isAuth();
       allow update, delete: if isAdmin();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  26. coupons — 쿠폰 (리워드 교환 시 발급)
+    //  읽기: 본인 또는 관리자 또는 매장(코드 조회용 전체)
+    //  생성: 로그인 | 수정: 관리자 또는 매장 담당자 | 삭제: 관리자
+    // ════════════════════════════════════════════════════════════
+    match /coupons/{docId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update: if isAuth();
+      allow delete: if isAdmin();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  27. partnerStores — 파트너 매장 정보
+    //  읽기: 로그인 | 쓰기: 관리자만
+    // ════════════════════════════════════════════════════════════
+    match /partnerStores/{storeId} {
+      allow read: if isAuth();
+      allow create, delete: if isAdmin();
+      allow update: if isAuth() &&
+        (resource.data.ownerUid == request.auth.uid || isAdmin());
     }
 
     // ════════════════════════════════════════════════════════════

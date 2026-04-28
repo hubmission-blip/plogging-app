@@ -166,6 +166,7 @@ export default function ProfileEditPage() {
       setSuccessMsg("✅ 내 정보가 저장됐어요!");
       setTimeout(() => { setSuccessMsg(""); router.push("/profile"); }, 1500);
     } catch (err) {
+      console.error("[프로필 저장 실패]", err.code, err.message, "uid:", user?.uid);
       alert("저장 실패: " + err.message);
     } finally {
       setSaving(false);

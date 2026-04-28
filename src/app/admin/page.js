@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, RefreshCw, BarChart3, Users, Gift, ShoppingCart, ClipboardList, Image, Recycle, Wrench, Megaphone, Footprints, MapPin, CalendarDays, UserRound, Route, PackageOpen, UsersRound, Trash2, AlertTriangle } from "lucide-react";
+import { Settings, RefreshCw, BarChart3, Users, Gift, ShoppingCart, ClipboardList, Image, Recycle, Wrench, Megaphone, Footprints, MapPin, CalendarDays, UserRound, Route, PackageOpen, UsersRound, Trash2, AlertTriangle, Store, Ticket } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
@@ -182,6 +182,16 @@ export default function AdminPage() {
     "from-red-400 to-red-500",      "from-cyan-400 to-cyan-600",
     "from-lime-400 to-lime-600",    "from-violet-400 to-violet-600",
   ];
+
+  // ── 파트너 매장 ────────────────────────────────────────
+  const EMPTY_STORE = { name: "", address: "", contact: "", ownerUid: "", ownerEmail: "", active: true, accumulatedPoints: 0 };
+  const [partnerStores, setPartnerStores] = useState([]);
+  const [storeMode,     setStoreMode]     = useState(false);
+  const [editingStore,  setEditingStore]  = useState(null);
+  const [newStore,       setNewStore]     = useState(EMPTY_STORE);
+  const [storeCoupons,   setStoreCoupons] = useState([]); // 쿠폰 현황
+  const [storeUserSearch, setStoreUserSearch] = useState("");
+  const [storeUserResults, setStoreUserResults] = useState([]);
 
   // ── 메시지 표시 ───────────────────────────────────────
   const showMsg = (msg) => {
@@ -412,6 +422,59 @@ export default function AdminPage() {
     } finally { setClubDeleting(false); }
   };
 
+  // ── 파트너 매장 데이터 ─────────────────────────────────
+  const fetchPartnerStores = useCallback(async () => {
+    setLoading(true);
+    try {
+      const snap = await getDocs(collection(db, "partnerStores"));
+      const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      arr.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      setPartnerStores(arr);
+
+      // 쿠폰 현황도 함께 로드
+      const couponSnap = await getDocs(query(collection(db, "coupons"), orderBy("createdAt", "desc"), limit(100)));
+      setStoreCoupons(couponSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    } catch (e) { console.error("파트너 매장 로드 실패:", e); }
+    finally { setLoading(false); }
+  }, []);
+
+  const handleSaveStore = async () => {
+    const data = editingStore || newStore;
+    if (!data.name.trim()) { showMsg("❌ 매장명을 입력하세요."); return; }
+    if (!data.ownerUid.trim()) { showMsg("❌ 매장 담당자를 선택하세요."); return; }
+    try {
+      if (editingStore) {
+        await updateDoc(doc(db, "partnerStores", editingStore.id), {
+          name: data.name, address: data.address, contact: data.contact,
+          ownerUid: data.ownerUid, ownerEmail: data.ownerEmail, active: data.active,
+        });
+        showMsg("✅ 매장 정보가 수정되었습니다.");
+      } else {
+        await addDoc(collection(db, "partnerStores"), {
+          ...data, accumulatedPoints: 0, createdAt: serverTimestamp(),
+        });
+        showMsg("✅ 매장이 등록되었습니다.");
+      }
+      setStoreMode(false);
+      setEditingStore(null);
+      setNewStore(EMPTY_STORE);
+      fetchPartnerStores();
+    } catch (e) { showMsg("❌ 저장 실패: " + e.message); }
+  };
+
+  const handleSearchStoreUser = async (keyword) => {
+    setStoreUserSearch(keyword);
+    if (keyword.length < 2) { setStoreUserResults([]); return; }
+    try {
+      const q1 = query(collection(db, "users"), where("displayName", ">=", keyword), where("displayName", "<=", keyword + ""), limit(5));
+      const q2 = query(collection(db, "users"), where("email", ">=", keyword), where("email", "<=", keyword + ""), limit(5));
+      const [s1, s2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+      const map = new Map();
+      [...s1.docs, ...s2.docs].forEach((d) => map.set(d.id, { uid: d.id, ...d.data() }));
+      setStoreUserResults([...map.values()]);
+    } catch (e) { console.error(e); }
+  };
+
   // ── 구매 승인 → 포인트 지급 ──────────────────────────
   const handleApprovePurchase = async (purchase) => {
     try {
@@ -517,6 +580,7 @@ export default function AdminPage() {
     if (activeTab === "shop")        fetchProducts();
     if (activeTab === "purchases")   fetchPurchases();
     if (activeTab === "clubs")       fetchClubs();
+    if (activeTab === "partners")    fetchPartnerStores();
   }, [activeTab, user, isAdmin, emailLoaded]);
 
   useEffect(() => {
@@ -954,6 +1018,7 @@ export default function AdminPage() {
     { id: "banners",     Icon: Image,            name: "배너" },
     { id: "ecospots",    Icon: Recycle,          name: "에코스팟" },
     { id: "clubs",       Icon: UsersRound,        name: "동아리" },
+    { id: "partners",   Icon: Store,             name: "파트너" },
     { id: "maintenance", Icon: Wrench,           name: "유지관리" },
     { id: "notices",     Icon: Megaphone,        name: "공지" },
   ];
@@ -983,6 +1048,7 @@ export default function AdminPage() {
               if (activeTab === "notices")     fetchNotices();
               if (activeTab === "purchases")   fetchPurchases();
               if (activeTab === "clubs")       fetchClubs();
+              if (activeTab === "partners")    fetchPartnerStores();
             }}
             className="bg-gray-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
           >
@@ -2832,6 +2898,217 @@ export default function AdminPage() {
                         }`}
                       >
                         {clubDeleting ? "삭제 중..." : "삭제"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ═════════════��════════════════════════
+              🏪 파트너 매장 탭
+          ══════════════════════════════════════ */}
+          {activeTab === "partners" && (
+            <>
+              <SectionTitle>파트너 매장 관리 ({partnerStores.length}개)</SectionTitle>
+
+              {/* 등록 버튼 */}
+              <button
+                onClick={() => { setStoreMode(true); setEditingStore(null); setNewStore(EMPTY_STORE); setStoreUserSearch(""); setStoreUserResults([]); }}
+                className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold text-sm mb-4 flex items-center justify-center gap-2"
+              >
+                <Store className="w-4 h-4" strokeWidth={2} /> 새 파트너 매장 등록
+              </button>
+
+              {/* 쿠폰 현황 요약 */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="bg-green-50 rounded-xl p-3 text-center">
+                  <p className="text-lg font-black text-green-700">{storeCoupons.filter(c => c.status === "active").length}</p>
+                  <p className="text-[10px] text-green-600">활성 쿠폰</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3 text-center">
+                  <p className="text-lg font-black text-gray-600">{storeCoupons.filter(c => c.status === "used").length}</p>
+                  <p className="text-[10px] text-gray-500">사용완료</p>
+                </div>
+                <div className="bg-purple-50 rounded-xl p-3 text-center">
+                  <p className="text-lg font-black text-purple-700">{storeCoupons.reduce((s, c) => s + (c.status === "used" ? (c.points || 0) : 0), 0).toLocaleString()}P</p>
+                  <p className="text-[10px] text-purple-600">총 사용 ��인트</p>
+                </div>
+              </div>
+
+              {/* 매장 목록 */}
+              <div className="space-y-3">
+                {partnerStores.map((store) => (
+                  <div key={store.id} className="bg-white rounded-xl p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${store.active ? "bg-green-400" : "bg-gray-300"}`} />
+                        <h3 className="font-bold text-gray-800 text-sm">{store.name}</h3>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setEditingStore(store);
+                          setStoreMode(true);
+                          setStoreUserSearch("");
+                          setStoreUserResults([]);
+                        }}
+                        className="text-xs text-blue-500 font-medium"
+                      >
+                        수정
+                      </button>
+                    </div>
+                    <div className="text-xs text-gray-400 space-y-0.5">
+                      {store.address && <p>{store.address}</p>}
+                      {store.contact && <p>연락처: {store.contact}</p>}
+                      <p>담당자: {store.ownerEmail || store.ownerUid}</p>
+                    </div>
+                    <div className="mt-2 flex items-center gap-3">
+                      <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+                        누적 {(store.accumulatedPoints || 0).toLocaleString()}P
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        쿠폰 사용: {storeCoupons.filter(c => c.usedByStore === store.id).length}건
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {partnerStores.length === 0 && (
+                  <p className="text-center py-8 text-gray-400 text-sm">등록된 파트너 매장이 없습니다</p>
+                )}
+              </div>
+
+              {/* 매장 등록/수정 모달 */}
+              {storeMode && (
+                <div className="fixed inset-0 bg-black/50 flex items-end z-[200]" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+                  <div className="bg-white w-full rounded-t-3xl p-6 shadow-2xl max-h-[80vh] overflow-y-auto">
+                    <h2 className="text-lg font-bold text-gray-800 mb-4">
+                      {editingStore ? "매장 수정" : "새 파트너 매장 ���록"}
+                    </h2>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 mb-1 block">매장명 *</label>
+                        <input
+                          value={editingStore ? editingStore.name : newStore.name}
+                          onChange={(e) => editingStore
+                            ? setEditingStore({ ...editingStore, name: e.target.value })
+                            : setNewStore({ ...newStore, name: e.target.value })
+                          }
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-400"
+                          placeholder="예: 그린카페 강남점"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 mb-1 block">주소</label>
+                        <input
+                          value={editingStore ? editingStore.address : newStore.address}
+                          onChange={(e) => editingStore
+                            ? setEditingStore({ ...editingStore, address: e.target.value })
+                            : setNewStore({ ...newStore, address: e.target.value })
+                          }
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-400"
+                          placeholder="예: 서울시 강남구 테헤란로 123"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 mb-1 block">연락처</label>
+                        <input
+                          value={editingStore ? editingStore.contact : newStore.contact}
+                          onChange={(e) => editingStore
+                            ? setEditingStore({ ...editingStore, contact: e.target.value })
+                            : setNewStore({ ...newStore, contact: e.target.value })
+                          }
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-400"
+                          placeholder="예: 02-1234-5678"
+                        />
+                      </div>
+
+                      {/* 매장 담당자 검색 */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 mb-1 block">매장 담당자 (앱 사용자) *</label>
+                        {(editingStore?.ownerEmail || newStore.ownerEmail) && (
+                          <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 mb-2 flex items-center justify-between">
+                            <span className="text-sm text-emerald-700">
+                              선택됨: {editingStore?.ownerEmail || newStore.ownerEmail}
+                            </span>
+                            <button
+                              onClick={() => editingStore
+                                ? setEditingStore({ ...editingStore, ownerUid: "", ownerEmail: "" })
+                                : setNewStore({ ...newStore, ownerUid: "", ownerEmail: "" })
+                              }
+                              className="text-xs text-red-400"
+                            >변경</button>
+                          </div>
+                        )}
+                        {!(editingStore?.ownerEmail || newStore.ownerEmail) && (
+                          <>
+                            <input
+                              value={storeUserSearch}
+                              onChange={(e) => handleSearchStoreUser(e.target.value)}
+                              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-400"
+                              placeholder="닉네임 또는 이메일로 검색"
+                            />
+                            {storeUserResults.length > 0 && (
+                              <div className="mt-1 bg-white border border-gray-200 rounded-xl overflow-hidden">
+                                {storeUserResults.map((u) => (
+                                  <button
+                                    key={u.uid}
+                                    onClick={() => {
+                                      const email = u.email || "";
+                                      if (editingStore) {
+                                        setEditingStore({ ...editingStore, ownerUid: u.uid, ownerEmail: email });
+                                      } else {
+                                        setNewStore({ ...newStore, ownerUid: u.uid, ownerEmail: email });
+                                      }
+                                      setStoreUserSearch("");
+                                      setStoreUserResults([]);
+                                    }}
+                                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                                  >
+                                    <p className="text-sm font-medium text-gray-700">{u.displayName || u.realName || "이름없음"}</p>
+                                    <p className="text-xs text-gray-400">{u.email}</p>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      {/* 활성 상태 */}
+                      <div className="flex items-center gap-3">
+                        <label className="text-xs font-medium text-gray-500">활성 상태</label>
+                        <button
+                          onClick={() => editingStore
+                            ? setEditingStore({ ...editingStore, active: !editingStore.active })
+                            : setNewStore({ ...newStore, active: !newStore.active })
+                          }
+                          className={`w-12 h-6 rounded-full transition-colors ${
+                            (editingStore?.active ?? newStore.active) ? "bg-emerald-500" : "bg-gray-300"
+                          }`}
+                        >
+                          <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                            (editingStore?.active ?? newStore.active) ? "translate-x-6" : "translate-x-0.5"
+                          }`} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mt-6">
+                      <button
+                        onClick={() => { setStoreMode(false); setEditingStore(null); }}
+                        className="flex-1 bg-gray-100 text-gray-600 py-3.5 rounded-2xl font-bold"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={handleSaveStore}
+                        className="flex-1 bg-emerald-500 text-white py-3.5 rounded-2xl font-bold"
+                      >
+                        {editingStore ? "수정" : "등록"}
                       </button>
                     </div>
                   </div>
