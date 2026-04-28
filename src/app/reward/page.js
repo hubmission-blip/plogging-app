@@ -18,9 +18,13 @@ import {
 // ─── 리워드 아이템 목록 ────────────────────────────────────
 // ─── 쿠폰 코드 생성 함수 ─────────────────────────────────
 function generateCouponCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 혼동 문자 제외
-  const seg = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  return `${seg(4)}-${seg(4)}-${seg(4)}`; // 예: A3K7-B9H2-X5M4
+  const COUPON_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let result = "";
+  for (let i = 0; i < 12; i++) {
+    result += COUPON_CHARS[Math.floor(Math.random() * COUPON_CHARS.length)];
+    if (i === 3 || i === 7) result += "-";
+  }
+  return result; // 예: A3K7-B9H2-X5M4
 }
 
 // ─── 쿠폰형 리워드 ID 목록 (코드 발급 대상) ─────────────
@@ -268,7 +272,8 @@ export default function RewardPage() {
         setTimeout(() => setSuccessMsg(""), 5000);
       }
     } catch (e) {
-      alert("교환 실패: " + e.message);
+      console.error("교환 실패 상세:", e);
+      alert("교환 실패: " + (e.message || String(e)));
     } finally {
       setExchanging(false);
     }

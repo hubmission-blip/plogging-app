@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, RefreshCw, BarChart3, Users, Gift, ShoppingCart, ClipboardList, Image, Recycle, Wrench, Megaphone, Footprints, MapPin, CalendarDays, UserRound, Route, PackageOpen, UsersRound, Trash2, AlertTriangle, Store, Ticket } from "lucide-react";
+import { Settings, RefreshCw, BarChart3, Users, Gift, ShoppingCart, ClipboardList, Image, Recycle, Wrench, Megaphone, Footprints, MapPin, CalendarDays, UserRound, Route, PackageOpen, UsersRound, Trash2, AlertTriangle, Store, Ticket, Leaf, Plus, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
@@ -192,6 +192,14 @@ export default function AdminPage() {
   const [storeCoupons,   setStoreCoupons] = useState([]); // 쿠폰 현황
   const [storeUserSearch, setStoreUserSearch] = useState("");
   const [storeUserResults, setStoreUserResults] = useState([]);
+
+  // ── 녹색매장 카테고리 ─────────────────────────────────
+  const [greenCategories, setGreenCategories] = useState([]);
+  const [greenEditMode, setGreenEditMode] = useState(false);
+  const [editingGreenCat, setEditingGreenCat] = useState(null);
+  const EMPTY_GREEN_CAT = { name: "", icon: "🌿", color: "#16A34A", keywords: [], active: true, order: 0 };
+  const [newGreenCat, setNewGreenCat] = useState(EMPTY_GREEN_CAT);
+  const [greenKeywordInput, setGreenKeywordInput] = useState("");
 
   // ── 메시지 표시 ───────────────────────────────────────
   const showMsg = (msg) => {
@@ -475,6 +483,54 @@ export default function AdminPage() {
     } catch (e) { console.error(e); }
   };
 
+  // ──────────────────────────────────────────────────────
+  //  Fetch: 녹색매장 카테고리
+  // ──────────────────────────────────────────────────────
+  const fetchGreenCategories = useCallback(async () => {
+    setLoading(true);
+    try {
+      const snap = await getDocs(collection(db, "greenCategories"));
+      const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      arr.sort((a, b) => (a.order || 0) - (b.order || 0));
+      setGreenCategories(arr);
+    } catch (e) { console.error("녹색매장 로드 실패:", e); }
+    finally { setLoading(false); }
+  }, []);
+
+  const handleSaveGreenCat = async () => {
+    const data = editingGreenCat || newGreenCat;
+    if (!data.name.trim()) { showMsg("❌ 카테고리 이름을 입력하세요."); return; }
+    if (data.keywords.length === 0) { showMsg("❌ 검색 키워드를 1개 이상 추가하세요."); return; }
+    try {
+      if (editingGreenCat) {
+        await updateDoc(doc(db, "greenCategories", editingGreenCat.id), {
+          name: data.name, icon: data.icon, color: data.color,
+          keywords: data.keywords, active: data.active, order: data.order || 0,
+        });
+        showMsg("✅ 카테고리가 수정되었습니다.");
+      } else {
+        await addDoc(collection(db, "greenCategories"), {
+          ...data, createdAt: serverTimestamp(),
+        });
+        showMsg("✅ 카테고리가 등록되었습니다.");
+      }
+      setGreenEditMode(false);
+      setEditingGreenCat(null);
+      setNewGreenCat(EMPTY_GREEN_CAT);
+      setGreenKeywordInput("");
+      fetchGreenCategories();
+    } catch (e) { showMsg("❌ 저장 실패: " + e.message); }
+  };
+
+  const handleDeleteGreenCat = async (cat) => {
+    if (!confirm(`'${cat.name}' 카테고리를 삭제할까요?`)) return;
+    try {
+      await deleteDoc(doc(db, "greenCategories", cat.id));
+      showMsg("✅ 삭제되었습니다.");
+      fetchGreenCategories();
+    } catch (e) { showMsg("❌ 삭제 실패: " + e.message); }
+  };
+
   // ── 구매 승인 → 포인트 지급 ──────────────────────────
   const handleApprovePurchase = async (purchase) => {
     try {
@@ -581,6 +637,7 @@ export default function AdminPage() {
     if (activeTab === "purchases")   fetchPurchases();
     if (activeTab === "clubs")       fetchClubs();
     if (activeTab === "partners")    fetchPartnerStores();
+    if (activeTab === "greenStores") fetchGreenCategories();
   }, [activeTab, user, isAdmin, emailLoaded]);
 
   useEffect(() => {
@@ -1018,7 +1075,8 @@ export default function AdminPage() {
     { id: "banners",     Icon: Image,            name: "배너" },
     { id: "ecospots",    Icon: Recycle,          name: "에코스팟" },
     { id: "clubs",       Icon: UsersRound,        name: "동아리" },
-    { id: "partners",   Icon: Store,             name: "파트너" },
+    { id: "partners",    Icon: Store,             name: "파트너" },
+    { id: "greenStores", Icon: Leaf,              name: "녹색매장" },
     { id: "maintenance", Icon: Wrench,           name: "유지관리" },
     { id: "notices",     Icon: Megaphone,        name: "공지" },
   ];
@@ -1049,6 +1107,7 @@ export default function AdminPage() {
               if (activeTab === "purchases")   fetchPurchases();
               if (activeTab === "clubs")       fetchClubs();
               if (activeTab === "partners")    fetchPartnerStores();
+              if (activeTab === "greenStores") fetchGreenCategories();
             }}
             className="bg-gray-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
           >
@@ -3110,6 +3169,234 @@ export default function AdminPage() {
                       >
                         {editingStore ? "수정" : "등록"}
                       </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ═══════════���══════════════════════════
+              🌿 녹색매장 카테고리 탭
+          ══════���════════════════��══════════════ */}
+          {activeTab === "greenStores" && (
+            <>
+              <SectionTitle>녹색매��� 카테고리 관리 ({greenCategories.length}개)</SectionTitle>
+
+              <p className="text-xs text-gray-400 mb-4 leading-relaxed">
+                카테고리를 등록하고 검색 키워드(브랜드명)를 추가하면, 사용자가 지도에서 해당 카테고리를 선택했을 때 카카오맵의 장소 데이터로 주변 매장을 표시합니다.
+              </p>
+
+              {/* 등록 버튼 */}
+              <button
+                onClick={() => { setGreenEditMode(true); setEditingGreenCat(null); setNewGreenCat(EMPTY_GREEN_CAT); setGreenKeywordInput(""); }}
+                className="w-full bg-green-500 text-white py-3 rounded-xl font-bold text-sm mb-4 flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" strokeWidth={2} /> 새 카테고리 등록
+              </button>
+
+              {/* 카테고리 목록 */}
+              <div className="space-y-3">
+                {greenCategories.map((cat) => (
+                  <div key={cat.id} className="bg-white rounded-xl p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{cat.icon}</span>
+                        <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: cat.active ? cat.color : "#d1d5db" }} />
+                        <h3 className="font-bold text-gray-800 text-sm">{cat.name}</h3>
+                        {!cat.active && <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">비���성</span>}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingGreenCat(cat);
+                            setGreenEditMode(true);
+                            setGreenKeywordInput("");
+                          }}
+                          className="text-xs text-blue-500 font-medium"
+                        >수정</button>
+                        <button
+                          onClick={() => handleDeleteGreenCat(cat)}
+                          className="text-xs text-red-400 font-medium"
+                        >삭제</button>
+                      </div>
+                    </div>
+                    {/* 키워드 칩 */}
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {(cat.keywords || []).map((kw, i) => (
+                        <span key={i} className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ backgroundColor: cat.color + "20", color: cat.color }}>
+                          {kw}
+                        </span>
+                      ))}
+                      {(!cat.keywords || cat.keywords.length === 0) && (
+                        <span className="text-xs text-gray-300">키워드 없음</span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-2">정렬 순서: {cat.order || 0}</p>
+                  </div>
+                ))}
+                {greenCategories.length === 0 && (
+                  <p className="text-center py-8 text-gray-400 text-sm">등록��� 녹색매장 카테고리가 없습니다</p>
+                )}
+              </div>
+
+              {/* 등록/수정 모달 */}
+              {greenEditMode && (
+                <div className="fixed inset-0 bg-black/50 flex items-end z-[200]" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+                  <div className="bg-white w-full rounded-t-3xl p-6 shadow-2xl max-h-[80vh] overflow-y-auto">
+                    <h2 className="text-lg font-bold text-gray-800 mb-4">
+                      {editingGreenCat ? "카테고리 수정" : "새 카테고리 등��"}
+                    </h2>
+
+                    <div className="space-y-4">
+                      {/* 카테고리명 */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 mb-1 block">카테고리 이���</label>
+                        <input
+                          value={editingGreenCat?.name ?? newGreenCat.name}
+                          onChange={(e) => editingGreenCat
+                            ? setEditingGreenCat({ ...editingGreenCat, name: e.target.value })
+                            : setNewGreenCat({ ...newGreenCat, name: e.target.value })
+                          }
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-400"
+                          placeholder="예: 제로웨이스트 매장"
+                        />
+                      </div>
+
+                      {/* 아이콘 + 색상 */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 mb-1 block">아이콘 (이모지)</label>
+                          <input
+                            value={editingGreenCat?.icon ?? newGreenCat.icon}
+                            onChange={(e) => editingGreenCat
+                              ? setEditingGreenCat({ ...editingGreenCat, icon: e.target.value })
+                              : setNewGreenCat({ ...newGreenCat, icon: e.target.value })
+                            }
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-center focus:outline-none focus:border-green-400"
+                            placeholder="🌿"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 mb-1 block">색상</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={editingGreenCat?.color ?? newGreenCat.color}
+                              onChange={(e) => editingGreenCat
+                                ? setEditingGreenCat({ ...editingGreenCat, color: e.target.value })
+                                : setNewGreenCat({ ...newGreenCat, color: e.target.value })
+                              }
+                              className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer"
+                            />
+                            <span className="text-xs text-gray-400">{editingGreenCat?.color ?? newGreenCat.color}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 정렬 순서 */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 mb-1 block">정렬 순서 (낮을수록 앞에)</label>
+                        <input
+                          type="number"
+                          value={editingGreenCat?.order ?? newGreenCat.order}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            editingGreenCat
+                              ? setEditingGreenCat({ ...editingGreenCat, order: val })
+                              : setNewGreenCat({ ...newGreenCat, order: val });
+                          }}
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-400"
+                        />
+                      </div>
+
+                      {/* 키워드 등록 */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 mb-1 block">검색 키워드 (브랜드명)</label>
+                        <div className="flex gap-2">
+                          <input
+                            value={greenKeywordInput}
+                            onChange={(e) => setGreenKeywordInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && greenKeywordInput.trim()) {
+                                e.preventDefault();
+                                const kw = greenKeywordInput.trim();
+                                const current = editingGreenCat?.keywords ?? newGreenCat.keywords;
+                                if (!current.includes(kw)) {
+                                  editingGreenCat
+                                    ? setEditingGreenCat({ ...editingGreenCat, keywords: [...current, kw] })
+                                    : setNewGreenCat({ ...newGreenCat, keywords: [...current, kw] });
+                                }
+                                setGreenKeywordInput("");
+                              }
+                            }}
+                            className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-400"
+                            placeholder="브랜드명 입력 후 Enter"
+                          />
+                          <button
+                            onClick={() => {
+                              if (!greenKeywordInput.trim()) return;
+                              const kw = greenKeywordInput.trim();
+                              const current = editingGreenCat?.keywords ?? newGreenCat.keywords;
+                              if (!current.includes(kw)) {
+                                editingGreenCat
+                                  ? setEditingGreenCat({ ...editingGreenCat, keywords: [...current, kw] })
+                                  : setNewGreenCat({ ...newGreenCat, keywords: [...current, kw] });
+                              }
+                              setGreenKeywordInput("");
+                            }}
+                            className="bg-green-500 text-white px-4 rounded-xl font-bold text-sm"
+                          >추가</button>
+                        </div>
+                        {/* 키워드 칩 목록 */}
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {(editingGreenCat?.keywords ?? newGreenCat.keywords).map((kw, i) => (
+                            <span key={i} className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-full bg-green-50 text-green-700 font-medium">
+                              {kw}
+                              <button
+                                onClick={() => {
+                                  const current = editingGreenCat?.keywords ?? newGreenCat.keywords;
+                                  const updated = current.filter((_, idx) => idx !== i);
+                                  editingGreenCat
+                                    ? setEditingGreenCat({ ...editingGreenCat, keywords: updated })
+                                    : setNewGreenCat({ ...newGreenCat, keywords: updated });
+                                }}
+                                className="ml-0.5 text-green-400 hover:text-red-500"
+                              ><X className="w-3.5 h-3.5" strokeWidth={2} /></button>
+                            </span>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-2">사용자가 이 카테고리를 선택하면, 등록된 모든 키워드로 카카오맵에서 주변 매장을 검색합니다.</p>
+                      </div>
+
+                      {/* 활성 상태 */}
+                      <div className="flex items-center gap-3">
+                        <label className="text-xs font-medium text-gray-500">활성 상태</label>
+                        <button
+                          onClick={() => editingGreenCat
+                            ? setEditingGreenCat({ ...editingGreenCat, active: !editingGreenCat.active })
+                            : setNewGreenCat({ ...newGreenCat, active: !newGreenCat.active })
+                          }
+                          className={`w-12 h-6 rounded-full transition-colors ${
+                            (editingGreenCat?.active ?? newGreenCat.active) ? "bg-green-500" : "bg-gray-300"
+                          }`}
+                        >
+                          <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                            (editingGreenCat?.active ?? newGreenCat.active) ? "translate-x-6" : "translate-x-0.5"
+                          }`} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mt-6">
+                      <button
+                        onClick={() => { setGreenEditMode(false); setEditingGreenCat(null); }}
+                        className="flex-1 bg-gray-100 text-gray-600 py-3.5 rounded-2xl font-bold"
+                      >취소</button>
+                      <button
+                        onClick={handleSaveGreenCat}
+                        className="flex-1 bg-green-500 text-white py-3.5 rounded-2xl font-bold"
+                      >{editingGreenCat ? "수정" : "등록"}</button>
                     </div>
                   </div>
                 </div>

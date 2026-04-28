@@ -4,18 +4,22 @@ import { useState, useEffect } from "react";
 import { Map, Polyline, CustomOverlayMap } from "react-kakao-maps-sdk";
 
 // ─── MapView Props ─────────────────────────────────────────
-// currentPath    : [{ lat, lng }, ...]  현재 플로깅 경로
-// pastRoutes     : [{ id, coords, color }, ...]  내 과거 경로
-// nearbyRoutes   : [{ id, coords }, ...]  타인 최근 경로 (회색 반투명)
-// partnerMarkers : [{ id, lat, lng, icon, name, ... }]  제휴 상점 마커
-// onPartnerClick : (partner) => void  마커 클릭 콜백
+// currentPath       : [{ lat, lng }, ...]  현재 플로깅 경로
+// pastRoutes        : [{ id, coords, color }, ...]  내 과거 경로
+// nearbyRoutes      : [{ id, coords }, ...]  타인 최근 경로 (회색 반투명)
+// partnerMarkers    : [{ id, lat, lng, icon, name, ... }]  제휴 상점 마커
+// greenStoreMarkers : [{ id, place_name, x, y, icon, color, category_name, ... }]  녹색매장 마커
+// onPartnerClick    : (partner) => void  마커 클릭 콜백
+// onGreenStoreClick : (store) => void  녹색매장 클릭 콜백
 
 export default function MapView({
-  currentPath    = [],
-  pastRoutes     = [],
-  nearbyRoutes   = [],
-  partnerMarkers = [],
+  currentPath        = [],
+  pastRoutes         = [],
+  nearbyRoutes       = [],
+  partnerMarkers     = [],
+  greenStoreMarkers  = [],
   onPartnerClick,
+  onGreenStoreClick,
 }) {
   const DEFAULT_CENTER = { lat: 37.5665, lng: 126.9780 }; // 서울 시청
   const [center, setCenter] = useState(DEFAULT_CENTER);
@@ -195,6 +199,55 @@ export default function MapView({
           </CustomOverlayMap>
         );
       })}
+
+      {/* ── D. 녹색매장 마커 (카카오 검색 결과) ──────────── */}
+      {mapLoaded && greenStoreMarkers.map((store, idx) => (
+        <CustomOverlayMap
+          key={`green-${store.id || idx}`}
+          position={{ lat: parseFloat(store.y), lng: parseFloat(store.x) }}
+          zIndex={12}
+        >
+          <button
+            onClick={() => onGreenStoreClick && onGreenStoreClick(store)}
+            style={{
+              background: "white",
+              border: `2px solid ${store.color || "#16A34A"}`,
+              borderRadius: 12,
+              width: 36,
+              height: 36,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 18,
+              cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+              transition: "transform 0.15s",
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = "scale(1.15)"}
+            onMouseOut={(e) => e.currentTarget.style.transform = "scale(1)"}
+            title={store.place_name}
+          >
+            {store.icon || "🌿"}
+          </button>
+          <div style={{
+            marginTop: 1,
+            background: "white",
+            borderRadius: 6,
+            padding: "1px 5px",
+            fontSize: 9,
+            fontWeight: 600,
+            color: store.color || "#16A34A",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
+            whiteSpace: "nowrap",
+            textAlign: "center",
+            maxWidth: 80,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}>
+            {store.place_name}
+          </div>
+        </CustomOverlayMap>
+      ))}
 
       {/* 펄스 애니메이션 */}
       <style>{`
