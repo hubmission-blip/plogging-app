@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, RefreshCw, BarChart3, Users, Gift, ShoppingCart, ClipboardList, Image, Recycle, Wrench, Megaphone, Footprints, MapPin, CalendarDays, UserRound, Route, PackageOpen, UsersRound, Trash2, AlertTriangle, Store, Ticket, Leaf, Plus, X } from "lucide-react";
+import { Settings, RefreshCw, BarChart3, Users, Gift, ShoppingCart, ClipboardList, Image, Recycle, Wrench, Megaphone, Footprints, MapPin, CalendarDays, UserRound, Route, PackageOpen, UsersRound, Trash2, AlertTriangle, Store, Ticket, Leaf, Plus, X, Award, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
@@ -200,6 +200,14 @@ export default function AdminPage() {
   const EMPTY_GREEN_CAT = { name: "", icon: "🌿", color: "#16A34A", keywords: [], active: true, order: 0 };
   const [newGreenCat, setNewGreenCat] = useState(EMPTY_GREEN_CAT);
   const [greenKeywordInput, setGreenKeywordInput] = useState("");
+
+  // ── 봉사실적 ─────────────────────────────────────────
+  const [volunteerMonth, setVolunteerMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [volunteerStats, setVolunteerStats] = useState([]);   // [{uid, name, email, volunteerNo, count, totalDist, totalDuration, totalPoints}]
+  const [volunteerLoading, setVolunteerLoading] = useState(false);
 
   // ── 메시지 표시 ───────────────────────────────────────
   const showMsg = (msg) => {
@@ -531,6 +539,99 @@ export default function AdminPage() {
     } catch (e) { showMsg("❌ 삭제 실패: " + e.message); }
   };
 
+  // ──────────────────────────────────────────────────────
+  //  Fetch: 봉사실적 집계
+  // ──────────────────────────────────────────────────────
+  const fetchVolunteerStats = useCallback(async (month) => {
+    const targetMonth = month || volunteerMonth;
+    setVolunteerLoading(true);
+    try {
+      // 해당 월의 시작/끝 타임스탬프
+      const [year, mon] = targetMonth.split("-").map(Number);
+      const startDate = new Date(year, mon - 1, 1);
+      const endDate   = new Date(year, mon, 1); // 다음 달 1일
+
+      // routes 컬렉션에서 해당 월 데이터 조회
+      const routesSnap = await getDocs(
+        query(
+          collection(db, "routes"),
+          where("createdAt", ">=", Timestamp.fromDate(startDate)),
+          where("createdAt", "<",  Timestamp.fromDate(endDate)),
+        )
+      );
+
+      // 사용자별 집계
+      const userMap = {}; // uid → { count, totalDist, totalDuration, totalPoints }
+      routesSnap.docs.forEach((d) => {
+        const r = d.data();
+        const uid = r.userId || "anonymous";
+        if (uid === "anonymous") return;
+        if (!userMap[uid]) {
+          userMap[uid] = { count: 0, totalDist: 0, totalDuration: 0, totalPoints: 0 };
+        }
+        userMap[uid].count += 1;
+        userMap[uid].totalDist     += r.distance || 0;
+        userMap[uid].totalDuration += r.duration || 0;
+        userMap[uid].totalPoints   += r.points   || 0;
+      });
+
+      // 사용자 정보 조회 (이름, 이메일, 1365 회원번호)
+      const uids = Object.keys(userMap);
+      if (uids.length > 0) {
+        const usersSnap = await getDocs(collection(db, "users"));
+        const usersMap = {};
+        usersSnap.docs.forEach((d) => { usersMap[d.id] = d.data(); });
+
+        const result = uids.map((uid) => {
+          const u = usersMap[uid] || {};
+          const s = userMap[uid];
+          return {
+            uid,
+            name: u.realName || u.displayName || u.name || "(이름 없음)",
+            email: u.email || "",
+            volunteerNo: u.volunteerNo || "",
+            count: s.count,
+            totalDist: Math.round(s.totalDist * 100) / 100,
+            totalDuration: s.totalDuration,
+            totalPoints: s.totalPoints,
+            // 봉사시간 = 플로깅 시간(초)을 시간 단위로 변환 (30분 이상 → 올림)
+            volunteerHours: Math.max(1, Math.round(s.totalDuration / 3600)),
+          };
+        });
+
+        // 봉사시간 내림차순 정렬
+        result.sort((a, b) => b.volunteerHours - a.volunteerHours || b.count - a.count);
+        setVolunteerStats(result);
+      } else {
+        setVolunteerStats([]);
+      }
+    } catch (e) {
+      console.error("봉사실적 로드 실패:", e);
+      showMsg("❌ 봉사실적 로드 실패: " + e.message);
+    } finally {
+      setVolunteerLoading(false);
+    }
+  }, [volunteerMonth]);
+
+  // ── 봉사실적 CSV 다운로드 ──────────────────────────────
+  const downloadVolunteerCSV = () => {
+    if (volunteerStats.length === 0) { showMsg("❌ 다운로드할 데이터가 없습니다."); return; }
+    const [year, mon] = volunteerMonth.split("-");
+    const header = "이름,이메일,1365회원번호,플로깅횟수,총거리(km),총시간(분),봉사시간(h),포인트";
+    const rows = volunteerStats.map((s) =>
+      `"${s.name}","${s.email}","${s.volunteerNo}",${s.count},${s.totalDist},${Math.round(s.totalDuration / 60)},${s.volunteerHours},${s.totalPoints}`
+    );
+    const csv = "﻿" + [header, ...rows].join("\n"); // BOM for Excel
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url;
+    a.download = `봉사실적_${year}년${mon}월.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showMsg("✅ CSV 다운로드 완료");
+  };
+
   // ── 구매 승인 → 포인트 지급 ──────────────────────────
   const handleApprovePurchase = async (purchase) => {
     try {
@@ -638,6 +739,7 @@ export default function AdminPage() {
     if (activeTab === "clubs")       fetchClubs();
     if (activeTab === "partners")    fetchPartnerStores();
     if (activeTab === "greenStores") fetchGreenCategories();
+    if (activeTab === "volunteer")   fetchVolunteerStats();
   }, [activeTab, user, isAdmin, emailLoaded]);
 
   useEffect(() => {
@@ -1077,6 +1179,7 @@ export default function AdminPage() {
     { id: "clubs",       Icon: UsersRound,        name: "동아리" },
     { id: "partners",    Icon: Store,             name: "파트너" },
     { id: "greenStores", Icon: Leaf,              name: "녹색매장" },
+    { id: "volunteer",   Icon: Award,            name: "봉사실적" },
     { id: "maintenance", Icon: Wrench,           name: "유지관리" },
     { id: "notices",     Icon: Megaphone,        name: "공지" },
   ];
@@ -1108,6 +1211,7 @@ export default function AdminPage() {
               if (activeTab === "clubs")       fetchClubs();
               if (activeTab === "partners")    fetchPartnerStores();
               if (activeTab === "greenStores") fetchGreenCategories();
+              if (activeTab === "volunteer")   fetchVolunteerStats();
             }}
             className="bg-gray-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
           >
@@ -3042,7 +3146,7 @@ export default function AdminPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-end z-[200]" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
                   <div className="bg-white w-full rounded-t-3xl p-6 shadow-2xl max-h-[80vh] overflow-y-auto">
                     <h2 className="text-lg font-bold text-gray-800 mb-4">
-                      {editingStore ? "매장 수정" : "새 파트너 매장 ���록"}
+                      {editingStore ? "매장 수정" : "새 파트너 매장 등록"}
                     </h2>
 
                     <div className="space-y-3">
@@ -3176,9 +3280,162 @@ export default function AdminPage() {
             </>
           )}
 
-          {/* ═══════════���══════════════════════════
+          {/* ═══════════════════════════════════════
+              🏅 봉사실적 집계 탭
+          ═══════════════════════════════════════ */}
+          {activeTab === "volunteer" && (
+            <>
+              <SectionTitle>봉사실적 집계 (1365 자원봉사 연계)</SectionTitle>
+
+              <p className="text-xs text-gray-400 mb-4 leading-relaxed">
+                월별 플로깅 활동을 1365 자원봉사 시간으로 환산하여 집계합니다. CSV로 다운로드하여 1365 포털에 일괄 등록할 수 있습니다.
+              </p>
+
+              {/* 월 선택기 */}
+              <div className="flex items-center justify-between bg-white rounded-2xl p-4 shadow-sm mb-4">
+                <button
+                  onClick={() => {
+                    const [y, m] = volunteerMonth.split("-").map(Number);
+                    const prev = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
+                    setVolunteerMonth(prev);
+                    fetchVolunteerStats(prev);
+                  }}
+                  className="p-2 rounded-full bg-gray-100 active:bg-gray-200"
+                >
+                  <ChevronLeft className="w-5 h-5 text-gray-600" strokeWidth={2} />
+                </button>
+
+                <div className="text-center">
+                  <p className="text-lg font-bold text-gray-800">
+                    {volunteerMonth.split("-")[0]}년 {parseInt(volunteerMonth.split("-")[1])}월
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">봉사실적 현황</p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    const [y, m] = volunteerMonth.split("-").map(Number);
+                    const next = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+                    setVolunteerMonth(next);
+                    fetchVolunteerStats(next);
+                  }}
+                  className="p-2 rounded-full bg-gray-100 active:bg-gray-200"
+                >
+                  <ChevronRight className="w-5 h-5 text-gray-600" strokeWidth={2} />
+                </button>
+              </div>
+
+              {/* 집계 요약 카드 */}
+              {!volunteerLoading && volunteerStats.length > 0 && (
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="bg-green-50 rounded-xl p-3 text-center">
+                    <p className="text-lg font-bold text-green-700">{volunteerStats.length}</p>
+                    <p className="text-[10px] text-green-600 font-medium">참여자 수</p>
+                  </div>
+                  <div className="bg-blue-50 rounded-xl p-3 text-center">
+                    <p className="text-lg font-bold text-blue-700">
+                      {volunteerStats.reduce((s, v) => s + v.volunteerHours, 0)}h
+                    </p>
+                    <p className="text-[10px] text-blue-600 font-medium">총 봉사시간</p>
+                  </div>
+                  <div className="bg-orange-50 rounded-xl p-3 text-center">
+                    <p className="text-lg font-bold text-orange-700">
+                      {volunteerStats.reduce((s, v) => s + v.count, 0)}
+                    </p>
+                    <p className="text-[10px] text-orange-600 font-medium">총 플로깅</p>
+                  </div>
+                </div>
+              )}
+
+              {/* CSV 다운로드 버튼 */}
+              {volunteerStats.length > 0 && (
+                <button
+                  onClick={downloadVolunteerCSV}
+                  className="w-full bg-green-500 text-white py-3 rounded-xl font-bold text-sm mb-4 flex items-center justify-center gap-2"
+                >
+                  <Download className="w-4 h-4" strokeWidth={2} /> CSV 다운로드 (1365 일괄등록용)
+                </button>
+              )}
+
+              {/* 로딩 */}
+              {volunteerLoading && (
+                <div className="text-center py-12 text-gray-400 text-sm">집계 중...</div>
+              )}
+
+              {/* 데이터 없음 */}
+              {!volunteerLoading && volunteerStats.length === 0 && (
+                <div className="text-center py-12 text-gray-400 text-sm">
+                  해당 월에 플로깅 기록이 없습니다.
+                </div>
+              )}
+
+              {/* 사용자별 봉사실적 테이블 */}
+              {!volunteerLoading && volunteerStats.length > 0 && (
+                <div className="space-y-2">
+                  {volunteerStats.map((s, idx) => (
+                    <div key={s.uid} className="bg-white rounded-xl p-4 shadow-sm">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                            idx < 3 ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-500"
+                          }`}>
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <p className="font-bold text-gray-800 text-sm">{s.name}</p>
+                            <p className="text-[10px] text-gray-400">{s.email}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-green-600">{s.volunteerHours}h</p>
+                          <p className="text-[10px] text-gray-400">봉사시간</p>
+                        </div>
+                      </div>
+
+                      {/* 상세 정보 */}
+                      <div className="grid grid-cols-4 gap-2 mt-2 pt-2 border-t border-gray-100">
+                        <div className="text-center">
+                          <p className="text-sm font-bold text-gray-700">{s.count}회</p>
+                          <p className="text-[9px] text-gray-400">플로깅</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-bold text-gray-700">{s.totalDist}km</p>
+                          <p className="text-[9px] text-gray-400">거리</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-bold text-gray-700">{Math.round(s.totalDuration / 60)}분</p>
+                          <p className="text-[9px] text-gray-400">시간</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-bold text-gray-700">{s.totalPoints}P</p>
+                          <p className="text-[9px] text-gray-400">포인트</p>
+                        </div>
+                      </div>
+
+                      {/* 1365 회원번호 */}
+                      {s.volunteerNo ? (
+                        <div className="mt-2 pt-2 border-t border-gray-100">
+                          <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
+                            1365 회원번호: {s.volunteerNo}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="mt-2 pt-2 border-t border-gray-100">
+                          <span className="text-[10px] bg-red-50 text-red-400 px-2 py-0.5 rounded-full font-medium">
+                            1365 미등록
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ═══════════════════════════════════════
               🌿 녹색매장 카테고리 탭
-          ══════���════════════════��══════════════ */}
+          ═══════════════════════════════════════ */}
           {activeTab === "greenStores" && (
             <>
               <SectionTitle>녹색매장 카테고리 관리 ({greenCategories.length}개)</SectionTitle>

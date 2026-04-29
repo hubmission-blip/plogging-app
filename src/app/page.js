@@ -502,34 +502,34 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ── 빠른 메뉴 (라이트 컬러 카드) ── */}
-          <div className="grid grid-cols-4 gap-2">
+          {/* ── 빠른 메뉴 (정사각형 카드) ── */}
+          <div className="grid grid-cols-4 gap-2.5">
             <Link
               href="/club"
-              className="bg-cyan-50 border border-cyan-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
+              className="bg-cyan-50 border-2 border-cyan-300 rounded-2xl aspect-square flex flex-col items-center justify-center gap-1.5 active:scale-95 transition-transform"
             >
-              <School className="w-5 h-5 text-cyan-600" strokeWidth={1.8} />
+              <School className="w-7 h-7 text-cyan-600" strokeWidth={1.8} />
               <span className="text-[11px] text-cyan-700 font-bold">동아리</span>
             </Link>
             <Link
               href="/group"
-              className="bg-sky-50 border border-sky-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
+              className="bg-sky-50 border-2 border-sky-300 rounded-2xl aspect-square flex flex-col items-center justify-center gap-1.5 active:scale-95 transition-transform"
             >
-              <Users className="w-5 h-5 text-sky-600" strokeWidth={1.8} />
+              <Users className="w-7 h-7 text-sky-600" strokeWidth={1.8} />
               <span className="text-[11px] text-sky-700 font-bold">그룹</span>
             </Link>
             <Link
               href="/reward"
-              className="bg-purple-50 border border-purple-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
+              className="bg-purple-50 border-2 border-purple-300 rounded-2xl aspect-square flex flex-col items-center justify-center gap-1.5 active:scale-95 transition-transform"
             >
-              <Gift className="w-5 h-5 text-purple-600" strokeWidth={1.8} />
+              <Gift className="w-7 h-7 text-purple-600" strokeWidth={1.8} />
               <span className="text-[11px] text-purple-700 font-bold">리워드</span>
             </Link>
             <button
               onClick={() => setShowManual(true)}
-              className="bg-orange-50 border border-orange-200 rounded-2xl py-3 flex flex-col items-center gap-1 active:scale-95 transition-transform"
+              className="bg-orange-50 border-2 border-orange-300 rounded-2xl aspect-square flex flex-col items-center justify-center gap-1.5 active:scale-95 transition-transform"
             >
-              <CirclePlay className="w-5 h-5 text-orange-600" strokeWidth={1.8} />
+              <CirclePlay className="w-7 h-7 text-orange-600" strokeWidth={1.8} />
               <span className="text-[11px] text-orange-700 font-bold">매뉴얼</span>
             </button>
           </div>
@@ -764,18 +764,16 @@ export default function HomePage() {
                 <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">증명서 발급하기</p>
               </div>
             </Link>
-            <a
-              href="https://www.1365.go.kr"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/volunteer"
               className="bg-gradient-to-br from-orange-400 to-orange-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
             >
               <HeartHandshake className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
               <div className="text-right flex-1">
                 <p className="font-black text-sm leading-tight">1365 자원봉사</p>
-                <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">자원봉사 포털 →</p>
+                <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">봉사현황 보기</p>
               </div>
-            </a>
+            </Link>
           </div>
 
           {/* ── 이용 방법 ── */}

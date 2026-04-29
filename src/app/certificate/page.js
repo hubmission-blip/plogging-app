@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
   collection, query, where, getDocs, addDoc, serverTimestamp,
+  doc, getDoc,
 } from "firebase/firestore";
 import { FileCheck, Download, ChevronLeft, CalendarDays, Clock, MapPin, Award, AlertCircle, History, RotateCcw, Printer, Lock, ScrollText, ClipboardList, BarChart3, FileText, PenLine } from "lucide-react";
 
@@ -94,6 +95,21 @@ export default function CertificatePage() {
   const [issuedCerts, setIssuedCerts] = useState([]);
   const [dupWarning, setDupWarning]   = useState("");
   const [saving, setSaving]           = useState(false);
+
+  // 1365 회원번호
+  const [volunteerNo, setVolunteerNo] = useState("");
+
+  // 사용자 프로필에서 1365 회원번호 조회
+  useEffect(() => {
+    if (!user?.uid) return;
+    getDoc(doc(db, "users", user.uid)).then((snap) => {
+      if (snap.exists()) {
+        setVolunteerNo(snap.data().volunteerNo || "");
+        // realName도 프로필에서 가져오기
+        if (snap.data().realName) setRealName(snap.data().realName);
+      }
+    }).catch(() => {});
+  }, [user?.uid]);
 
   // 기본 날짜 세팅 (최근 1개월)
   useEffect(() => {
@@ -254,6 +270,12 @@ export default function CertificatePage() {
         totalDistance: Math.round(summary.totalDistance * 100) / 100,
         activityName: "환경정화 봉사활동 (플로깅)",
         organization: "사단법인 국제청년환경연합회",
+        // 1365 자원봉사 연계 정보
+        volunteerNo: volunteerNo || "",
+        volunteerCategory: "환경보호",
+        volunteerSubCategory: "환경정화활동",
+        volunteerOrgName: "국제청년환경연합회",
+        volunteerHours: Math.max(1, Math.round(summary.totalHours)),
         issuedAt: serverTimestamp(),
       });
 
@@ -291,6 +313,7 @@ export default function CertificatePage() {
       realName: cert.realName,
       email: cert.email,
       nickname: cert.displayName || "",
+      volunteerNo: cert.volunteerNo || volunteerNo || "",
       periodStr,
       totalSessions: cert.totalSessions,
       totalHours: cert.totalHours,
@@ -303,7 +326,7 @@ export default function CertificatePage() {
   };
 
   // ─── 증명서 HTML 생성 ────────────────────────────────────
-  const buildCertHTML = ({ certNumber: num, realName: name, email, nickname = "", periodStr, totalSessions, totalHours, totalDistance, dateStr }) => {
+  const buildCertHTML = ({ certNumber: num, realName: name, email, nickname = "", periodStr, totalSessions, totalHours, totalDistance, dateStr, volunteerNo: vNo = "" }) => {
     return `
       <div style="max-width:700px;margin:0 auto;border:3px solid #2c5f2d;padding:30px">
         <div style="border:1px solid #2c5f2d;padding:25px;min-height:796px;display:flex;flex-direction:column">
@@ -317,9 +340,21 @@ export default function CertificatePage() {
               <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;width:25%;text-align:center">성 명</td>
               <td style="border:1px solid #ccc;padding:8px 12px;font-size:15px;font-weight:700">${name}</td>
             </tr>
+            ${vNo ? `<tr>
+              <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">1365 회원번호</td>
+              <td style="border:1px solid #ccc;padding:8px 12px;font-size:13px;font-weight:600;color:#1d4ed8">${vNo}</td>
+            </tr>` : ""}
             <tr>
               <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">아이디</td>
               <td style="border:1px solid #ccc;padding:8px 12px;font-size:13px;color:#555">${nickname ? `${nickname} / ` : ""}${email}</td>
+            </tr>
+            <tr>
+              <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">봉사 단체</td>
+              <td style="border:1px solid #ccc;padding:8px 12px">사단법인 국제청년환경연합회</td>
+            </tr>
+            <tr>
+              <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">봉사 분류</td>
+              <td style="border:1px solid #ccc;padding:8px 12px">환경보호 &gt; 환경정화활동</td>
             </tr>
             <tr>
               <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">활동 기간</td>
@@ -335,7 +370,7 @@ export default function CertificatePage() {
             </tr>
             <tr>
               <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">봉사 시간</td>
-              <td style="border:1px solid #ccc;padding:8px 12px;font-weight:700;font-size:15px">${formatHoursMinutes(totalHours)}</td>
+              <td style="border:1px solid #ccc;padding:8px 12px;font-weight:700;font-size:15px">${formatHoursMinutes(totalHours)} <span style="font-size:11px;color:#666;font-weight:400;margin-left:8px">(1365 인정: ${Math.max(1, Math.round(totalHours))}시간)</span></td>
             </tr>
             <tr>
               <td style="border:1px solid #ccc;padding:8px 12px;background:#f0f7f0;font-weight:700;color:#2c5f2d;text-align:center">이동 거리</td>
@@ -460,8 +495,32 @@ export default function CertificatePage() {
             <p>• 1회 최대 인정 시간: <b>4시간</b> / 하루 최대: <b>6시간</b></p>
             <p>• 발급 조건: 기간 내 <b>3회 이상</b> 참여, 합산 <b>2시간 이상</b></p>
             <p>• GPS 경로가 기록된 활동만 인정됩니다</p>
+            <p>• <b>1365 자원봉사 포털</b> 연계 시 회원번호를 프로필에 등록하세요</p>
           </div>
         </div>
+
+        {/* ── 1365 회원번호 안내 ── */}
+        {!volunteerNo && (
+          <div className="bg-blue-50 rounded-2xl p-4 border border-blue-200">
+            <h2 className="font-bold text-blue-700 text-sm mb-1 flex items-center gap-1"><Award className="w-4 h-4" strokeWidth={1.8} /> 1365 자원봉사 연계</h2>
+            <p className="text-xs text-blue-600 leading-relaxed">
+              프로필에서 1365 자원봉사 회원번호를 등록하면 증명서에 자동으��� 표기됩니다.
+              관리자가 CSV로 일괄 등록하여 1365 포털에 봉사시간을 반영할 수 있습니다.
+            </p>
+            <Link href="/profile/edit" className="inline-block mt-2 text-xs font-bold text-blue-700 underline underline-offset-2">
+              프로필에서 등록하기 →
+            </Link>
+          </div>
+        )}
+        {volunteerNo && (
+          <div className="bg-blue-50 rounded-2xl p-3 border border-blue-200 flex items-center gap-2">
+            <Award className="w-5 h-5 text-blue-600 flex-shrink-0" strokeWidth={1.8} />
+            <div>
+              <p className="text-xs font-bold text-blue-700">1365 회원번호: {volunteerNo}</p>
+              <p className="text-[10px] text-blue-500">증명서에 자동 포함됩니다</p>
+            </div>
+          </div>
+        )}
 
         {/* ── 기간 선택 ── */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
@@ -627,9 +686,23 @@ export default function CertificatePage() {
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", width: "25%", textAlign: "center" }}>성 명</td>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontSize: 15, fontWeight: 700 }}>{displayName}</td>
                             </tr>
+                            {volunteerNo && (
+                              <tr>
+                                <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>1365 회원번호</td>
+                                <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontSize: 13, fontWeight: 600, color: "#1d4ed8" }}>{volunteerNo}</td>
+                              </tr>
+                            )}
                             <tr>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>아이디</td>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontSize: 13, color: "#555" }}>{user?.displayName ? `${user.displayName} / ` : ""}{userEmail}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>봉사 단체</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px" }}>사단법인 국제청년환경연합회</td>
+                            </tr>
+                            <tr>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>봉사 분류</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px" }}>환경보호 &gt; 환경정화활동</td>
                             </tr>
                             <tr>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>활동 기간</td>
@@ -647,7 +720,12 @@ export default function CertificatePage() {
                             </tr>
                             <tr>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>봉사 시간</td>
-                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontWeight: 700, fontSize: 15 }}>{formatHoursMinutes(summary.totalHours)}</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontWeight: 700, fontSize: 15 }}>
+                                {formatHoursMinutes(summary.totalHours)}
+                                <span style={{ fontSize: 11, color: "#666", fontWeight: 400, marginLeft: 8 }}>
+                                  (1365 인정: {Math.max(1, Math.round(summary.totalHours))}시간)
+                                </span>
+                              </td>
                             </tr>
                             <tr>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>이동 거리</td>
@@ -726,9 +804,23 @@ export default function CertificatePage() {
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", width: "25%", textAlign: "center" }}>성 명</td>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontSize: 15, fontWeight: 700 }}>{reprintData.realName}</td>
                             </tr>
+                            {reprintData.volunteerNo && (
+                              <tr>
+                                <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>1365 회원번호</td>
+                                <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontSize: 13, fontWeight: 600, color: "#1d4ed8" }}>{reprintData.volunteerNo}</td>
+                              </tr>
+                            )}
                             <tr>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>아이디</td>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontSize: 13, color: "#555" }}>{reprintData.nickname ? `${reprintData.nickname} / ` : ""}{reprintData.email}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>봉사 단체</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px" }}>사단법인 국제청년환경연합회</td>
+                            </tr>
+                            <tr>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>봉사 분류</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px" }}>환경보호 &gt; 환경정화활동</td>
                             </tr>
                             <tr>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>활동 기간</td>
@@ -744,7 +836,12 @@ export default function CertificatePage() {
                             </tr>
                             <tr>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>봉사 시간</td>
-                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontWeight: 700, fontSize: 15 }}>{formatHoursMinutes(reprintData.totalHours)}</td>
+                              <td style={{ border: "1px solid #ccc", padding: "8px 12px", fontWeight: 700, fontSize: 15 }}>
+                                {formatHoursMinutes(reprintData.totalHours)}
+                                <span style={{ fontSize: 11, color: "#666", fontWeight: 400, marginLeft: 8 }}>
+                                  (1365 인정: {Math.max(1, Math.round(reprintData.totalHours))}시간)
+                                </span>
+                              </td>
                             </tr>
                             <tr>
                               <td style={{ border: "1px solid #ccc", padding: "8px 12px", background: "#f0f7f0", fontWeight: 700, color: "#2c5f2d", textAlign: "center" }}>이동 거리</td>
