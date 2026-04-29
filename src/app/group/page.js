@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Rocket, KeyRound, Lock, Users, User, School, Clover, Gift, ClipboardCopy, Check, Hourglass, Loader } from "lucide-react";
+import { Rocket, KeyRound, Lock, Users, User, School, Clover, Gift, ClipboardCopy, Check, Hourglass, Loader, Footprints as FootprintsIcon } from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
   doc, setDoc, getDoc, updateDoc, deleteDoc,
@@ -35,6 +35,7 @@ export default function GroupPage() {
   const [copied,  setCopied]  = useState(false);
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [restoring, setRestoring] = useState(true); // 초기 복원 중 여부
+  const initialLoadRef = useRef(true); // 첫 로드 vs 실시간 상태변경 구분
 
   // ── 페이지 진입 시 활성 그룹 자동 복원 ─────────────────────
   useEffect(() => {
@@ -113,14 +114,26 @@ export default function GroupPage() {
         setError("이 그룹은 시간이 만료되었어요.");
         try { localStorage.removeItem("activeGroupCode"); } catch {}
         setMode("home"); setGroupCode(""); setGroupData(null);
+        initialLoadRef.current = false;
+        return;
+      }
+      // ★ 첫 로드(복원) 시에는 리다이렉트 안 함 — 실시간 변경(방장 시작) 시에만 이동
+      if (initialLoadRef.current) {
+        initialLoadRef.current = false;
+        // 이미 plogging 상태에서 돌아온 경우 → "plogging" 모드로 전환 (그룹 페이지에 머무름)
+        setMode("plogging");
         return;
       }
       router.push(`/map?groupId=${groupCode}&groupSize=${groupData.members.length}`);
     }
-    if (groupData?.status === "finished" && mode === "waiting") {
+    if (groupData?.status === "finished" && (mode === "waiting" || mode === "plogging")) {
       setError("이 그룹은 종료되었어요.");
       try { localStorage.removeItem("activeGroupCode"); } catch {}
       setMode("home"); setGroupCode(""); setGroupData(null);
+    }
+    // 첫 로드가 아닌 상태에서 finished가 아닌 다른 데이터가 도착하면 초기 로드 끝
+    if (initialLoadRef.current && groupData) {
+      initialLoadRef.current = false;
     }
   }, [groupData, mode, groupCode, router]);
 
@@ -309,6 +322,66 @@ export default function GroupPage() {
                 <p className="text-xs" style={{ color: "#ef558b99" }}>친환경 제품 보기 →</p>
               </Link>
             </div>
+          </>
+        )}
+
+        {/* ═══════════ ⚡ 플로깅 진행 중 (복귀 시) ═══════════ */}
+        {!restoring && mode === "plogging" && groupData && (
+          <>
+            <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
+              <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+                <FootprintsIcon size={28} className="text-green-600" strokeWidth={1.8} />
+              </div>
+              <h2 className="text-lg font-bold text-gray-800 mb-1">그룹 플로깅 진행 중</h2>
+              <p className="text-sm text-gray-500">코드: <span className="font-mono font-bold text-sky-600">{groupCode}</span></p>
+              <p className="text-sm text-gray-400 mt-1">{groupData.members?.length || 0}명 참여 중</p>
+            </div>
+
+            {/* 멤버 목록 */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm">
+              <h3 className="font-bold text-gray-700 mb-2">참여 멤버</h3>
+              <div className="space-y-2">
+                {(groupData.members || []).map((member) => (
+                  <div key={member.uid} className="flex items-center gap-3 py-1">
+                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {member.photoURL
+                        ? <img src={member.photoURL} alt="" className="w-full h-full object-cover" />
+                        : <User size={16} className="text-green-400" strokeWidth={1.8} />}
+                    </div>
+                    <span className="text-sm text-gray-700">{member.name}</span>
+                    {member.uid === groupData.hostUid && (
+                      <span className="text-[10px] bg-sky-100 text-sky-600 px-1.5 py-0.5 rounded">방장</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 지도로 돌아가기 */}
+            <button
+              onClick={() => router.push(`/map?groupId=${groupCode}&groupSize=${groupData.members.length}`)}
+              className="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-base shadow-md active:scale-95 transition-transform"
+            >
+              🗺️ 지도로 돌아가기
+            </button>
+
+            {/* 그룹 종료 (방장만) */}
+            {groupData.hostUid === user?.uid && (
+              <button
+                onClick={handleLeave}
+                className="w-full bg-red-50 text-red-500 py-3 rounded-2xl text-sm font-medium border border-red-200"
+              >
+                그룹 플로깅 종료
+              </button>
+            )}
+
+            {/* 일반 멤버 나가기 */}
+            {groupData.hostUid !== user?.uid && (
+              <button onClick={handleLeave}
+                className="w-full bg-white text-gray-400 py-3 rounded-2xl text-sm font-medium shadow-sm">
+                그룹 나가기
+              </button>
+            )}
           </>
         )}
 
