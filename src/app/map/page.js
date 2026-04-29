@@ -1932,46 +1932,40 @@ function MapPageInner() {
             </div>
           </div>
 
-          {/* 브랜드 선택 — 가로 스크롤 한 줄 풀다운 */}
+          {/* 브랜드 선택 — 세로 풀다운 */}
           {greenBrandPanel && greenBrandPanel.keywords && greenBrandPanel.keywords.length > 0 && (
-            <div className="mt-1.5 overflow-x-auto no-scrollbar">
-              <div className="flex items-center gap-1.5">
-                {/* 브랜드 버튼들 */}
+            <div className="mt-1.5 max-h-48 overflow-y-auto no-scrollbar">
+              <div className="flex flex-col gap-1">
                 {greenBrandPanel.keywords.map((keyword) => {
                   const isSel = selectedBrand === keyword;
                   return (
                     <button
                       key={keyword}
                       onClick={() => handleSelectBrand(keyword)}
-                      className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-all
+                      className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center justify-between
                         ${isSel
                           ? "text-white shadow-md"
                           : "bg-white/90 text-gray-600 border border-gray-200"
                         }`}
                       style={isSel ? { backgroundColor: greenBrandPanel.color } : {}}
                     >
-                      {keyword}
-                      {isSel && greenSearching && <span className="animate-spin ml-1">⏳</span>}
+                      <span>{keyword}</span>
+                      {isSel && greenSearching && <span className="animate-spin">⏳</span>}
+                      {isSel && !greenSearching && greenStoreMarkers.length > 0 && (
+                        <span className="text-[10px] opacity-80">{greenStoreMarkers.length}개 매장</span>
+                      )}
+                      {isSel && !greenSearching && greenStoreMarkers.length === 0 && (
+                        <span className="text-[10px] opacity-80">없음</span>
+                      )}
                     </button>
                   );
                 })}
-                {/* 검색 결과 카운트 */}
-                {selectedBrand && !greenSearching && greenStoreMarkers.length > 0 && (
-                  <span className="flex-shrink-0 text-[10px] text-green-600 font-bold bg-green-50 px-2 py-1 rounded-full">
-                    {greenStoreMarkers.length}개
-                  </span>
-                )}
-                {selectedBrand && !greenSearching && greenStoreMarkers.length === 0 && (
-                  <span className="flex-shrink-0 text-[10px] text-gray-400 bg-gray-50 px-2 py-1 rounded-full">
-                    없음
-                  </span>
-                )}
                 {/* 닫기 버튼 */}
                 <button
                   onClick={() => { setGreenBrandPanel(null); setSelectedBrand(null); setActiveGreenCats([]); setGreenStoreMarkers([]); }}
-                  className="flex-shrink-0 w-6 h-6 rounded-full bg-white/90 border border-gray-200 flex items-center justify-center shadow-sm"
+                  className="w-full px-3 py-1.5 rounded-xl text-xs text-gray-400 bg-gray-50 border border-gray-200 shadow-sm"
                 >
-                  <XIcon className="w-3 h-3 text-gray-400" strokeWidth={2} />
+                  닫기
                 </button>
               </div>
             </div>
