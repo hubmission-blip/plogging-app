@@ -7,10 +7,11 @@ import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
   collection, query, where, orderBy, getDocs,
+  doc, onSnapshot,
 } from "firebase/firestore";
 import {
   Ticket, Coffee, Copy, Check, ChevronLeft,
-  CheckCircle2, XCircle, Store,
+  CheckCircle2, XCircle, Store, PartyPopper,
 } from "lucide-react";
 import { generateQRDataURL } from "@/lib/qrcode";
 
@@ -31,6 +32,38 @@ export default function CouponPage() {
   const [selectedCoupon, setSelectedCoupon] = useState(null);
   const [copied, setCopied]         = useState(false);
   const [qrDataURL, setQrDataURL]   = useState(null);
+  const [justUsed, setJustUsed]     = useState(false); // 실시간 사용완료 감지
+
+  // ── 선택된 쿠폰 실시간 감시 (QR 모달 열려있을 때) ─────────
+  useEffect(() => {
+    if (!selectedCoupon || selectedCoupon.status !== "active") return;
+
+    const unsub = onSnapshot(
+      doc(db, "coupons", selectedCoupon.id),
+      (snap) => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        // 매장에서 사용처리 완료 → 상태 자동 전환
+        if (data.status === "used") {
+          const updated = { id: snap.id, ...data };
+          setSelectedCoupon(updated);
+          setJustUsed(true);
+          setQrDataURL(null);
+          // 쿠폰 목록도 즉시 갱신
+          setCoupons((prev) =>
+            prev.map((c) => (c.id === snap.id ? updated : c))
+          );
+          // 진동 피드백
+          if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        }
+      },
+      (err) => {
+        console.warn("쿠폰 실시간 감시 실패:", err.message);
+      }
+    );
+
+    return () => unsub();
+  }, [selectedCoupon?.id, selectedCoupon?.status]);
 
   // ── 쿠폰 목록 불러오기 ────────────────────────────────────
   const fetchCoupons = useCallback(async () => {
@@ -192,70 +225,107 @@ export default function CouponPage() {
       {/* ── 쿠폰 상세 모달 ── */}
       {selectedCoupon && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] px-6"
-          onClick={() => { setSelectedCoupon(null); setCopied(false); setQrDataURL(null); }}>
+          onClick={() => { setSelectedCoupon(null); setCopied(false); setQrDataURL(null); setJustUsed(false); }}>
           <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center"
             onClick={(e) => e.stopPropagation()}>
 
-            <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-3">
-              <Coffee className="w-8 h-8 text-orange-600" strokeWidth={1.8} />
-            </div>
-            <h2 className="text-lg font-bold text-gray-800 mb-1">{selectedCoupon.rewardTitle}</h2>
-            <span className={`inline-block text-xs font-bold px-3 py-1 rounded-full mb-4 ${(STATUS_MAP[selectedCoupon.status] || STATUS_MAP.active).color}`}>
-              {(STATUS_MAP[selectedCoupon.status] || STATUS_MAP.active).label}
-            </span>
-
-            {/* QR코드 + 교환코드 통합 영역 */}
-            {selectedCoupon.status === "active" && qrDataURL ? (
-              <div className="bg-white rounded-2xl p-5 mb-4 border-2 border-orange-200">
-                <p className="text-[10px] text-orange-500 font-bold mb-3">매장 직원에게 이 화면을 보여주세요</p>
-                <img src={qrDataURL} alt="QR코드" className="w-52 h-52 mx-auto mb-4" />
-                <p className="text-2xl font-black text-gray-800 tracking-[0.15em]">{selectedCoupon.code}</p>
+            {/* ── 실시간 사용완료 감지 → 축하 화면 ── */}
+            {justUsed ? (
+              <>
+                <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4 animate-bounce">
+                  <CheckCircle2 className="w-10 h-10 text-green-500" strokeWidth={1.8} />
+                </div>
+                <h2 className="text-xl font-black text-gray-800 mb-1">사용 완료!</h2>
+                <p className="text-sm text-gray-500 mb-2">{selectedCoupon.rewardTitle}</p>
+                {selectedCoupon.usedByStoreName && (
+                  <div className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-bold px-3 py-1.5 rounded-full mb-4">
+                    <Store className="w-3.5 h-3.5" strokeWidth={2} />
+                    {selectedCoupon.usedByStoreName}에서 사용됨
+                  </div>
+                )}
+                <div className="bg-green-50 rounded-2xl p-4 mb-4 border border-green-200">
+                  <p className="text-xs text-green-600 mb-1">교환 완료</p>
+                  <p className="text-lg font-black text-gray-800 tracking-widest">{selectedCoupon.code}</p>
+                </div>
                 <button
-                  onClick={() => handleCopy(selectedCoupon.code)}
-                  className="mt-2 text-xs text-gray-400 flex items-center justify-center gap-1"
+                  onClick={() => { setSelectedCoupon(null); setCopied(false); setQrDataURL(null); setJustUsed(false); }}
+                  className="w-full bg-green-500 text-white py-3.5 rounded-2xl font-bold"
                 >
-                  {copied
-                    ? <><Check className="w-3 h-3" strokeWidth={2} /> 복사됨</>
-                    : <><Copy className="w-3 h-3" strokeWidth={2} /> 코드 복사</>
-                  }
+                  확인
                 </button>
-              </div>
+              </>
             ) : (
-              <div className="bg-gray-50 rounded-2xl p-5 mb-4 border-2 border-dashed border-gray-300">
-                <p className="text-[10px] text-gray-400 mb-2">쿠폰 코드</p>
-                <p className="text-2xl font-black text-gray-800 tracking-[0.15em]">{selectedCoupon.code}</p>
-              </div>
-            )}
+              <>
+                <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-3">
+                  <Coffee className="w-8 h-8 text-orange-600" strokeWidth={1.8} />
+                </div>
+                <h2 className="text-lg font-bold text-gray-800 mb-1">{selectedCoupon.rewardTitle}</h2>
+                <span className={`inline-block text-xs font-bold px-3 py-1 rounded-full mb-4 ${(STATUS_MAP[selectedCoupon.status] || STATUS_MAP.active).color}`}>
+                  {(STATUS_MAP[selectedCoupon.status] || STATUS_MAP.active).label}
+                </span>
 
-            {/* 상세 정보 */}
-            <div className="text-left space-y-2 mb-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">포인트</span>
-                <span className="font-bold text-gray-700">{selectedCoupon.points?.toLocaleString() || "0"} P</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">발급일</span>
-                <span className="text-gray-700">{fmt(selectedCoupon.createdAt)}</span>
-              </div>
-              {selectedCoupon.usedAt && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">사용일</span>
-                  <span className="text-gray-700">{fmt(selectedCoupon.usedAt)}</span>
+                {/* QR코드 + 교환코드 통합 영역 */}
+                {selectedCoupon.status === "active" && qrDataURL ? (
+                  <div className="bg-white rounded-2xl p-5 mb-4 border-2 border-orange-200">
+                    <p className="text-[10px] text-orange-500 font-bold mb-3">매장 직원에게 이 화면을 보여주세요</p>
+                    <img src={qrDataURL} alt="QR코드" className="w-52 h-52 mx-auto mb-4" />
+                    <p className="text-2xl font-black text-gray-800 tracking-[0.15em]">{selectedCoupon.code}</p>
+                    <button
+                      onClick={() => handleCopy(selectedCoupon.code)}
+                      className="mt-2 text-xs text-gray-400 flex items-center justify-center gap-1"
+                    >
+                      {copied
+                        ? <><Check className="w-3 h-3" strokeWidth={2} /> 복사됨</>
+                        : <><Copy className="w-3 h-3" strokeWidth={2} /> 코드 복사</>
+                      }
+                    </button>
+                    {/* 실시간 대기 표시 */}
+                    <div className="mt-4 flex items-center justify-center gap-2 text-orange-400">
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
+                      </span>
+                      <span className="text-[10px] font-medium">매장 스캔 대기 중...</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 rounded-2xl p-5 mb-4 border-2 border-dashed border-gray-300">
+                    <p className="text-[10px] text-gray-400 mb-2">쿠폰 코드</p>
+                    <p className="text-2xl font-black text-gray-800 tracking-[0.15em]">{selectedCoupon.code}</p>
+                  </div>
+                )}
+
+                {/* 상세 정보 */}
+                <div className="text-left space-y-2 mb-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">포인트</span>
+                    <span className="font-bold text-gray-700">{selectedCoupon.points?.toLocaleString() || "0"} P</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">발급일</span>
+                    <span className="text-gray-700">{fmt(selectedCoupon.createdAt)}</span>
+                  </div>
+                  {selectedCoupon.usedAt && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">사용일</span>
+                      <span className="text-gray-700">{fmt(selectedCoupon.usedAt)}</span>
+                    </div>
+                  )}
+                  {selectedCoupon.expiresAt && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">만료일</span>
+                      <span className="text-gray-700">{fmt(selectedCoupon.expiresAt)}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-              {selectedCoupon.expiresAt && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">만료일</span>
-                  <span className="text-gray-700">{fmt(selectedCoupon.expiresAt)}</span>
-                </div>
-              )}
-            </div>
-            <button
-              onClick={() => { setSelectedCoupon(null); setCopied(false); setQrDataURL(null); }}
-              className="w-full bg-gray-100 text-gray-600 py-3 rounded-2xl font-bold"
-            >
-              닫기
-            </button>
+                <button
+                  onClick={() => { setSelectedCoupon(null); setCopied(false); setQrDataURL(null); setJustUsed(false); }}
+                  className="w-full bg-gray-100 text-gray-600 py-3 rounded-2xl font-bold"
+                >
+                  닫기
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
