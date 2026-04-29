@@ -1932,32 +1932,21 @@ function MapPageInner() {
             </div>
           </div>
 
-          {/* 브랜드 선택 패널 */}
+          {/* 브랜드 선택 — 가로 스크롤 한 줄 풀다운 */}
           {greenBrandPanel && greenBrandPanel.keywords && greenBrandPanel.keywords.length > 0 && (
-            <div className="mt-2 bg-white/95 backdrop-blur-sm rounded-2xl p-3 shadow-lg border border-gray-100">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-bold text-gray-700 flex items-center gap-1">
-                  <span className="text-sm">{greenBrandPanel.icon}</span>
-                  {greenBrandPanel.name} 참여 브랜드
-                </p>
-                <button
-                  onClick={() => { setGreenBrandPanel(null); setSelectedBrand(null); setActiveGreenCats([]); setGreenStoreMarkers([]); }}
-                  className="text-gray-400 p-0.5"
-                >
-                  <XIcon className="w-4 h-4" strokeWidth={2} />
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
+            <div className="mt-1.5 overflow-x-auto no-scrollbar">
+              <div className="flex items-center gap-1.5">
+                {/* 브랜드 버튼들 */}
                 {greenBrandPanel.keywords.map((keyword) => {
                   const isSel = selectedBrand === keyword;
                   return (
                     <button
                       key={keyword}
                       onClick={() => handleSelectBrand(keyword)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all
+                      className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-all
                         ${isSel
                           ? "text-white shadow-md"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          : "bg-white/90 text-gray-600 border border-gray-200"
                         }`}
                       style={isSel ? { backgroundColor: greenBrandPanel.color } : {}}
                     >
@@ -1966,23 +1955,25 @@ function MapPageInner() {
                     </button>
                   );
                 })}
+                {/* 검색 결과 카운트 */}
+                {selectedBrand && !greenSearching && greenStoreMarkers.length > 0 && (
+                  <span className="flex-shrink-0 text-[10px] text-green-600 font-bold bg-green-50 px-2 py-1 rounded-full">
+                    {greenStoreMarkers.length}개
+                  </span>
+                )}
+                {selectedBrand && !greenSearching && greenStoreMarkers.length === 0 && (
+                  <span className="flex-shrink-0 text-[10px] text-gray-400 bg-gray-50 px-2 py-1 rounded-full">
+                    없음
+                  </span>
+                )}
+                {/* 닫기 버튼 */}
+                <button
+                  onClick={() => { setGreenBrandPanel(null); setSelectedBrand(null); setActiveGreenCats([]); setGreenStoreMarkers([]); }}
+                  className="flex-shrink-0 w-6 h-6 rounded-full bg-white/90 border border-gray-200 flex items-center justify-center shadow-sm"
+                >
+                  <XIcon className="w-3 h-3 text-gray-400" strokeWidth={2} />
+                </button>
               </div>
-              {/* 검색 결과 요약 */}
-              {selectedBrand && greenStoreMarkers.length > 0 && !greenSearching && (
-                <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-2">
-                  <span className="text-[11px] text-green-600 font-bold flex items-center gap-1">
-                    <Leaf className="w-3 h-3" strokeWidth={2} />
-                    주변 {selectedBrand} {greenStoreMarkers.length}개 매장
-                  </span>
-                </div>
-              )}
-              {selectedBrand && greenStoreMarkers.length === 0 && !greenSearching && (
-                <div className="mt-2 pt-2 border-t border-gray-100">
-                  <span className="text-[11px] text-gray-400">
-                    주변에 {selectedBrand} 매장이 없어요
-                  </span>
-                </div>
-              )}
             </div>
           )}
         </div>
