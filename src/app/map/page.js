@@ -1934,7 +1934,7 @@ function MapPageInner() {
 
           {/* 브랜드 선택 — 세로 풀다운 */}
           {greenBrandPanel && greenBrandPanel.keywords && greenBrandPanel.keywords.length > 0 && (
-            <div className="mt-1.5 max-h-48 overflow-y-auto no-scrollbar">
+            <div className="mt-1.5 max-h-48 overflow-y-auto no-scrollbar" style={{ width: "fit-content", maxWidth: 140 }}>
               <div className="flex flex-col gap-1">
                 {greenBrandPanel.keywords.map((keyword) => {
                   const isSel = selectedBrand === keyword;
@@ -1942,28 +1942,24 @@ function MapPageInner() {
                     <button
                       key={keyword}
                       onClick={() => handleSelectBrand(keyword)}
-                      className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center justify-between
+                      className={`text-left px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-all whitespace-nowrap
                         ${isSel
                           ? "text-white shadow-md"
                           : "bg-white/90 text-gray-600 border border-gray-200"
                         }`}
                       style={isSel ? { backgroundColor: greenBrandPanel.color } : {}}
                     >
-                      <span>{keyword}</span>
-                      {isSel && greenSearching && <span className="animate-spin">⏳</span>}
+                      {keyword}
+                      {isSel && greenSearching && <span className="animate-spin ml-1">⏳</span>}
                       {isSel && !greenSearching && greenStoreMarkers.length > 0 && (
-                        <span className="text-[10px] opacity-80">{greenStoreMarkers.length}개 매장</span>
-                      )}
-                      {isSel && !greenSearching && greenStoreMarkers.length === 0 && (
-                        <span className="text-[10px] opacity-80">없음</span>
+                        <span className="text-[10px] ml-1 opacity-80">{greenStoreMarkers.length}</span>
                       )}
                     </button>
                   );
                 })}
-                {/* 닫기 버튼 */}
                 <button
                   onClick={() => { setGreenBrandPanel(null); setSelectedBrand(null); setActiveGreenCats([]); setGreenStoreMarkers([]); }}
-                  className="w-full px-3 py-1.5 rounded-xl text-xs text-gray-400 bg-gray-50 border border-gray-200 shadow-sm"
+                  className="px-3 py-1 rounded-full text-[10px] text-gray-400 bg-gray-50 border border-gray-200"
                 >
                   닫기
                 </button>
