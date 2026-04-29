@@ -2000,15 +2000,15 @@ function MapPageInner() {
           {!greenDrawerOpen && (
             <button
               onClick={() => setGreenDrawerOpen(true)}
-              className="absolute z-[15] bg-white/95 backdrop-blur-sm rounded-r-xl shadow-md border-r border-t border-b border-gray-200 px-1.5 py-3 flex flex-col items-center gap-0.5 active:scale-95 transition-transform"
+              className="absolute z-[15] bg-white/95 backdrop-blur-sm rounded-r-2xl shadow-lg border-r border-t border-b border-gray-200 px-2.5 py-4 flex flex-col items-center gap-1 active:scale-95 transition-transform"
               style={{ top: isTracking ? 108 : 60, left: 0 }}
             >
-              <Leaf className="w-4 h-4 text-green-600" strokeWidth={2} />
-              <span className="text-[8px] font-bold text-green-700 leading-tight">녹색<br/>매장</span>
+              <Leaf className="w-5 h-5 text-green-600" strokeWidth={2} />
+              <span className="text-[10px] font-bold text-green-700 leading-tight">녹색<br/>매장</span>
               {activeGreenCats.length > 0 && (
-                <span className="w-4 h-4 rounded-full bg-green-500 text-white text-[9px] font-bold flex items-center justify-center">{activeGreenCats.length}</span>
+                <span className="w-5 h-5 rounded-full bg-green-500 text-white text-[10px] font-bold flex items-center justify-center">{activeGreenCats.length}</span>
               )}
-              <span className="text-gray-400 text-[10px] mt-0.5">›</span>
+              <span className="text-gray-400 text-xs mt-0.5">›</span>
             </button>
           )}
         </>
