@@ -11,7 +11,7 @@ import {
 import {
   Store, Search, Ticket, CheckCircle2, XCircle,
   ChevronLeft, Coffee, ArrowRight, AlertTriangle,
-  Coins, History, QrCode, Camera,
+  Coins, History, QrCode, Camera, Calendar, ChevronDown, ChevronUp,
 } from "lucide-react";
 import QRScanner from "@/components/QRScanner";
 
@@ -52,7 +52,7 @@ export default function PartnerRedeemPage() {
     }
   }, [user]);
 
-  // ── 사용 이력 조회 ─────────────────────────────────────────
+  // ── 사용 이력 조회 (전체 — 월별 통계용) ────────────────────
   const fetchHistory = useCallback(async () => {
     if (!storeInfo) return;
     try {
@@ -60,7 +60,7 @@ export default function PartnerRedeemPage() {
         collection(db, "coupons"),
         where("usedByStore", "==", storeInfo.id),
         orderBy("usedAt", "desc"),
-        limit(20),
+        limit(200),
       );
       const snap = await getDocs(q);
       setRedeemHistory(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
@@ -414,39 +414,98 @@ export default function PartnerRedeemPage() {
         </div>
       )}
 
-      {/* ── 최근 사용 이력 ── */}
+      {/* ── 쿠폰 사용 이력 (월별 누적 통계) ── */}
       <div className="px-4 mt-6">
         <button
           onClick={() => setShowHistory(!showHistory)}
           className="flex items-center gap-2 mb-3"
         >
           <History className="w-4 h-4 text-gray-500" strokeWidth={2} />
-          <span className="text-sm font-bold text-gray-700">최근 사용처리 이력</span>
+          <span className="text-sm font-bold text-gray-700">쿠폰 사용 이력</span>
           <span className="text-xs text-gray-400">({redeemHistory.length}건)</span>
+          {showHistory
+            ? <ChevronUp className="w-4 h-4 text-gray-400" strokeWidth={2} />
+            : <ChevronDown className="w-4 h-4 text-gray-400" strokeWidth={2} />
+          }
         </button>
 
-        {showHistory && (
-          <div className="space-y-2">
-            {redeemHistory.length === 0 && (
-              <p className="text-center text-sm text-gray-400 py-6">사용처리 이력이 없습니다</p>
-            )}
-            {redeemHistory.map((item) => (
-              <div key={item.id} className="bg-white rounded-xl p-3 flex items-center gap-3 shadow-sm">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <Ticket className="w-4 h-4 text-gray-400" strokeWidth={1.8} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-700 truncate">{item.rewardTitle}</p>
-                  <p className="text-xs text-gray-400">{item.userName} · {item.code}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-emerald-600">+{item.points?.toLocaleString() || 0}P</p>
-                  <p className="text-xs text-gray-400">{fmt(item.usedAt)}</p>
+        {showHistory && (() => {
+          // 월별 그룹핑
+          const monthGroups = {};
+          let totalAll = 0;
+          let countAll = 0;
+          redeemHistory.forEach((item) => {
+            const d = item.usedAt?.toDate ? item.usedAt.toDate() : (item.usedAt ? new Date(item.usedAt) : null);
+            const key = d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` : "날짜없음";
+            if (!monthGroups[key]) monthGroups[key] = { items: [], total: 0, count: 0 };
+            monthGroups[key].items.push(item);
+            monthGroups[key].total += item.points || 0;
+            monthGroups[key].count += 1;
+            totalAll += item.points || 0;
+            countAll += 1;
+          });
+          const sortedMonths = Object.keys(monthGroups).sort((a, b) => b.localeCompare(a));
+
+          return (
+            <div className="space-y-3">
+              {/* 전체 누적 요약 카드 */}
+              <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Coins className="w-5 h-5 text-emerald-600" strokeWidth={1.8} />
+                    <span className="text-sm font-bold text-emerald-700">전체 누적</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-black text-emerald-600">{totalAll.toLocaleString()} P</p>
+                    <p className="text-[10px] text-emerald-500">{countAll}건 처리</p>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+
+              {redeemHistory.length === 0 && (
+                <p className="text-center text-sm text-gray-400 py-6">사용처리 이력이 없습니다</p>
+              )}
+
+              {/* 월별 그룹 */}
+              {sortedMonths.map((month) => {
+                const group = monthGroups[month];
+                const [y, m] = month.split("-");
+                const monthLabel = month === "날짜없음" ? "날짜 없음" : `${y}년 ${parseInt(m)}월`;
+
+                return (
+                  <div key={month} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                    {/* 월별 헤더 */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-gray-500" strokeWidth={1.8} />
+                        <span className="text-sm font-bold text-gray-700">{monthLabel}</span>
+                        <span className="text-xs text-gray-400">{group.count}건</span>
+                      </div>
+                      <span className="text-sm font-black text-emerald-600">{group.total.toLocaleString()} P</span>
+                    </div>
+
+                    {/* 해당 월의 개별 이력 */}
+                    {group.items.map((item) => (
+                      <div key={item.id} className="flex items-center gap-3 px-4 py-3 border-b last:border-0">
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          <Ticket className="w-4 h-4 text-gray-400" strokeWidth={1.8} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-700 truncate">{item.rewardTitle}</p>
+                          <p className="text-xs text-gray-400">{item.userName} · {item.code}</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-bold text-emerald-600">+{(item.points || 0).toLocaleString()}P</p>
+                          <p className="text-xs text-gray-400">{fmt(item.usedAt)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

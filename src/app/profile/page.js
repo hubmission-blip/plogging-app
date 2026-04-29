@@ -448,6 +448,18 @@ export default function ProfilePage() {
           )}
         </div>
 
+        {/* ── 파트너 매장 메뉴 (매장 담당자 전용) ── */}
+        {isPartnerStore && (
+          <div className="bg-emerald-600 rounded-2xl shadow-sm overflow-hidden">
+            <Link href="/partner/redeem"
+              className="flex items-center gap-3 px-4 py-4 active:bg-emerald-700">
+              <Store className="w-5 h-5 text-white/80" strokeWidth={1.8} />
+              <span className="flex-1 text-sm font-bold text-white">매장 쿠폰 사용처리</span>
+              <span className="text-white/50">›</span>
+            </Link>
+          </div>
+        )}
+
         {/* ── 에코마일리지 연동 ── */}
         <EcomileageConnect
           userId={user?.uid}
@@ -556,18 +568,6 @@ export default function ProfilePage() {
             </Link>
           ))}
         </div>
-
-        {/* ── 파트너 매장 메뉴 (매장 담당자 전용) ── */}
-        {isPartnerStore && (
-          <div className="bg-emerald-600 rounded-2xl shadow-sm overflow-hidden">
-            <Link href="/partner/redeem"
-              className="flex items-center gap-3 px-4 py-4 active:bg-emerald-700">
-              <Store className="w-5 h-5 text-white/80" strokeWidth={1.8} />
-              <span className="flex-1 text-sm font-bold text-white">매장 쿠폰 사용처리</span>
-              <span className="text-white/50">›</span>
-            </Link>
-          </div>
-        )}
 
         {/* ── 관리자 메뉴 (hubmission@gmail.com 전용) ── */}
         {isAdmin && (
