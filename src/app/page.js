@@ -857,10 +857,17 @@ export default function HomePage() {
             <button
               onClick={async () => {
                 try {
+                  // 1. 캐시 전부 삭제
                   const keys = await caches.keys();
                   await Promise.all(keys.map((k) => caches.delete(k)));
+                  // 2. 서비스 워커 해제 → 새 SW로 교체 유도
+                  if ("serviceWorker" in navigator) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map((r) => r.unregister()));
+                  }
                 } catch {}
-                window.location.reload();
+                // 캐시 무시 강제 리로드
+                window.location.href = window.location.pathname + "?_t=" + Date.now();
               }}
               className="mt-2 text-xs text-gray-400 border border-gray-200 px-3 py-1 rounded-full"
             >

@@ -27,7 +27,11 @@ jobs:
       - name: 📦 패키지 설치
         run: npm ci
 
-      # 4. Next.js 빌드 (정적 export → out/ 폴더)
+      # 4. 이전 빌드 잔여물 제거
+      - name: 🧹 이전 빌드 클린업
+        run: rm -rf out
+
+      # 5. Next.js 빌드 (정적 export → out/ 폴더)
       - name: 🔨 Next.js 빌드
         run: npm run build
         env:
@@ -46,7 +50,11 @@ jobs:
           NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: ${{ secrets.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET }}
           NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
 
-      # 5. Firebase Hosting 배포
+      # 6. SW 캐시 버전 타임스탬프 갱신
+      - name: 🔄 SW 타임스탬프 갱신
+        run: node scripts/stamp-sw.mjs
+
+      # 7. Firebase Hosting 배포
       - name: 🔥 Firebase Hosting 배포
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:

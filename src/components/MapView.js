@@ -207,44 +207,20 @@ export default function MapView({
           position={{ lat: parseFloat(store.y), lng: parseFloat(store.x) }}
           zIndex={12}
         >
-          <button
+          <div
             onClick={() => onGreenStoreClick && onGreenStoreClick(store)}
             style={{
-              background: "white",
-              border: `2px solid ${store.color || "#16A34A"}`,
-              borderRadius: 12,
-              width: 36,
-              height: 36,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 18,
+              fontSize: 26,
               cursor: "pointer",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
               transition: "transform 0.15s",
+              filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
+              lineHeight: 1,
             }}
-            onMouseOver={(e) => e.currentTarget.style.transform = "scale(1.15)"}
+            onMouseOver={(e) => e.currentTarget.style.transform = "scale(1.25)"}
             onMouseOut={(e) => e.currentTarget.style.transform = "scale(1)"}
             title={store.place_name}
           >
             {store.icon || "🌿"}
-          </button>
-          <div style={{
-            marginTop: 1,
-            background: "white",
-            borderRadius: 6,
-            padding: "1px 5px",
-            fontSize: 9,
-            fontWeight: 600,
-            color: store.color || "#16A34A",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
-            whiteSpace: "nowrap",
-            textAlign: "center",
-            maxWidth: 80,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}>
-            {store.place_name}
           </div>
         </CustomOverlayMap>
       ))}

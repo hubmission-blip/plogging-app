@@ -1,10 +1,11 @@
-const CACHE_NAME = "plogging-v7";
+const CACHE_VERSION = "1777423353154";
+const CACHE_NAME = `plogging-${CACHE_VERSION}`;
 
 const urlsToCache = ["/", "/manifest.json"];
 
 // 설치 시 즉시 활성화 — 이전 SW 즉시 교체
 self.addEventListener("install", (event) => {
-  console.log("[SW] v7 설치 중 — 이전 버전 즉시 교체");
+  console.log(`[SW] ${CACHE_NAME} 설치 중 — 이전 버전 즉시 교체`);
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
@@ -21,12 +22,18 @@ self.addEventListener("activate", (event) => {
           cacheNames
             .filter((name) => name !== CACHE_NAME)
             .map((name) => {
-              console.log("🗑️ 이전 캐시 삭제:", name);
+              console.log("[SW] 이전 캐시 삭제:", name);
               return caches.delete(name);
             })
         )
       )
-      .then(() => self.clients.claim())
+      .then(() => {
+        // 모든 클라이언트 강제 리로드
+        self.clients.matchAll().then((clients) => {
+          clients.forEach((client) => client.navigate(client.url));
+        });
+        return self.clients.claim();
+      })
   );
 });
 
@@ -34,6 +41,8 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   if (event.request.url.includes("/api/")) return;
+  // SW 자기 자신, _next/static 제외한 HTML은 항상 네트워크 우선
+  if (event.request.url.includes("sw.js")) return;
 
   event.respondWith(
     fetch(event.request)

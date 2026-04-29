@@ -87,14 +87,21 @@ export default function RootLayout({ children }) {
                   });
                 }
                 if (!isCapacitor && "serviceWorker" in navigator) {
-                  navigator.serviceWorker.register("/sw.js").then(function(registration) {
+                  navigator.serviceWorker.register("/sw.js?v=" + Date.now()).then(function(registration) {
                     console.log("SW 등록:", registration.scope);
+                    // 즉시 업데이트 체크
+                    registration.update();
                     registration.addEventListener("updatefound", function() {
                       var newWorker = registration.installing;
                       newWorker.addEventListener("statechange", function() {
                         if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-                          newWorker.postMessage({ type: "SKIP_WAITING" });
-                          window.location.reload();
+                          // 기존 캐시 전부 삭제 후 리로드
+                          caches.keys().then(function(names) {
+                            return Promise.all(names.map(function(n) { return caches.delete(n); }));
+                          }).then(function() {
+                            newWorker.postMessage({ type: "SKIP_WAITING" });
+                            window.location.reload();
+                          });
                         }
                       });
                     });

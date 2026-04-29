@@ -1038,6 +1038,8 @@ function MapPageInner() {
   const [greenStoreMarkers, setGreenStoreMarkers] = useState([]); // 카카오 검색 결과
   const [greenSearching, setGreenSearching]       = useState(false);
   const [selectedGreenStore, setSelectedGreenStore] = useState(null); // 선택된 녹색매장 정보
+  const [greenBrandPanel, setGreenBrandPanel]     = useState(null); // 브랜드 선택 패널용 카테고리
+  const [selectedBrand, setSelectedBrand]         = useState(null); // 현재 선택된 브랜드 키워드
 
   // 사진/검증
   const [speedViolationStop, setSpeedViolationStop] = useState(false);
@@ -1197,9 +1199,9 @@ function MapPageInner() {
     } catch (e) { console.error("녹색매장 카테고리 로드 실패:", e); }
   }, []);
 
-  // ─── D. 카카오 Places 키워드 검색 ─────────────────────
-  const searchGreenStores = useCallback(async (categoryIds) => {
-    if (!mapUserPos || categoryIds.length === 0) {
+  // ─── D. 카카오 Places 단일 키워드 검색 ──────────────────
+  const searchGreenBrand = useCallback(async (keyword, cat) => {
+    if (!mapUserPos || !keyword) {
       setGreenStoreMarkers([]);
       return;
     }
@@ -1207,39 +1209,28 @@ function MapPageInner() {
     try {
       const ps = new window.kakao.maps.services.Places();
       const results = [];
-      const searched = new Set(); // 중복 place_id 방지
 
-      // 선택된 카테고리들의 키워드로 검색
-      for (const catId of categoryIds) {
-        const cat = greenCategories.find((c) => c.id === catId);
-        if (!cat || !cat.keywords) continue;
-
-        for (const keyword of cat.keywords) {
-          await new Promise((resolve) => {
-            ps.keywordSearch(keyword, (data, status) => {
-              if (status === window.kakao.maps.services.Status.OK) {
-                data.forEach((place) => {
-                  if (!searched.has(place.id)) {
-                    searched.add(place.id);
-                    results.push({
-                      ...place,
-                      icon: cat.icon,
-                      color: cat.color,
-                      category_name: cat.name,
-                      categoryId: cat.id,
-                    });
-                  }
-                });
-              }
-              resolve();
-            }, {
-              location: new window.kakao.maps.LatLng(mapUserPos.lat, mapUserPos.lng),
-              radius: 3000, // 3km 반경
-              size: 15,
+      await new Promise((resolve) => {
+        ps.keywordSearch(keyword, (data, status) => {
+          if (status === window.kakao.maps.services.Status.OK) {
+            data.forEach((place) => {
+              results.push({
+                ...place,
+                icon: cat.icon,
+                color: cat.color,
+                category_name: cat.name,
+                categoryId: cat.id,
+                brandKeyword: keyword,
+              });
             });
-          });
-        }
-      }
+          }
+          resolve();
+        }, {
+          location: new window.kakao.maps.LatLng(mapUserPos.lat, mapUserPos.lng),
+          radius: 3000,
+          size: 15,
+        });
+      });
 
       setGreenStoreMarkers(results);
     } catch (e) {
@@ -1247,18 +1238,43 @@ function MapPageInner() {
     } finally {
       setGreenSearching(false);
     }
-  }, [mapUserPos, greenCategories]);
+  }, [mapUserPos]);
 
-  // ─── D. 카테고리 토글 핸들러 ──────────────────────────
+  // ─── D. 카테고리 칩 클릭 → 브랜드 선택 패널 열기 ──────
   const handleToggleGreenCat = useCallback((catId) => {
-    setActiveGreenCats((prev) => {
-      const next = prev.includes(catId)
-        ? prev.filter((id) => id !== catId)
-        : [...prev, catId];
-      searchGreenStores(next);
-      return next;
-    });
-  }, [searchGreenStores]);
+    const cat = greenCategories.find((c) => c.id === catId);
+    if (!cat) return;
+
+    // 이미 같은 카테고리가 열려있으면 닫기
+    if (greenBrandPanel?.id === catId) {
+      setGreenBrandPanel(null);
+      setSelectedBrand(null);
+      setActiveGreenCats([]);
+      setGreenStoreMarkers([]);
+      return;
+    }
+
+    // 브랜드 선택 패널 열기
+    setGreenBrandPanel(cat);
+    setSelectedBrand(null);
+    setActiveGreenCats([catId]);
+    setGreenStoreMarkers([]);
+  }, [greenCategories, greenBrandPanel]);
+
+  // ─── D. 브랜드 선택 → 해당 브랜드만 검색 ─────────────
+  const handleSelectBrand = useCallback((keyword) => {
+    if (!greenBrandPanel) return;
+
+    if (selectedBrand === keyword) {
+      // 같은 브랜드 다시 탭 → 해제
+      setSelectedBrand(null);
+      setGreenStoreMarkers([]);
+      return;
+    }
+
+    setSelectedBrand(keyword);
+    searchGreenBrand(keyword, greenBrandPanel);
+  }, [greenBrandPanel, selectedBrand, searchGreenBrand]);
 
   // ─── GPS 위치 취득 (거리 표시용) + 지역 감지 ──────────
   useEffect(() => {
@@ -1890,39 +1906,83 @@ function MapPageInner() {
 
       {/* ── 녹색매장 필터 칩 ──────────────────────────────── */}
       {!isTracking && greenCategories.length > 0 && (
-        <div className="absolute top-14 left-3 right-16 z-10 overflow-x-auto no-scrollbar">
-          <div className="flex gap-1.5 pb-1">
-            {greenCategories.map((cat) => {
-              const isActive = activeGreenCats.includes(cat.id);
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => handleToggleGreenCat(cat.id)}
-                  className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-all
-                    ${isActive
-                      ? "text-white shadow-md"
-                      : "bg-white/90 text-gray-600 border border-gray-200"
-                    }`}
-                  style={isActive ? { backgroundColor: cat.color } : {}}
-                >
-                  <span className="text-sm">{cat.icon}</span>
-                  {cat.name}
-                  {isActive && greenSearching && <span className="animate-spin ml-1">⏳</span>}
-                </button>
-              );
-            })}
+        <div className="absolute top-14 left-3 right-16 z-10">
+          {/* 카테고리 칩 */}
+          <div className="overflow-x-auto no-scrollbar">
+            <div className="flex gap-1.5 pb-1">
+              {greenCategories.map((cat) => {
+                const isActive = activeGreenCats.includes(cat.id);
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleToggleGreenCat(cat.id)}
+                    className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-all
+                      ${isActive
+                        ? "text-white shadow-md"
+                        : "bg-white/90 text-gray-600 border border-gray-200"
+                      }`}
+                    style={isActive ? { backgroundColor: cat.color } : {}}
+                  >
+                    <span className="text-sm">{cat.icon}</span>
+                    {cat.name}
+                    {isActive && !greenBrandPanel && greenSearching && <span className="animate-spin ml-1">⏳</span>}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          {activeGreenCats.length > 0 && greenStoreMarkers.length > 0 && (
-            <div className="mt-1 flex items-center gap-2">
-              <span className="text-[10px] text-gray-500 bg-white/80 px-2 py-0.5 rounded-full shadow-sm">
-                <Leaf className="w-3 h-3 inline -mt-0.5 text-green-500" strokeWidth={2} /> 주변 {greenStoreMarkers.length}개 매장
-              </span>
-              <button
-                onClick={() => { setActiveGreenCats([]); setGreenStoreMarkers([]); }}
-                className="text-[10px] text-red-400 bg-white/80 px-2 py-0.5 rounded-full shadow-sm"
-              >
-                <XIcon className="w-3 h-3 inline -mt-0.5" strokeWidth={2} /> 초기화
-              </button>
+
+          {/* 브랜드 선택 패널 */}
+          {greenBrandPanel && greenBrandPanel.keywords && greenBrandPanel.keywords.length > 0 && (
+            <div className="mt-2 bg-white/95 backdrop-blur-sm rounded-2xl p-3 shadow-lg border border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-bold text-gray-700 flex items-center gap-1">
+                  <span className="text-sm">{greenBrandPanel.icon}</span>
+                  {greenBrandPanel.name} 참여 브랜드
+                </p>
+                <button
+                  onClick={() => { setGreenBrandPanel(null); setSelectedBrand(null); setActiveGreenCats([]); setGreenStoreMarkers([]); }}
+                  className="text-gray-400 p-0.5"
+                >
+                  <XIcon className="w-4 h-4" strokeWidth={2} />
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {greenBrandPanel.keywords.map((keyword) => {
+                  const isSel = selectedBrand === keyword;
+                  return (
+                    <button
+                      key={keyword}
+                      onClick={() => handleSelectBrand(keyword)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all
+                        ${isSel
+                          ? "text-white shadow-md"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      style={isSel ? { backgroundColor: greenBrandPanel.color } : {}}
+                    >
+                      {keyword}
+                      {isSel && greenSearching && <span className="animate-spin ml-1">⏳</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* 검색 결과 요약 */}
+              {selectedBrand && greenStoreMarkers.length > 0 && !greenSearching && (
+                <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-2">
+                  <span className="text-[11px] text-green-600 font-bold flex items-center gap-1">
+                    <Leaf className="w-3 h-3" strokeWidth={2} />
+                    주변 {selectedBrand} {greenStoreMarkers.length}개 매장
+                  </span>
+                </div>
+              )}
+              {selectedBrand && greenStoreMarkers.length === 0 && !greenSearching && (
+                <div className="mt-2 pt-2 border-t border-gray-100">
+                  <span className="text-[11px] text-gray-400">
+                    주변에 {selectedBrand} 매장이 없어요
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1947,11 +2007,17 @@ function MapPageInner() {
                 <XIcon className="w-5 h-5" strokeWidth={2} />
               </button>
             </div>
-            <div className="mt-3 space-y-1.5">
+            <div className="mt-2.5 space-y-1.5">
               {selectedGreenStore.road_address_name && (
                 <p className="text-xs text-gray-500 flex items-center gap-1.5">
                   <MapPinIcon className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={2} />
                   {selectedGreenStore.road_address_name}
+                </p>
+              )}
+              {!selectedGreenStore.road_address_name && selectedGreenStore.address_name && (
+                <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                  <MapPinIcon className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={2} />
+                  {selectedGreenStore.address_name}
                 </p>
               )}
               {selectedGreenStore.phone && (
@@ -1960,27 +2026,11 @@ function MapPageInner() {
                   {selectedGreenStore.phone}
                 </p>
               )}
-            </div>
-            <div className="flex gap-2 mt-3">
-              {selectedGreenStore.place_url && (
-                <a
-                  href={selectedGreenStore.place_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 bg-yellow-400 text-yellow-900 py-2.5 rounded-xl text-xs font-bold text-center"
-                >
-                  카카오맵에서 보기
-                </a>
+              {selectedGreenStore.distance && (
+                <p className="text-xs text-green-600 font-medium mt-1">
+                  현재 위치에서 약 {selectedGreenStore.distance}m
+                </p>
               )}
-              <button
-                onClick={() => {
-                  const url = `https://map.kakao.com/link/to/${selectedGreenStore.place_name},${selectedGreenStore.y},${selectedGreenStore.x}`;
-                  window.open(url, "_blank");
-                }}
-                className="flex-1 bg-green-500 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1"
-              >
-                <Navigation className="w-3.5 h-3.5" strokeWidth={2} /> 길찾기
-              </button>
             </div>
           </div>
         </div>
