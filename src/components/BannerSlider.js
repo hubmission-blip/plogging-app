@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 // ─── 기본 하드코딩 배너 (Firestore 미설정 시 표시) ────────────
 // priority: 낮을수록 앞에 노출 (1 = 최우선)
@@ -109,27 +109,24 @@ export default function BannerSlider({ userRegion = null, autoInterval = 4000 })
   const [ytIsShorts,   setYtIsShorts]   = useState(false); // Shorts 여부 (9:16)
   const timerRef = useRef(null);
 
-  // ── Firestore 실시간 리스너 (onSnapshot) ────────────────────
-  // getDocs 대신 onSnapshot 사용 → 관리자가 배너 수정 즉시 앱에 반영
+  // ── Firestore 배너 일회성 조회 (getDocs) ────────────────────
+  // onSnapshot → getDocs 전환: 실시간 업데이트 불필요, 초기 로딩 속도 우선
   useEffect(() => {
-    const q = query(collection(db, "banners"), where("active", "==", true));
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
+    const fetchBanners = async () => {
+      try {
+        const q = query(collection(db, "banners"), where("active", "==", true));
+        const snap = await getDocs(q);
         if (!snap.empty) {
-          const loaded = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          setAllBanners(loaded);
+          setAllBanners(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
         } else {
-          // Firestore에 활성 배너 없으면 기본 배너 사용
           setAllBanners([]);
         }
-      },
-      (err) => {
+      } catch (err) {
         console.warn("배너 로드 실패, 기본 배너 사용:", err.message);
-        setAllBanners([]); // 오류 시 기본 배너 표시
+        setAllBanners([]);
       }
-    );
-    return () => unsub(); // 컴포넌트 언마운트 시 리스너 해제
+    };
+    fetchBanners();
   }, []);
 
   // ── 지역 필터 + 중요도 정렬 + 항상 12개 유지 ────────────────

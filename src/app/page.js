@@ -182,59 +182,43 @@ export default function HomePage() {
     checkProfile();
   }, [user]);
 
-  // ── 사용자 위치 기반 지역 감지 ────────────────────────────
+  // ── 사용자 위치 기반 지역 감지 (비차단, 백그라운드) ────────
   useEffect(() => {
-    const detectRegion = async () => {
-      try {
-        // 세션 캐시 확인 (페이지 재로드 시 재감지 방지)
-        const cached = sessionStorage.getItem("user_region");
-        if (cached) { setUserRegion(cached); return; }
+    // 세션 캐시 확인 (즉시)
+    try {
+      const cached = sessionStorage.getItem("user_region");
+      if (cached) { setUserRegion(cached); return; }
+    } catch {}
 
-        if (!navigator?.geolocation) return;
+    if (!navigator?.geolocation) return;
 
-        navigator.geolocation.getCurrentPosition(
-          async (pos) => {
-            try {
-              const { latitude: lat, longitude: lon } = pos.coords;
-              const res = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=ko`,
-                {
-                  headers: { "User-Agent": "plogging-app/1.0" },
-                  signal: AbortSignal.timeout(5000),
-                }
-              );
-              if (!res.ok) return;
-              const data = await res.json();
-              const raw  = data.address?.state
-                        || data.address?.province
-                        || data.address?.city
-                        || "";
-              // 17개 시/도 중 일치하는 것 찾기
-              const found = KOREAN_REGIONS.find(
-                (r) => raw.includes(r) || r.startsWith(raw.slice(0, 2))
-              );
-              if (found) {
-                setUserRegion(found);
-                try { sessionStorage.setItem("user_region", found); } catch {}
-              }
-            } catch {
-              // 역주소 실패 → 기본 전국 배너만 표시
-            }
-          },
-          () => {
-            // 위치 거부 → 기본 전국 배너만 표시
-          },
-          { timeout: 8000, maximumAge: 300000 } // 5분 캐시
-        );
-      } catch {
-        // 무시
-      }
-    };
-    detectRegion();
+    // 비동기로 위치 감지 — UI 렌더링 차단하지 않음
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude: lat, longitude: lon } = pos.coords;
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=ko`,
+            { headers: { "User-Agent": "plogging-app/1.0" }, signal: AbortSignal.timeout(4000) }
+          );
+          if (!res.ok) return;
+          const data = await res.json();
+          const raw = data.address?.state || data.address?.province || data.address?.city || "";
+          const found = KOREAN_REGIONS.find((r) => raw.includes(r) || r.startsWith(raw.slice(0, 2)));
+          if (found) {
+            setUserRegion(found);
+            try { sessionStorage.setItem("user_region", found); } catch {}
+          }
+        } catch { /* 역주소 실패 무시 */ }
+      },
+      () => { /* 위치 거부 무시 */ },
+      { timeout: 5000, maximumAge: 600000 } // 10분 캐시, 5초 타임아웃
+    );
   }, []);
 
-  // 활성 공지사항 불러오기
+  // ── 공지사항 + 커뮤니티 통계를 병렬로 불러오기 ─────────────
   useEffect(() => {
+    // 공지사항
     const fetchNotices = async () => {
       try {
         let snap;
@@ -246,12 +230,8 @@ export default function HomePage() {
           );
           snap = await getDocs(q);
         } catch (indexErr) {
-          // 복합 인덱스 미생성 시 → orderBy 없이 조회 후 클라이언트 정렬
           console.warn("공지사항 인덱스 쿼리 실패, fallback:", indexErr.message);
-          const fallbackQ = query(
-            collection(db, "notices"),
-            where("active", "==", true)
-          );
+          const fallbackQ = query(collection(db, "notices"), where("active", "==", true));
           snap = await getDocs(fallbackQ);
         }
         const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -265,52 +245,60 @@ export default function HomePage() {
         console.warn("공지사항 로드 실패:", e.message);
       }
     };
+
+    // 공지사항은 즉시 실행 (병렬)
     fetchNotices();
   }, []);
 
   // 커뮤니티 통계 (누적 사용자 수 + 누적 이동 거리)
   // ※ 탈퇴자도 누적 사용자에 포함 (stats/community.deletedUsersCount 합산)
-  // ※ 탈퇴자의 경로 데이터도 보존되어 누적 이동거리 유지
+  // ※ stats/community 문서에 캐시된 totalDistance 우선 사용 (전체 유저 스캔 방지)
   useEffect(() => {
     const fetchCommunityStats = async () => {
       let totalUsers = 0;
       let deletedUsers = 0;
       let totalDistance = 0;
+      let deletedDistance = 0;
 
       try {
-        // 현재 가입자 수
+        // stats/community 문서 한 번만 읽기 (캐시된 통계)
+        const statsSnap = await getDoc(doc(db, "stats", "community"));
+        if (statsSnap.exists()) {
+          const sd = statsSnap.data();
+          deletedUsers = sd.deletedUsersCount || 0;
+          deletedDistance = sd.deletedUsersDistance || 0;
+          // 캐시된 총 이동거리가 있으면 사용 (전체 유저 스캔 불필요)
+          if (sd.cachedTotalDistance !== undefined) {
+            totalDistance = sd.cachedTotalDistance + deletedDistance;
+          }
+        }
+      } catch (e) {
+        console.warn("통계 로드 실패:", e.message);
+      }
+
+      try {
+        // 현재 가입자 수 (경량 카운트 쿼리)
         const usersSnap = await getCountFromServer(collection(db, "users"));
         totalUsers = usersSnap.data().count;
       } catch (e) {
         console.warn("가입자 수 로드 실패:", e.message);
       }
 
-      let deletedDistance = 0;
-      try {
-        // 탈퇴한 사용자 수 + 탈퇴자 누적 이동거리
-        const statsSnap = await getDoc(doc(db, "stats", "community"));
-        if (statsSnap.exists()) {
-          deletedUsers = statsSnap.data().deletedUsersCount || 0;
-          deletedDistance = statsSnap.data().deletedUsersDistance || 0;
+      // cachedTotalDistance가 없는 경우만 전체 스캔 (최초 1회, 이후 불필요)
+      if (totalDistance === 0 && totalUsers > 0) {
+        try {
+          const usersSnap = await getDocs(collection(db, "users"));
+          usersSnap.forEach((d) => {
+            totalDistance += d.data().totalDistance || 0;
+          });
+          totalDistance += deletedDistance;
+        } catch (e) {
+          console.warn("이동 거리 로드 실패:", e.message);
         }
-      } catch (e) {
-        console.warn("탈퇴자 통계 로드 실패:", e.message);
-      }
-
-      try {
-        // 현재 가입자들의 총 이동거리 (각 유저의 totalDistance 합산)
-        const usersSnap = await getDocs(collection(db, "users"));
-        usersSnap.forEach((d) => {
-          totalDistance += d.data().totalDistance || 0;
-        });
-        // 탈퇴자 이동거리 합산
-        totalDistance += deletedDistance;
-      } catch (e) {
-        console.warn("이동 거리 로드 실패:", e.message);
       }
 
       setCommunityStats({
-        users: totalUsers + deletedUsers,  // 누적 사용자 = 현재 가입자 + 탈퇴자
+        users: totalUsers + deletedUsers,
         distance: totalDistance,
       });
     };

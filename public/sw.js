@@ -1,4 +1,4 @@
-const CACHE_VERSION = "1777434889407";
+const CACHE_VERSION = "1777435248490";
 const CACHE_NAME = `plogging-${CACHE_VERSION}`;
 
 const urlsToCache = ["/", "/manifest.json"];
@@ -35,25 +35,48 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Network-first 전략: 항상 최신 코드 우선, 오프라인일 때만 캐시
+// 하이브리드 캐시 전략:
+// - 정적 자원(_next/static, 이미지, 폰트): 캐시 우선 → 즉시 로딩
+// - HTML/페이지: 네트워크 우선 → 항상 최신
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   if (event.request.url.includes("/api/")) return;
-  // SW 자기 자신, _next/static 제외한 HTML은 항상 네트워크 우선
   if (event.request.url.includes("sw.js")) return;
 
+  const url = new URL(event.request.url);
+
+  // 정적 자원 → Cache-First (Stale-While-Revalidate)
+  const isStatic =
+    url.pathname.startsWith("/_next/static/") ||
+    /\.(js|css|woff2?|ttf|png|jpg|jpeg|gif|svg|ico|webp)$/.test(url.pathname);
+
+  if (isStatic) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        const fetchPromise = fetch(event.request)
+          .then((response) => {
+            if (response.ok) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            }
+            return response;
+          })
+          .catch(() => cached);
+        return cached || fetchPromise;
+      })
+    );
+    return;
+  }
+
+  // HTML/페이지 → Network-First
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // 네트워크 성공 → 캐시 업데이트 후 반환
         const clone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         return response;
       })
-      .catch(() => {
-        // 오프라인 → 캐시에서 반환
-        return caches.match(event.request);
-      })
+      .catch(() => caches.match(event.request))
   );
 });
 

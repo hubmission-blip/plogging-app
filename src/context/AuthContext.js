@@ -33,26 +33,34 @@ const restoreSocialUser = () => {
   return null;
 };
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [showSkip, setShowSkip] = useState(false);
+// ── 즉시 복구: 이전 로그인 상태가 있으면 초기값으로 사용 ──
+// Firebase onAuthStateChanged 응답 전에도 앱을 렌더링할 수 있게 함
+const getInitialUser = () => {
+  try {
+    // Firebase가 로컬 persistence에 저장한 키 확인
+    const fbKey = Object.keys(localStorage).find(
+      (k) => k.startsWith("firebase:authUser:")
+    );
+    if (fbKey) {
+      const cached = JSON.parse(localStorage.getItem(fbKey));
+      if (cached?.uid) return { uid: cached.uid, email: cached.email, displayName: cached.displayName, _cached: true };
+    }
+  } catch { /* 무시 */ }
+  return restoreSocialUser();
+};
 
-  // 강제 건너뛰기
-  const forceSkip = useCallback(() => {
-    console.warn("[AuthContext] 사용자가 인증 건너뛰기 선택");
-    const socialUser = restoreSocialUser();
-    setUser(socialUser);
-    setLoading(false);
-  }, []);
+export function AuthProvider({ children }) {
+  // 즉시 캐시된 사용자로 초기화 → loading=false로 시작 가능
+  const cachedUser = typeof window !== "undefined" ? getInitialUser() : null;
+  const [user, setUser] = useState(cachedUser);
+  const [loading, setLoading] = useState(!cachedUser); // 캐시 있으면 즉시 렌더링
+  const [authReady, setAuthReady] = useState(false); // Firebase 확인 완료 여부
 
   useEffect(() => {
     let resolved = false;
     const isNative = isCapacitorNative();
-    // 타임아웃: 웹 3초, 네이티브 8초
-    const timeoutMs = isNative ? 8000 : 3000;
-    // 건너뛰기 버튼: 2초 후 표시
-    const skipTimer = setTimeout(() => setShowSkip(true), 2000);
+    // 타임아웃: 웹 1.5초, 네이티브 5초 (캐시가 있으면 백그라운드 처리)
+    const timeoutMs = isNative ? 5000 : 1500;
 
     if (isNative) {
       console.log("[AuthContext] Capacitor 네이티브(iOS) 환경 감지");
@@ -63,9 +71,12 @@ export function AuthProvider({ children }) {
       if (resolved) return;
       resolved = true;
       console.warn(`[AuthContext] Firebase auth timeout (${timeoutMs}ms) — 앱 진입 허용`);
-      const socialUser = restoreSocialUser();
-      setUser(socialUser);
+      if (!user) {
+        const socialUser = restoreSocialUser();
+        setUser(socialUser);
+      }
       setLoading(false);
+      setAuthReady(true);
     }, timeoutMs);
 
     let unsubscribe = () => {};
@@ -77,7 +88,6 @@ export function AuthProvider({ children }) {
           if (resolved) return;
           resolved = true;
           clearTimeout(timeout);
-          clearTimeout(skipTimer);
           if (firebaseUser) {
             setUser(firebaseUser);
           } else {
@@ -85,35 +95,39 @@ export function AuthProvider({ children }) {
             setUser(socialUser);
           }
           setLoading(false);
+          setAuthReady(true);
         },
         (error) => {
           if (resolved) return;
           resolved = true;
           clearTimeout(timeout);
-          clearTimeout(skipTimer);
           console.error("[AuthContext] onAuthStateChanged error:", error.code, error.message);
-          const socialUser = restoreSocialUser();
-          setUser(socialUser);
+          if (!user) {
+            const socialUser = restoreSocialUser();
+            setUser(socialUser);
+          }
           setLoading(false);
+          setAuthReady(true);
         }
       );
     } catch (initError) {
       if (!resolved) {
         resolved = true;
         clearTimeout(timeout);
-        clearTimeout(skipTimer);
         console.error("[AuthContext] Firebase 초기화 실패:", initError);
         setLoading(false);
+        setAuthReady(true);
       }
     }
 
     return () => {
       clearTimeout(timeout);
-      clearTimeout(skipTimer);
       unsubscribe();
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 캐시 유저가 있으면 스플래시 없이 바로 렌더링
+  // 캐시 없을 때만 최소한의 로딩 표시 (최대 1.5초)
   if (loading) {
     return (
       <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center z-[999]">
@@ -126,22 +140,13 @@ export function AuthProvider({ children }) {
           <span className="w-2 h-2 rounded-full bg-green-500 animate-bounce" style={{ animationDelay: "150ms" }} />
           <span className="w-2 h-2 rounded-full bg-teal-500 animate-bounce" style={{ animationDelay: "300ms" }} />
         </div>
-        <p className="text-[10px] text-gray-300 mt-4">인증 확인 중...</p>
-        {/* 2초 후 건너뛰기 버튼 표시 */}
-        {showSkip && (
-          <button
-            onClick={forceSkip}
-            className="mt-6 text-xs text-gray-400 underline underline-offset-2 active:text-gray-600 transition-colors"
-          >
-            건너뛰기
-          </button>
-        )}
+        <p className="text-[10px] text-gray-300 mt-4">잠시만 기다려주세요...</p>
       </div>
     );
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, authReady }}>
       {children}
     </AuthContext.Provider>
   );

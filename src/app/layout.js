@@ -87,21 +87,27 @@ export default function RootLayout({ children }) {
                   });
                 }
                 if (!isCapacitor && "serviceWorker" in navigator) {
-                  navigator.serviceWorker.register("/sw.js?v=" + Date.now()).then(function(registration) {
+                  navigator.serviceWorker.register("/sw.js").then(function(registration) {
                     console.log("SW 등록:", registration.scope);
-                    // 즉시 업데이트 체크
-                    registration.update();
+
+                    // 무한 리로드 방지: 최근 5초 내 리로드했으면 건너뛰기
+                    var RELOAD_KEY = "sw_last_reload";
+                    var lastReload = parseInt(sessionStorage.getItem(RELOAD_KEY) || "0", 10);
+                    var now = Date.now();
+                    var justReloaded = (now - lastReload) < 5000;
+
                     registration.addEventListener("updatefound", function() {
                       var newWorker = registration.installing;
+                      if (!newWorker) return;
                       newWorker.addEventListener("statechange", function() {
-                        if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-                          // 기존 캐시 전부 삭제 후 리로드
-                          caches.keys().then(function(names) {
-                            return Promise.all(names.map(function(n) { return caches.delete(n); }));
-                          }).then(function() {
-                            newWorker.postMessage({ type: "SKIP_WAITING" });
-                            window.location.reload();
-                          });
+                        if (newWorker.state === "activated" && navigator.serviceWorker.controller) {
+                          // 이미 방금 리로드했으면 다시 하지 않음
+                          if (justReloaded) {
+                            console.log("[SW] 업데이트 완료, 리로드 생략 (방금 리로드됨)");
+                            return;
+                          }
+                          sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+                          window.location.reload();
                         }
                       });
                     });

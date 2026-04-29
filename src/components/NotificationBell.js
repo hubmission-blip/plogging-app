@@ -96,8 +96,8 @@ export default function NotificationBell({ user }) {
       }
     };
 
-    const timer = setTimeout(fetchAllNotifications, 1500);
-    return () => { cancelled = true; clearTimeout(timer); };
+    fetchAllNotifications();
+    return () => { cancelled = true; };
   }, [user?.uid]);
 
   if (!user) return null;
