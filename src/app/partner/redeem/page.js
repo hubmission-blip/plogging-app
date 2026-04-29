@@ -169,29 +169,37 @@ export default function PartnerRedeemPage() {
     if (!couponInfo || !storeInfo) return;
     setRedeeming(true);
     try {
+      // 1단계: 쿠폰 상태만 업데이트 (모든 인증 사용자 가능)
+      const couponRef = doc(db, "coupons", couponInfo.id);
       await runTransaction(db, async (tx) => {
-        const couponRef = doc(db, "coupons", couponInfo.id);
         const couponSnap = await tx.get(couponRef);
         if (!couponSnap.exists()) throw new Error("쿠폰을 찾을 수 없습니다.");
         if (couponSnap.data().status !== "active") throw new Error("이미 사용된 쿠폰입니다.");
 
-        // 쿠폰 상태 → used
         tx.update(couponRef, {
           status:       "used",
           usedAt:       serverTimestamp(),
           usedByStore:  storeInfo.id,
           usedByStoreName: storeInfo.name,
         });
-
-        // 매장 적립 포인트 증가
-        const storeRef = doc(db, "partnerStores", storeInfo.id);
-        const storeSnap = await tx.get(storeRef);
-        const currentPoints = storeSnap.data()?.accumulatedPoints || 0;
-        tx.update(storeRef, {
-          accumulatedPoints: currentPoints + (couponInfo.points || 0),
-          lastRedeemAt: serverTimestamp(),
-        });
       });
+
+      // 2단계: 매장 적립 포인트 증가 (매장 소유자만 가능)
+      try {
+        const storeRef = doc(db, "partnerStores", storeInfo.id);
+        await runTransaction(db, async (tx) => {
+          const storeSnap = await tx.get(storeRef);
+          if (!storeSnap.exists()) throw new Error("매장 정보를 찾을 수 없습니다.");
+          const currentPoints = storeSnap.data()?.accumulatedPoints || 0;
+          tx.update(storeRef, {
+            accumulatedPoints: currentPoints + (couponInfo.points || 0),
+            lastRedeemAt: serverTimestamp(),
+          });
+        });
+      } catch (storeErr) {
+        // 매장 포인트 업데이트 실패해도 쿠폰은 이미 사용 처리됨
+        console.warn("매장 포인트 적립 실패 (쿠폰은 사용처리 완료):", storeErr);
+      }
 
       setSuccessInfo({
         code: couponInfo.code,
@@ -203,7 +211,13 @@ export default function PartnerRedeemPage() {
       setCodeInput("");
       fetchHistory();
     } catch (e) {
-      alert("사용 처리 실패: " + e.message);
+      console.error("쿠폰 사용처리 에러:", e);
+      const code = e.code || "";
+      let msg = e.message || "알 수 없는 오류";
+      if (code === "permission-denied" || code === "PERMISSION_DENIED") {
+        msg = "권한이 없습니다. Firestore 보안규칙을 확인해주세요.";
+      }
+      alert("사용 처리 실패: " + msg);
     } finally {
       setRedeeming(false);
     }
