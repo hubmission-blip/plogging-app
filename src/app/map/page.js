@@ -44,7 +44,7 @@ import { uploadToCloudinary } from "@/lib/cloudinary";
 
 // ─── 플로깅 가능 시간 상수 ────────────────────────────────
 const PLOGGING_START_HOUR = 6;  // 오전 6시
-const PLOGGING_END_HOUR   = 20; // 오후 8시
+const PLOGGING_END_HOUR   = 22; // 오후 10시
 
 function isWithinPloggingHours() {
   const hour = new Date().getHours();
@@ -1511,7 +1511,7 @@ function MapPageInner() {
 
   // ─── 시작 버튼 (시간 체크 → 중복 체크 포함) ──────────
   const handleStart = async () => {
-    // 1. 시간 제한 체크 (오전 6시 ~ 오후 8시) — 관리자 OFF 시 무시
+    // 1. 시간 제한 체크 (오전 6시 ~ 오후 10시) — 관리자 OFF 시 무시
     if (timeLimitEnabled && !isWithinPloggingHours()) {
       setShowTimeRestriction(true);
       return;
@@ -1905,7 +1905,7 @@ function MapPageInner() {
       )}
 
       {/* ── 녹색매장 필터 칩 ──────────────────────────────── */}
-      {!isTracking && greenCategories.length > 0 && (
+      {greenCategories.length > 0 && (
         <div className="absolute top-14 left-3 z-10" style={{ maxWidth: 140 }}>
           {/* 카테고리 칩 — 세로 배치 */}
           <div className="flex flex-col gap-1.5">

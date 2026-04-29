@@ -1684,7 +1684,7 @@ export default function AdminPage() {
               <div className="bg-white rounded-2xl p-4 shadow-sm">
                 <SectionTitle>🕐 플로깅 시간 제한</SectionTitle>
                 <p className="text-xs text-gray-400 mb-4">
-                  오전 6시 ~ 오후 8시 사이에만 플로깅을 시작할 수 있는 제한입니다.<br/>
+                  오전 6시 ~ 오후 10시 사이에만 플로깅을 시작할 수 있는 제한입니다.<br/>
                   <span className="text-orange-400 font-medium">※ OFF 시 24시간 언제든 플로깅 가능 (테스트·이벤트 시 활용)</span>
                 </p>
                 <div className="flex items-center justify-between">
@@ -1692,7 +1692,7 @@ export default function AdminPage() {
                     <p className="text-sm font-bold text-gray-700">시간 제한</p>
                     <p className={`text-xs mt-0.5 font-medium ${appSettings.timeLimitEnabled !== false ? "text-green-500" : "text-red-400"}`}>
                       {appSettings.timeLimitEnabled !== false
-                        ? "✅ 현재 ON — 오전 6시 ~ 오후 8시만 허용"
+                        ? "✅ 현재 ON — 오전 6시 ~ 오후 10시만 허용"
                         : "⛔ 현재 OFF — 24시간 플로깅 가능"}
                     </p>
                   </div>
