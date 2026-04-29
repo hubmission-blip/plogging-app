@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
@@ -16,43 +16,56 @@ const isCapacitorNative = () => {
   }
 };
 
+// localStorage에서 소셜 로그인 사용자 복구
+const restoreSocialUser = () => {
+  try {
+    const kakaoUser = localStorage.getItem("kakaoUser");
+    const appleUser = localStorage.getItem("appleUser");
+    if (kakaoUser) {
+      const parsed = JSON.parse(kakaoUser);
+      return { uid: parsed.uid, email: parsed.email, displayName: parsed.nickname, provider: "kakao" };
+    }
+    if (appleUser) {
+      const parsed = JSON.parse(appleUser);
+      return { uid: parsed.uid, email: parsed.email, displayName: parsed.nickname, provider: "apple" };
+    }
+  } catch { /* 파싱 실패 무시 */ }
+  return null;
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [timedOut, setTimedOut] = useState(false);
+  const [showSkip, setShowSkip] = useState(false);
 
-  const initAuth = () => {
-    setLoading(true);
-    setTimedOut(false);
+  // 강제 건너뛰기
+  const forceSkip = useCallback(() => {
+    console.warn("[AuthContext] 사용자가 인증 건너뛰기 선택");
+    const socialUser = restoreSocialUser();
+    setUser(socialUser);
+    setLoading(false);
+  }, []);
 
+  useEffect(() => {
+    let resolved = false;
     const isNative = isCapacitorNative();
-    // iPad/시뮬레이터 환경에서 Firebase 초기화가 느릴 수 있으므로 넉넉하게
-    const timeoutMs = isNative ? 12000 : 5000;
+    // 타임아웃: 웹 3초, 네이티브 8초
+    const timeoutMs = isNative ? 8000 : 3000;
+    // 건너뛰기 버튼: 2초 후 표시
+    const skipTimer = setTimeout(() => setShowSkip(true), 2000);
 
     if (isNative) {
       console.log("[AuthContext] Capacitor 네이티브(iOS) 환경 감지");
     }
 
+    // 안전장치: 타임아웃 시 강제 진입
     const timeout = setTimeout(() => {
+      if (resolved) return;
+      resolved = true;
       console.warn(`[AuthContext] Firebase auth timeout (${timeoutMs}ms) — 앱 진입 허용`);
-      // 타임아웃 시 localStorage 소셜 로그인 체크 후 진입
-      try {
-        const kakaoUser = localStorage.getItem("kakaoUser");
-        const appleUser = localStorage.getItem("appleUser");
-        if (kakaoUser) {
-          const parsed = JSON.parse(kakaoUser);
-          setUser({ uid: parsed.uid, email: parsed.email, displayName: parsed.nickname, provider: "kakao" });
-        } else if (appleUser) {
-          const parsed = JSON.parse(appleUser);
-          setUser({ uid: parsed.uid, email: parsed.email, displayName: parsed.nickname, provider: "apple" });
-        } else {
-          setUser(null);
-        }
-      } catch {
-        setUser(null);
-      }
+      const socialUser = restoreSocialUser();
+      setUser(socialUser);
       setLoading(false);
-      setTimedOut(true);
     }, timeoutMs);
 
     let unsubscribe = () => {};
@@ -61,50 +74,44 @@ export function AuthProvider({ children }) {
       unsubscribe = onAuthStateChanged(
         auth,
         (firebaseUser) => {
+          if (resolved) return;
+          resolved = true;
           clearTimeout(timeout);
+          clearTimeout(skipTimer);
           if (firebaseUser) {
             setUser(firebaseUser);
           } else {
-            // 소셜 로그인 확인 (카카오/애플)
-            try {
-              const kakaoUser = localStorage.getItem("kakaoUser");
-              const appleUser = localStorage.getItem("appleUser");
-              if (kakaoUser) {
-                const parsed = JSON.parse(kakaoUser);
-                setUser({ uid: parsed.uid, email: parsed.email, displayName: parsed.nickname, provider: "kakao" });
-              } else if (appleUser) {
-                const parsed = JSON.parse(appleUser);
-                setUser({ uid: parsed.uid, email: parsed.email, displayName: parsed.nickname, provider: "apple" });
-              } else {
-                setUser(null);
-              }
-            } catch {
-              setUser(null);
-            }
+            const socialUser = restoreSocialUser();
+            setUser(socialUser);
           }
           setLoading(false);
         },
         (error) => {
+          if (resolved) return;
+          resolved = true;
           clearTimeout(timeout);
+          clearTimeout(skipTimer);
           console.error("[AuthContext] onAuthStateChanged error:", error.code, error.message);
+          const socialUser = restoreSocialUser();
+          setUser(socialUser);
           setLoading(false);
         }
       );
     } catch (initError) {
-      clearTimeout(timeout);
-      console.error("[AuthContext] Firebase 초기화 실패:", initError);
-      setLoading(false);
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timeout);
+        clearTimeout(skipTimer);
+        console.error("[AuthContext] Firebase 초기화 실패:", initError);
+        setLoading(false);
+      }
     }
 
     return () => {
       clearTimeout(timeout);
+      clearTimeout(skipTimer);
       unsubscribe();
     };
-  };
-
-  useEffect(() => {
-    const cleanup = initAuth();
-    return cleanup;
   }, []);
 
   if (loading) {
@@ -120,6 +127,15 @@ export function AuthProvider({ children }) {
           <span className="w-2 h-2 rounded-full bg-teal-500 animate-bounce" style={{ animationDelay: "300ms" }} />
         </div>
         <p className="text-[10px] text-gray-300 mt-4">인증 확인 중...</p>
+        {/* 2초 후 건너뛰기 버튼 표시 */}
+        {showSkip && (
+          <button
+            onClick={forceSkip}
+            className="mt-6 text-xs text-gray-400 underline underline-offset-2 active:text-gray-600 transition-colors"
+          >
+            건너뛰기
+          </button>
+        )}
       </div>
     );
   }

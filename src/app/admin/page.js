@@ -3181,7 +3181,7 @@ export default function AdminPage() {
           ══════���════════════════��══════════════ */}
           {activeTab === "greenStores" && (
             <>
-              <SectionTitle>녹색매��� 카테고리 관리 ({greenCategories.length}개)</SectionTitle>
+              <SectionTitle>녹색매장 카테고리 관리 ({greenCategories.length}개)</SectionTitle>
 
               <p className="text-xs text-gray-400 mb-4 leading-relaxed">
                 카테고리를 등록하고 검색 키워드(브랜드명)를 추가하면, 사용자가 지도에서 해당 카테고리를 선택했을 때 카카오맵의 장소 데이터로 주변 매장을 표시합니다.

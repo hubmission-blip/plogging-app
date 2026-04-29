@@ -1,4 +1,4 @@
-const CACHE_VERSION = "1777424709429";
+const CACHE_VERSION = "1777433331630";
 const CACHE_NAME = `plogging-${CACHE_VERSION}`;
 
 const urlsToCache = ["/", "/manifest.json"];
@@ -28,10 +28,8 @@ self.addEventListener("activate", (event) => {
         )
       )
       .then(() => {
-        // 모든 클라이언트 강제 리로드
-        self.clients.matchAll().then((clients) => {
-          clients.forEach((client) => client.navigate(client.url));
-        });
+        // claim만 수행 — 리로드는 layout.js의 updatefound 핸들러가 담당
+        // client.navigate()를 여기서 하면 layout.js의 reload()와 이중 충돌 발생
         return self.clients.claim();
       })
   );

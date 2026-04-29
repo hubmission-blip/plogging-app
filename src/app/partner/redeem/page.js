@@ -11,8 +11,9 @@ import {
 import {
   Store, Search, Ticket, CheckCircle2, XCircle,
   ChevronLeft, Coffee, ArrowRight, AlertTriangle,
-  Coins, History,
+  Coins, History, QrCode, Camera,
 } from "lucide-react";
+import QRScanner from "@/components/QRScanner";
 
 export default function PartnerRedeemPage() {
   const { user } = useAuth();
@@ -28,6 +29,7 @@ export default function PartnerRedeemPage() {
   const [successInfo, setSuccessInfo] = useState(null);
   const [redeemHistory, setRedeemHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   // ── 매장 정보 조회 (로그인된 유저가 파트너 매장인지 확인) ────
   const fetchStoreInfo = useCallback(async () => {
@@ -76,7 +78,57 @@ export default function PartnerRedeemPage() {
     if (storeInfo) fetchHistory();
   }, [storeInfo, fetchHistory]);
 
-  // ── 쿠폰 코드 조회 ────────────────────────────────────────
+  // ── QR 스캔 결과 처리 ──────────────────────────────────────
+  const handleQRScan = useCallback((scannedCode) => {
+    setShowScanner(false);
+    // QR에서 읽은 코드를 입력란에 넣고 자동 조회
+    const code = scannedCode.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
+    if (code) {
+      setCodeInput(code);
+      // 자동 조회 실행
+      setTimeout(() => {
+        handleSearchWithCode(code);
+      }, 300);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── 쿠폰 코드 조회 (코드 직접 전달 가능) ──────────────────
+  const handleSearchWithCode = async (directCode) => {
+    const code = (directCode || codeInput.trim()).toUpperCase();
+    if (!code) return;
+    setSearching(true);
+    setCouponInfo(null);
+    setCouponError("");
+    try {
+      const q = query(
+        collection(db, "coupons"),
+        where("code", "==", code),
+        limit(1),
+      );
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        setCouponError("유효하지 않은 쿠폰 코드입니다.");
+        return;
+      }
+      const data = { id: snap.docs[0].id, ...snap.docs[0].data() };
+      if (data.status === "used") {
+        setCouponError("이미 사용된 쿠폰입니다.");
+        return;
+      }
+      if (data.status === "expired") {
+        setCouponError("만료된 쿠폰입니다.");
+        return;
+      }
+      setCouponInfo(data);
+    } catch (e) {
+      setCouponError("쿠폰 조회 중 오류가 발생했습니다.");
+      console.error(e);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  // ── 쿠폰 코드 조회 (기존 버튼용) ─────────────────────────
   const handleSearch = async () => {
     const code = codeInput.trim().toUpperCase();
     if (!code) return;
@@ -223,16 +275,30 @@ export default function PartnerRedeemPage() {
         </div>
       </div>
 
-      {/* ── 쿠폰 코드 입력 ── */}
+      {/* ── QR 스캔 버튼 (메인) ── */}
       <div className="px-4 -mt-3">
+        <button
+          onClick={() => { setShowScanner(true); setCouponError(""); setCouponInfo(null); }}
+          className="w-full bg-white rounded-2xl shadow-sm p-5 flex items-center gap-4 active:scale-[0.98] transition-transform mb-3"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+            <QrCode className="w-7 h-7 text-emerald-600" strokeWidth={1.8} />
+          </div>
+          <div className="text-left flex-1">
+            <p className="font-bold text-gray-800">QR코드 스캔</p>
+            <p className="text-xs text-gray-400 mt-0.5">고객의 쿠폰 QR을 카메라로 스캔합니다</p>
+          </div>
+          <Camera className="w-5 h-5 text-emerald-500" strokeWidth={2} />
+        </button>
+
+        {/* ── 쿠폰 코드 수동 입력 ── */}
         <div className="bg-white rounded-2xl shadow-sm p-4">
-          <p className="text-sm font-bold text-gray-700 mb-3">고객 쿠폰 코드 입력</p>
+          <p className="text-sm font-bold text-gray-700 mb-3">또는 쿠폰 코드 직접 입력</p>
           <div className="flex gap-2">
             <input
               type="text"
               value={codeInput}
               onChange={(e) => {
-                // 자동 대문자 + 숫자/영문/하이픈만 허용
                 const v = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "");
                 setCodeInput(v);
               }}
@@ -256,6 +322,15 @@ export default function PartnerRedeemPage() {
           )}
         </div>
       </div>
+
+      {/* ── QR 스캐너 모달 ── */}
+      {showScanner && (
+        <QRScanner
+          title="고객 쿠폰 QR 스캔"
+          onScan={handleQRScan}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
 
       {/* ── 조회된 쿠폰 정보 ── */}
       {couponInfo && (

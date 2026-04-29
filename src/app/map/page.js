@@ -1906,30 +1906,28 @@ function MapPageInner() {
 
       {/* ── 녹색매장 필터 칩 ──────────────────────────────── */}
       {!isTracking && greenCategories.length > 0 && (
-        <div className="absolute top-14 left-3 right-16 z-10">
-          {/* 카테고리 칩 */}
-          <div className="overflow-x-auto no-scrollbar">
-            <div className="flex gap-1.5 pb-1">
-              {greenCategories.map((cat) => {
-                const isActive = activeGreenCats.includes(cat.id);
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => handleToggleGreenCat(cat.id)}
-                    className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-all
-                      ${isActive
-                        ? "text-white shadow-md"
-                        : "bg-white/90 text-gray-600 border border-gray-200"
-                      }`}
-                    style={isActive ? { backgroundColor: cat.color } : {}}
-                  >
-                    <span className="text-sm">{cat.icon}</span>
-                    {cat.name}
-                    {isActive && !greenBrandPanel && greenSearching && <span className="animate-spin ml-1">⏳</span>}
-                  </button>
-                );
-              })}
-            </div>
+        <div className="absolute top-14 left-3 z-10" style={{ maxWidth: 140 }}>
+          {/* 카테고리 칩 — 세로 배치 */}
+          <div className="flex flex-col gap-1.5">
+            {greenCategories.map((cat) => {
+              const isActive = activeGreenCats.includes(cat.id);
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => handleToggleGreenCat(cat.id)}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-all whitespace-nowrap
+                    ${isActive
+                      ? "text-white shadow-md"
+                      : "bg-white/90 text-gray-600 border border-gray-200"
+                    }`}
+                  style={isActive ? { backgroundColor: cat.color } : {}}
+                >
+                  <span className="text-sm">{cat.icon}</span>
+                  {cat.name}
+                  {isActive && !greenBrandPanel && greenSearching && <span className="animate-spin ml-1">⏳</span>}
+                </button>
+              );
+            })}
           </div>
 
           {/* 브랜드 선택 — 세로 풀다운 */}
