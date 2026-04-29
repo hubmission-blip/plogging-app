@@ -138,11 +138,12 @@ export default function CouponPage() {
           return (
             <button
               key={coupon.id}
-              onClick={() => {
+              onClick={async () => {
                 setSelectedCoupon(coupon);
                 if (coupon.status === "active") {
                   try {
-                    setQrDataURL(generateQRDataURL(coupon.code, 256));
+                    const url = await generateQRDataURL(coupon.code, 280);
+                    setQrDataURL(url);
                   } catch (e) { console.error("QR 생성 실패:", e); }
                 } else {
                   setQrDataURL(null);
