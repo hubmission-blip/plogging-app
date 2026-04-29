@@ -1040,6 +1040,7 @@ function MapPageInner() {
   const [selectedGreenStore, setSelectedGreenStore] = useState(null); // 선택된 녹색매장 정보
   const [greenBrandPanel, setGreenBrandPanel]     = useState(null); // 브랜드 선택 패널용 카테고리
   const [selectedBrand, setSelectedBrand]         = useState(null); // 현재 선택된 브랜드 키워드
+  const [greenDrawerOpen, setGreenDrawerOpen]     = useState(false); // 녹색매장 드로어 열림 여부
 
   // 사진/검증
   const [speedViolationStop, setSpeedViolationStop] = useState(false);
@@ -1054,7 +1055,9 @@ function MapPageInner() {
   const PENDING_EXPIRY_MS = 60 * 60 * 1000; // 1시간
 
   // 페이지 마운트 시 pending 데이터가 있으면 복원
+  const mountedRef = useRef(true);
   useEffect(() => {
+    mountedRef.current = true;
     try {
       const raw = localStorage.getItem(PENDING_KEY);
       if (!raw) return;
@@ -1064,11 +1067,13 @@ function MapPageInner() {
         localStorage.removeItem(PENDING_KEY);
         return;
       }
-      // 유효한 데이터 → 복원
+      // 유효한 데이터 → 복원 (언마운트 체크)
+      if (!mountedRef.current) return;
       pendingDataRef.current = saved.data;
       if (Array.isArray(saved.tumblerCerts) && saved.tumblerCerts.length > 0) setSessionTumblerCerts(saved.tumblerCerts);
       setShowPhotoModal(true);
     } catch { /* 파싱 실패 → 무시 */ }
+    return () => { mountedRef.current = false; };
   }, []);
 
   // ── 텀블러/다회용컵 인증 ──────────────────────────────────
@@ -1749,6 +1754,7 @@ function MapPageInner() {
         greenStoreMarkers={greenStoreMarkers}
         onPartnerClick={(partner) => setSelectedPartner(partner)}
         onGreenStoreClick={(store) => setSelectedGreenStore(store)}
+        isPlogging={isTracking}
       />
 
       {/* ── 상단 정보바 ─────────────────────────────────── */}
@@ -1904,67 +1910,108 @@ function MapPageInner() {
         </div>
       )}
 
-      {/* ── 녹색매장 필터 칩 ──────────────────────────────── */}
+      {/* ── 녹색매장 슬라이드 드로어 ─────────────────────── */}
       {greenCategories.length > 0 && (
-        <div className="absolute top-14 left-3 z-10" style={{ maxWidth: 140 }}>
-          {/* 카테고리 칩 — 세로 배치 */}
-          <div className="flex flex-col gap-1.5">
-            {greenCategories.map((cat) => {
-              const isActive = activeGreenCats.includes(cat.id);
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => handleToggleGreenCat(cat.id)}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-all whitespace-nowrap
-                    ${isActive
-                      ? "text-white shadow-md"
-                      : "bg-white/90 text-gray-600 border border-gray-200"
-                    }`}
-                  style={isActive ? { backgroundColor: cat.color } : {}}
-                >
-                  <span className="text-sm">{cat.icon}</span>
-                  {cat.name}
-                  {isActive && !greenBrandPanel && greenSearching && <span className="animate-spin ml-1">⏳</span>}
-                </button>
-              );
-            })}
-          </div>
+        <>
+          {/* 배경 오버레이 (열렸을 때 지도 터치로 닫기) */}
+          {greenDrawerOpen && (
+            <div
+              className="absolute inset-0 z-[14]"
+              onClick={() => setGreenDrawerOpen(false)}
+            />
+          )}
 
-          {/* 브랜드 선택 — 세로 풀다운 */}
-          {greenBrandPanel && greenBrandPanel.keywords && greenBrandPanel.keywords.length > 0 && (
-            <div className="mt-1.5 overflow-y-auto no-scrollbar" style={{ width: "fit-content", maxWidth: 140, maxHeight: 320 }}>
-              <div className="flex flex-col gap-1">
-                {greenBrandPanel.keywords.map((keyword) => {
-                  const isSel = selectedBrand === keyword;
+          {/* 드로어 본체 */}
+          <div
+            className="absolute z-[15] transition-transform duration-300 ease-in-out"
+            style={{
+              top: isTracking ? 108 : 60,
+              left: 0,
+              transform: greenDrawerOpen ? "translateX(0)" : "translateX(-100%)",
+            }}
+          >
+            <div className="bg-white/95 backdrop-blur-sm rounded-r-2xl shadow-lg border-r border-t border-b border-gray-200 px-3 py-3 flex flex-col gap-2" style={{ width: 150, maxHeight: "60vh", overflowY: "auto" }}>
+              {/* 드로어 헤더 */}
+              <div className="flex items-center justify-between pb-1.5 border-b border-gray-100">
+                <span className="text-xs font-bold text-green-700 flex items-center gap-1">🌿 녹색매장</span>
+                <button onClick={() => setGreenDrawerOpen(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">‹</button>
+              </div>
+
+              {/* 카테고리 칩 */}
+              <div className="flex flex-col gap-1.5">
+                {greenCategories.map((cat) => {
+                  const isActive = activeGreenCats.includes(cat.id);
                   return (
                     <button
-                      key={keyword}
-                      onClick={() => handleSelectBrand(keyword)}
-                      className={`text-left px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-all whitespace-nowrap
-                        ${isSel
+                      key={cat.id}
+                      onClick={() => handleToggleGreenCat(cat.id)}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap
+                        ${isActive
                           ? "text-white shadow-md"
-                          : "bg-white/90 text-gray-600 border border-gray-200"
+                          : "bg-gray-50 text-gray-600 border border-gray-200"
                         }`}
-                      style={isSel ? { backgroundColor: greenBrandPanel.color } : {}}
+                      style={isActive ? { backgroundColor: cat.color } : {}}
                     >
-                      {keyword}
-                      {isSel && greenSearching && <span className="animate-spin ml-1">⏳</span>}
-                      {isSel && !greenSearching && greenStoreMarkers.length > 0 && (
-                        <span className="text-[10px] ml-1 opacity-80">{greenStoreMarkers.length}</span>
-                      )}
+                      <span className="text-sm">{cat.icon}</span>
+                      {cat.name}
+                      {isActive && !greenBrandPanel && greenSearching && <span className="animate-spin ml-1">⏳</span>}
                     </button>
                   );
                 })}
-                <button
-                  onClick={() => { setGreenBrandPanel(null); setSelectedBrand(null); setActiveGreenCats([]); setGreenStoreMarkers([]); }}
-                  className="px-3 py-1 rounded-full text-[10px] text-gray-400 bg-gray-50 border border-gray-200"
-                >
-                  닫기
-                </button>
               </div>
+
+              {/* 브랜드 선택 */}
+              {greenBrandPanel && greenBrandPanel.keywords && greenBrandPanel.keywords.length > 0 && (
+                <div className="pt-1.5 border-t border-gray-100 flex flex-col gap-1">
+                  <span className="text-[10px] text-gray-400 font-medium px-1">브랜드 선택</span>
+                  {greenBrandPanel.keywords.map((keyword) => {
+                    const isSel = selectedBrand === keyword;
+                    return (
+                      <button
+                        key={keyword}
+                        onClick={() => handleSelectBrand(keyword)}
+                        className={`text-left px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap
+                          ${isSel
+                            ? "text-white shadow-md"
+                            : "bg-gray-50 text-gray-600 border border-gray-200"
+                          }`}
+                        style={isSel ? { backgroundColor: greenBrandPanel.color } : {}}
+                      >
+                        {keyword}
+                        {isSel && greenSearching && <span className="animate-spin ml-1">⏳</span>}
+                        {isSel && !greenSearching && greenStoreMarkers.length > 0 && (
+                          <span className="text-[10px] ml-1 opacity-80">{greenStoreMarkers.length}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => { setGreenBrandPanel(null); setSelectedBrand(null); setActiveGreenCats([]); setGreenStoreMarkers([]); }}
+                    className="px-3 py-1 rounded-xl text-[10px] text-gray-400 bg-gray-50 border border-gray-200 mt-0.5"
+                  >
+                    초기화
+                  </button>
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* 탭 버튼 (닫혀있을 때 왼쪽 가장자리에 표시) */}
+          {!greenDrawerOpen && (
+            <button
+              onClick={() => setGreenDrawerOpen(true)}
+              className="absolute z-[15] bg-white/95 backdrop-blur-sm rounded-r-xl shadow-md border-r border-t border-b border-gray-200 px-1.5 py-3 flex flex-col items-center gap-0.5 active:scale-95 transition-transform"
+              style={{ top: isTracking ? 108 : 60, left: 0 }}
+            >
+              <Leaf className="w-4 h-4 text-green-600" strokeWidth={2} />
+              <span className="text-[8px] font-bold text-green-700 leading-tight">녹색<br/>매장</span>
+              {activeGreenCats.length > 0 && (
+                <span className="w-4 h-4 rounded-full bg-green-500 text-white text-[9px] font-bold flex items-center justify-center">{activeGreenCats.length}</span>
+              )}
+              <span className="text-gray-400 text-[10px] mt-0.5">›</span>
+            </button>
           )}
-        </div>
+        </>
       )}
 
       {/* ── 녹색매장 상세 팝업 ─────────────────────────────── */}

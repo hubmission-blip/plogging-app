@@ -20,15 +20,17 @@ export default function MapView({
   greenStoreMarkers  = [],
   onPartnerClick,
   onGreenStoreClick,
+  isPlogging         = false, // 플로깅 중 여부 — true면 자체 GPS 워처 중지 (이중 등록 방지)
 }) {
   const DEFAULT_CENTER = { lat: 37.5665, lng: 126.9780 }; // 서울 시청
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [userPos, setUserPos] = useState(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
-  // ── 현재 위치 추적 ──────────────────────────────────────
+  // ── 현재 위치 추적 (플로깅 중이 아닐 때만) ────────────────
+  // 플로깅 중에는 useLocation 훅이 GPS를 관리하므로 이중 워처 방지
   useEffect(() => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation || isPlogging) return;
 
     const wid = navigator.geolocation.watchPosition(
       (pos) => {
@@ -53,14 +55,17 @@ export default function MapView({
     );
 
     return () => navigator.geolocation.clearWatch(wid);
-  }, []); // eslint-disable-line
+  }, [isPlogging]); // eslint-disable-line
 
-  // ── 플로깅 중 마지막 위치로 센터 이동 ──────────────────
+  // ── 플로깅 중 마지막 위치로 센터/위치 마커 이동 ────────
   useEffect(() => {
-    if (currentPath.length > 1) {
-      setCenter(currentPath[currentPath.length - 1]);
+    if (currentPath.length > 0) {
+      const lastPos = currentPath[currentPath.length - 1];
+      if (currentPath.length > 1) setCenter(lastPos);
+      // 플로깅 중에는 자체 워처가 꺼져 있으므로 경로 끝점을 현재 위치로 사용
+      if (isPlogging) setUserPos(lastPos);
     }
-  }, [currentPath]);
+  }, [currentPath, isPlogging]);
 
   return (
     <Map

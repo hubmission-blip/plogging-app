@@ -63,7 +63,7 @@ export default function CouponPage() {
     );
 
     return () => unsub();
-  }, [selectedCoupon?.id, selectedCoupon?.status]);
+  }, [selectedCoupon?.id]); // id만 의존 — status는 콜백 내에서 체크
 
   // ── 쿠폰 목록 불러오기 ────────────────────────────────────
   const fetchCoupons = useCallback(async () => {
@@ -93,8 +93,19 @@ export default function CouponPage() {
   const usedCoupons   = coupons.filter((c) => c.status !== "active");
   const displayed     = tab === "active" ? activeCoupons : usedCoupons;
 
-  const handleCopy = (code) => {
-    navigator.clipboard?.writeText(code);
+  const handleCopy = async (code) => {
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch {
+      // clipboard API 미지원 시 fallback (인앱브라우저 등)
+      const ta = document.createElement("textarea");
+      ta.value = code;
+      ta.style.cssText = "position:fixed;opacity:0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

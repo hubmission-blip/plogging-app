@@ -107,14 +107,20 @@ export function useLocation({ onSpeedViolation, backgroundModeEnabled = false } 
   const useNativeBg = backgroundModeEnabled && isNativePlatform();
 
   // ─── Wake Lock 요청 ──────────────────────────────────
+  const wakeLockHandlerRef = useRef(null); // release 리스너 참조 (누수 방지)
   const requestWakeLock = useCallback(async () => {
     try {
       if ("wakeLock" in navigator) {
+        // 기존 Wake Lock이 있으면 리스너 제거 후 해제
+        if (wakeLockRef.current && wakeLockHandlerRef.current) {
+          wakeLockRef.current.removeEventListener("release", wakeLockHandlerRef.current);
+          wakeLockRef.current.release().catch(() => {});
+        }
         wakeLockRef.current = await navigator.wakeLock.request("screen");
         setWakeLockActive(true);
-        wakeLockRef.current.addEventListener("release", () => {
-          setWakeLockActive(false);
-        });
+        // 리스너를 참조로 보관하여 나중에 제거 가능
+        wakeLockHandlerRef.current = () => { setWakeLockActive(false); };
+        wakeLockRef.current.addEventListener("release", wakeLockHandlerRef.current);
       }
     } catch (e) {
       setWakeLockActive(false);
@@ -123,6 +129,11 @@ export function useLocation({ onSpeedViolation, backgroundModeEnabled = false } 
 
   const releaseWakeLock = useCallback(() => {
     if (wakeLockRef.current) {
+      // 리스너 제거 후 해제 (메모리 누수 방지)
+      if (wakeLockHandlerRef.current) {
+        wakeLockRef.current.removeEventListener("release", wakeLockHandlerRef.current);
+        wakeLockHandlerRef.current = null;
+      }
       wakeLockRef.current.release().catch(() => {});
       wakeLockRef.current = null;
     }

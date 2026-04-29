@@ -53,8 +53,15 @@ export default function QRScanner({ onScan, onClose, title = "QR 스캔" }) {
       streamRef.current = stream;
 
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        const videoEl = videoRef.current;
+        videoEl.srcObject = stream;
+        try {
+          await videoEl.play();
+        } catch (playErr) {
+          // iOS Safari에서 컴포넌트 빠른 언마운트 시 AbortError 무시
+          if (playErr.name === "AbortError") return;
+          throw playErr;
+        }
         setScanning(true);
         setError(null);
       }

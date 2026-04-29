@@ -184,7 +184,7 @@ export default function ProfilePage() {
       localStorage.removeItem("kakaoUser");
       localStorage.removeItem("appleUser");
     } catch {}
-    await signOut(auth);
+    try { await signOut(auth); } catch (e) { console.warn("로그아웃 처리:", e); }
     router.push("/login");
   };
 

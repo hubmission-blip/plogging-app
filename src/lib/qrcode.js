@@ -25,7 +25,10 @@ function loadQRLib() {
       qrLib = window.qrcode;
       resolve(qrLib);
     };
-    script.onerror = () => reject(new Error("QR 라이브러리 로드 실패"));
+    script.onerror = () => {
+      loadPromise = null; // 실패 시 재시도 허용
+      reject(new Error("QR 라이브러리 로드 실패"));
+    };
     document.head.appendChild(script);
   });
 

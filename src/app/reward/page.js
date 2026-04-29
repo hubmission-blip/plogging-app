@@ -20,8 +20,19 @@ import {
 function generateCouponCode() {
   const COUPON_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let result = "";
+  // crypto API 사용 (보안성 높음), 미지원 시 Math.random fallback
+  let randomValues;
+  try {
+    randomValues = new Uint8Array(12);
+    crypto.getRandomValues(randomValues);
+  } catch {
+    randomValues = null;
+  }
   for (let i = 0; i < 12; i++) {
-    result += COUPON_CHARS[Math.floor(Math.random() * COUPON_CHARS.length)];
+    const idx = randomValues
+      ? randomValues[i] % COUPON_CHARS.length
+      : Math.floor(Math.random() * COUPON_CHARS.length);
+    result += COUPON_CHARS[idx];
     if (i === 3 || i === 7) result += "-";
   }
   return result; // 예: A3K7-B9H2-X5M4
@@ -550,8 +561,19 @@ export default function RewardPage() {
             </div>
 
             <button
-              onClick={() => {
-                navigator.clipboard?.writeText(couponModal.code);
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(couponModal.code);
+                } catch {
+                  // clipboard API 미지원 시 fallback (인앱브라우저 등)
+                  const ta = document.createElement("textarea");
+                  ta.value = couponModal.code;
+                  ta.style.cssText = "position:fixed;opacity:0";
+                  document.body.appendChild(ta);
+                  ta.select();
+                  document.execCommand("copy");
+                  document.body.removeChild(ta);
+                }
                 setCouponCopied(true);
                 setTimeout(() => setCouponCopied(false), 2000);
               }}
