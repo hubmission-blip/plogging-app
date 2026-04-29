@@ -1934,7 +1934,7 @@ function MapPageInner() {
 
           {/* 브랜드 선택 — 세로 풀다운 */}
           {greenBrandPanel && greenBrandPanel.keywords && greenBrandPanel.keywords.length > 0 && (
-            <div className="mt-1.5 max-h-48 overflow-y-auto no-scrollbar" style={{ width: "fit-content", maxWidth: 140 }}>
+            <div className="mt-1.5 overflow-y-auto no-scrollbar" style={{ width: "fit-content", maxWidth: 140, maxHeight: 320 }}>
               <div className="flex flex-col gap-1">
                 {greenBrandPanel.keywords.map((keyword) => {
                   const isSel = selectedBrand === keyword;
