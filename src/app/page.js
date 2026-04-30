@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, CirclePlay, Star, Smartphone, UserPlus, Navigation, Footprints, Flag, Camera, Trophy, HeartHandshake, Globe, Coins, Target, Zap, Activity, Sparkles, RefreshCw, Bell, Rocket, Pin, AlertTriangle, PartyPopper, ChevronUp, ChevronDown, PersonStanding, UserCheck, UsersRound, Contact, Route, School, FileCheck, Leaf } from "lucide-react";
+import { Recycle, Clover, Building2, Heart, MapPin, Users, Gift, CirclePlay, Star, Smartphone, UserPlus, Navigation, Footprints, Flag, Camera, Trophy, HeartHandshake, Globe, Coins, Target, Zap, Activity, Sparkles, RefreshCw, Bell, Rocket, Pin, AlertTriangle, PartyPopper, ChevronUp, ChevronDown, PersonStanding, UserCheck, UsersRound, Contact, Route, School, FileCheck, Leaf, Store, Ticket } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import BannerSlider from "@/components/BannerSlider";
 import CharacterGuide from "@/components/CharacterGuide";
@@ -156,6 +156,7 @@ export default function HomePage() {
   const [userRegion, setUserRegion] = useState(null); // 감지된 사용자 지역 (예: "부산광역시")
   const [pointAccordion, setPointAccordion] = useState(false); // 포인트 적립 기준 아코디언
   const [profileIncomplete, setProfileIncomplete] = useState(false); // 실명/전화번호 미입력
+  const [isStoreOwner, setIsStoreOwner] = useState(false); // 파트너 매장 관리자 여부
 
   // 첫 방문 시에만 캐릭터 가이드 표시
   useEffect(() => {
@@ -180,6 +181,20 @@ export default function HomePage() {
       } catch {}
     };
     checkProfile();
+  }, [user]);
+
+  // ── 파트너 매장 관리자 여부 체크 ─────────────────────────
+  useEffect(() => {
+    if (!user) { setIsStoreOwner(false); return; }
+    const checkStoreOwner = async () => {
+      try {
+        const snap = await getDocs(
+          query(collection(db, "partnerStores"), where("ownerUid", "==", user.uid))
+        );
+        setIsStoreOwner(!snap.empty);
+      } catch { setIsStoreOwner(false); }
+    };
+    checkStoreOwner();
   }, [user]);
 
   // ── 사용자 위치 기반 지역 감지 (비차단, 백그라운드) ────────
@@ -508,28 +523,28 @@ export default function HomePage() {
               href="/club"
               className="bg-cyan-50 border-2 border-cyan-300 rounded-2xl aspect-square flex flex-col items-center justify-center gap-1.5 active:scale-95 transition-transform"
             >
-              <School className="w-7 h-7 text-cyan-600" strokeWidth={1.8} />
+              <School className="w-9 h-9 text-cyan-600" strokeWidth={1.8} />
               <span className="text-[11px] text-cyan-700 font-bold">동아리</span>
             </Link>
             <Link
               href="/group"
               className="bg-sky-50 border-2 border-sky-300 rounded-2xl aspect-square flex flex-col items-center justify-center gap-1.5 active:scale-95 transition-transform"
             >
-              <Users className="w-7 h-7 text-sky-600" strokeWidth={1.8} />
+              <Users className="w-9 h-9 text-sky-600" strokeWidth={1.8} />
               <span className="text-[11px] text-sky-700 font-bold">그룹</span>
             </Link>
             <Link
               href="/reward"
               className="bg-purple-50 border-2 border-purple-300 rounded-2xl aspect-square flex flex-col items-center justify-center gap-1.5 active:scale-95 transition-transform"
             >
-              <Gift className="w-7 h-7 text-purple-600" strokeWidth={1.8} />
+              <Gift className="w-9 h-9 text-purple-600" strokeWidth={1.8} />
               <span className="text-[11px] text-purple-700 font-bold">리워드</span>
             </Link>
             <button
               onClick={() => setShowManual(true)}
               className="bg-orange-50 border-2 border-orange-300 rounded-2xl aspect-square flex flex-col items-center justify-center gap-1.5 active:scale-95 transition-transform"
             >
-              <CirclePlay className="w-7 h-7 text-orange-600" strokeWidth={1.8} />
+              <CirclePlay className="w-9 h-9 text-orange-600" strokeWidth={1.8} />
               <span className="text-[11px] text-orange-700 font-bold">매뉴얼</span>
             </button>
           </div>
@@ -753,17 +768,30 @@ export default function HomePage() {
                 <p className="text-[11px] text-sky-100 mt-0.5 leading-relaxed">보너스 포인트 지급!</p>
               </div>
             </button>
-            <Link
-              href="/certificate"
-              className="text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
-              style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
-            >
-              <FileCheck className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
-              <div className="text-right flex-1">
-                <p className="font-black text-sm leading-tight">봉사활동 증명</p>
-                <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">증명서 발급하기</p>
-              </div>
-            </Link>
+            {isStoreOwner ? (
+              <Link
+                href="/partner/redeem"
+                className="bg-gradient-to-br from-teal-500 to-emerald-600 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+              >
+                <Store className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
+                <div className="text-right flex-1">
+                  <p className="font-black text-sm leading-tight">매장 관리</p>
+                  <p className="text-[11px] text-teal-100 mt-0.5 leading-relaxed">쿠폰 사용처리</p>
+                </div>
+              </Link>
+            ) : (
+              <Link
+                href="/coupon"
+                className="text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
+                style={{ backgroundImage: "linear-gradient(to bottom right, #8dc63f, #4cb748)" }}
+              >
+                <Ticket className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
+                <div className="text-right flex-1">
+                  <p className="font-black text-sm leading-tight">내 쿠폰함</p>
+                  <p className="text-[11px] text-green-100 mt-0.5 leading-relaxed">보유 쿠폰 확인</p>
+                </div>
+              </Link>
+            )}
             <Link
               href="/volunteer"
               className="bg-gradient-to-br from-orange-400 to-orange-500 text-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex items-center gap-3"
