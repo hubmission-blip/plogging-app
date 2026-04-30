@@ -190,7 +190,7 @@ export default function VolunteerPage() {
         {totalStats && (
           <div className="bg-white rounded-2xl p-4 shadow-sm">
             <h2 className="font-bold text-gray-700 text-sm mb-3 flex items-center gap-1.5">
-              <Footprints className="w-4 h-4 text-green-600" strokeWidth={1.8} /> 전체 봉사활��� 누적
+              <Footprints className="w-4 h-4 text-green-600" strokeWidth={1.8} /> 전체 봉사활동 누적
             </h2>
             <div className="grid grid-cols-4 gap-2">
               <div className="bg-green-50 rounded-xl p-3 text-center">
@@ -254,7 +254,7 @@ export default function VolunteerPage() {
             </>
           ) : (
             <div className="text-center py-8 text-gray-400 text-sm">
-              이 달에는 아직 활동 기록�� 없습니다.
+              이 달에는 아직 활동 기록이 없습니다.
             </div>
           )}
         </div>
@@ -274,11 +274,11 @@ export default function VolunteerPage() {
 
         {/* 안내 */}
         <div className="bg-gray-100 rounded-2xl p-4">
-          <h3 className="font-bold text-gray-600 text-xs mb-2">1365 자원봉��� 연계 안내</h3>
+          <h3 className="font-bold text-gray-600 text-xs mb-2">1365 자원봉사 연계 안내</h3>
           <div className="space-y-1.5 text-[11px] text-gray-500 leading-relaxed">
             <p>• 플로깅 활동은 "환경보호 &gt; 환경정화활동"으로 분류됩니다.</p>
             <p>• 봉사시간은 실제 플로깅 시간을 기준으로 산정됩니다.</p>
-            <p>• 관리자가 월별 봉���실적을 CSV로 취합하여 1365 포털에 등록합니다.</p>
+            <p>• 관리자가 월별 봉사실적을 CSV로 취합하여 1365 포털에 등록합니다.</p>
             <p>• 1365 회원번호를 프로필에 등록해야 봉사시간 인정이 가능합니다.</p>
             <p>• 봉사활동 증명서는 앱 내에서 직접 발급받을 수 있습니다.</p>
           </div>

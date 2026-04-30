@@ -176,7 +176,8 @@ export default function HomePage() {
         const snap = await getDoc(doc(db, "users", user.uid));
         if (snap.exists()) {
           const d = snap.data();
-          setProfileIncomplete(!d.realName || !d.phone);
+          const isDefaultNickname = !d.displayName || d.displayName === "카카오유저" || d.nickname === "카카오유저";
+          setProfileIncomplete(!d.realName || !d.phone || isDefaultNickname);
         }
       } catch {}
     };
@@ -572,7 +573,7 @@ export default function HomePage() {
               >
                 <div className="text-right">
                   <p className="font-black text-sm text-white leading-tight">프로필 완성하기</p>
-                  <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">실명 · 전화번호 등록</p>
+                  <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">닉네임 · 실명 · 전화번호</p>
                 </div>
                 <div className="flex justify-between items-end">
                   <UserCheck className="w-12 h-12 text-white/80" strokeWidth={1.5} />

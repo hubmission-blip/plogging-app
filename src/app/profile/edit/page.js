@@ -99,6 +99,8 @@ export default function ProfileEditPage() {
     const e = {};
     if (!form.displayName.trim() || form.displayName.trim().length < 2)
       e.displayName = "닉네임은 2자 이상 입력해주세요";
+    else if (form.displayName.trim() === "카카오유저")
+      e.displayName = "닉네임을 변경해주세요 (기본값은 사용할 수 없어요)";
     if (form.volunteerNo && !/^\d{6,12}$/.test(form.volunteerNo.trim()))
       e.volunteerNo = "1365 회원번호는 6~12자리 숫자입니다";
     if (form.phone && !/^010-?\d{4}-?\d{4}$/.test(form.phone.replace(/-/g, "").replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3")))
@@ -116,6 +118,7 @@ export default function ProfileEditPage() {
       const updates = {
         realName:    form.realName.trim(),
         displayName: form.displayName.trim(),
+        nickname:    form.displayName.trim(),
         phone:       form.phone.trim(),
         region:      form.region,
         volunteerNo: form.volunteerNo.trim(),
@@ -248,6 +251,9 @@ export default function ProfileEditPage() {
               />
               {errors.displayName && (
                 <p className="text-red-400 text-xs mt-1">{errors.displayName}</p>
+              )}
+              {form.displayName === "카카오유저" && (
+                <p className="text-orange-500 text-xs mt-1 font-bold">닉네임을 변경해주세요! 다른 사용자에게 보이는 이름이에요.</p>
               )}
               <p className="text-gray-400 text-xs mt-1">모든 페이지에 표시되는 이름이에요</p>
             </div>
