@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, KeyRound, Trophy, Rocket, Lock, User } from "lucide-react";
+import { Plus, KeyRound, Trophy, Rocket, Lock, User, QrCode, Camera, X as XIcon } from "lucide-react";
+import { generateQRDataURL } from "@/lib/qrcode";
+import QRScanner from "@/components/QRScanner";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import {
@@ -208,6 +210,9 @@ export default function ClubPage() {
   const [error,         setError]         = useState("");
   const [copied,        setCopied]        = useState(false);
   const [showCodeInput, setShowCodeInput] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [qrDataURL, setQrDataURL] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
 
   // 알림
   const [notices,        setNotices]        = useState([]);
@@ -555,6 +560,29 @@ export default function ClubPage() {
     } catch { alert("코드: " + code); }
   };
 
+  // QR 코드 보기 (동아리장용)
+  const handleShowQR = async (code) => {
+    try {
+      const url = await generateQRDataURL(code, 280);
+      setQrDataURL(url);
+      setShowQRCode(true);
+    } catch (e) {
+      alert("QR 코드 생성 실패: " + e.message);
+    }
+  };
+
+  // QR 스캔 결과 처리 (가입자용)
+  const handleQRScan = (scannedCode) => {
+    setShowScanner(false);
+    const cleaned = (scannedCode || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 6);
+    if (cleaned) {
+      setClubJoinCode(cleaned);
+      setShowCodeInput(true);
+    } else {
+      setError("유효하지 않은 QR 코드예요.");
+    }
+  };
+
   const openEdit = () => {
     setEditForm(clubToForm(selectedClub));
     setClubEditMode(true); setError("");
@@ -640,6 +668,11 @@ export default function ClubPage() {
                   <input value={clubJoinCode} onChange={(e) => setClubJoinCode(e.target.value.toUpperCase())}
                     placeholder="6자리 초대 코드" maxLength={6}
                     className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-cyan-400" />
+                  <button onClick={() => setShowScanner(true)}
+                    className="bg-gray-100 text-gray-600 px-3 rounded-xl active:scale-95 transition-transform"
+                    title="QR 스캔">
+                    <Camera size={20} strokeWidth={2} />
+                  </button>
                   <button onClick={handleJoinByCode} disabled={loading || clubJoinCode.length < 6}
                     className="bg-cyan-500 text-white px-5 rounded-xl font-bold whitespace-nowrap disabled:opacity-40 active:scale-95 transition-transform">
                     참여
@@ -768,11 +801,19 @@ export default function ClubPage() {
                       </span>
                     )}
                   </div>
-                  <button onClick={() => handleCopyCode(selectedClub.code)}
-                    className={`w-full py-3 rounded-xl font-medium text-sm transition-colors
-                      ${copied ? "bg-green-100 text-green-600" : "bg-sky-50 text-sky-600 border border-sky-200"}`}>
-                    {copied ? "✅ 복사됨!" : "📋 초대 코드 복사하기"}
-                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleCopyCode(selectedClub.code)}
+                      className={`flex-1 py-3 rounded-xl font-medium text-sm transition-colors
+                        ${copied ? "bg-green-100 text-green-600" : "bg-sky-50 text-sky-600 border border-sky-200"}`}>
+                      {copied ? "✅ 복사됨!" : "📋 코드 복사"}
+                    </button>
+                    <button onClick={() => handleShowQR(selectedClub.code)}
+                      className="px-4 py-3 rounded-xl font-medium text-sm bg-sky-50 text-sky-600 border border-sky-200 active:bg-sky-100 transition-colors">
+                      <span className="flex items-center justify-center gap-1">
+                        <QrCode size={16} strokeWidth={2} /> QR
+                      </span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* ── 알림 섹션 ── */}
@@ -1055,6 +1096,37 @@ export default function ClubPage() {
           </>
         )}
       </div>
+
+      {/* QR 코드 모달 (동아리장용) */}
+      {showQRCode && qrDataURL && (
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center px-6"
+          onClick={() => setShowQRCode(false)}>
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-xl"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-700 text-sm">동아리 초대 QR 코드</h3>
+              <button onClick={() => setShowQRCode(false)}
+                className="p-1.5 rounded-full bg-gray-100 active:bg-gray-200">
+                <XIcon size={16} className="text-gray-500" strokeWidth={2} />
+              </button>
+            </div>
+            <img src={qrDataURL} alt="QR Code" className="w-56 h-56 mx-auto mb-3" />
+            <p className="text-2xl font-mono font-black text-sky-600 tracking-widest mb-1">
+              {selectedClub?.code || ""}
+            </p>
+            <p className="text-xs text-gray-400">이 QR을 스캔하면 동아리 코드가 자동 입력돼요</p>
+          </div>
+        </div>
+      )}
+
+      {/* QR 스캐너 (가입자용) */}
+      {showScanner && (
+        <QRScanner
+          onScan={handleQRScan}
+          onClose={() => setShowScanner(false)}
+          title="동아리 코드 QR 스캔"
+        />
+      )}
     </div>
   );
 }

@@ -4,7 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Rocket, KeyRound, Lock, Users, User, School, Clover, Gift, ClipboardCopy, Check, Hourglass, Loader, Footprints as FootprintsIcon } from "lucide-react";
+import { Rocket, KeyRound, Lock, Users, User, School, Clover, Gift, ClipboardCopy, Check, Hourglass, Loader, Footprints as FootprintsIcon, QrCode, Camera, X } from "lucide-react";
+import { generateQRDataURL } from "@/lib/qrcode";
+import QRScanner from "@/components/QRScanner";
 import { db } from "@/lib/firebase";
 import {
   doc, setDoc, getDoc, updateDoc, deleteDoc,
@@ -34,6 +36,9 @@ export default function GroupPage() {
   const [error,   setError]   = useState("");
   const [copied,  setCopied]  = useState(false);
   const [showCodeInput, setShowCodeInput] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [qrDataURL, setQrDataURL] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
   const [restoring, setRestoring] = useState(true); // 초기 복원 중 여부
   const initialLoadRef = useRef(true); // 첫 로드 vs 실시간 상태변경 구분
 
@@ -241,6 +246,35 @@ export default function GroupPage() {
     } catch { alert("코드: " + code); }
   };
 
+  // QR 코드 보기 (방장용)
+  const handleShowQR = async (code) => {
+    try {
+      const url = await generateQRDataURL(code, 280);
+      setQrDataURL(url);
+      setShowQRCode(true);
+    } catch (e) {
+      alert("QR 코드 생성 실패: " + e.message);
+    }
+  };
+
+  // QR 스캔 결과 처리 (참여자용)
+  const handleQRScan = (scannedCode) => {
+    setShowScanner(false);
+    if (scannedCode && scannedCode.length === 6) {
+      setJoinCode(scannedCode.toUpperCase());
+      setShowCodeInput(true);
+    } else {
+      // 6자리가 아닌 경우에도 일단 입력
+      const cleaned = (scannedCode || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 6);
+      if (cleaned) {
+        setJoinCode(cleaned);
+        setShowCodeInput(true);
+      } else {
+        setError("유효하지 않은 QR 코드예요.");
+      }
+    }
+  };
+
   // ─────────────────────────────────────────────────────────
   if (!user) return (
     <div className="flex flex-col items-center justify-center h-screen gap-4 text-center px-6">
@@ -291,6 +325,11 @@ export default function GroupPage() {
                   <input value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                     placeholder="6자리 초대 코드" maxLength={6}
                     className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-sky-400" />
+                  <button onClick={() => setShowScanner(true)}
+                    className="bg-gray-100 text-gray-600 px-3 rounded-xl active:scale-95 transition-transform"
+                    title="QR 스캔">
+                    <Camera size={20} strokeWidth={2} />
+                  </button>
                   <button onClick={handleJoin} disabled={loading || joinCode.length < 6}
                     className="bg-sky-500 text-white px-5 rounded-xl font-bold whitespace-nowrap disabled:opacity-40 active:scale-95 transition-transform">참여</button>
                 </div>
@@ -391,13 +430,21 @@ export default function GroupPage() {
             <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
               <p className="text-sm text-gray-400 mb-1">그룹 코드</p>
               <span className="text-4xl font-mono font-black text-sky-600 tracking-widest block mb-3">{groupCode}</span>
-              <button onClick={() => handleCopyCode(groupCode)}
-                className={`w-full py-3 rounded-xl font-medium text-sm transition-colors
-                  ${copied ? "bg-green-100 text-green-600" : "bg-sky-50 text-sky-600 border border-sky-200"}`}>
-                <span className="flex items-center justify-center gap-1">
-                  {copied ? <><Check size={14} strokeWidth={2} /> 복사됨!</> : <><ClipboardCopy size={14} strokeWidth={2} /> 코드 및 링크 복사하기</>}
-                </span>
-              </button>
+              <div className="flex gap-2">
+                <button onClick={() => handleCopyCode(groupCode)}
+                  className={`flex-1 py-3 rounded-xl font-medium text-sm transition-colors
+                    ${copied ? "bg-green-100 text-green-600" : "bg-sky-50 text-sky-600 border border-sky-200"}`}>
+                  <span className="flex items-center justify-center gap-1">
+                    {copied ? <><Check size={14} strokeWidth={2} /> 복사됨!</> : <><ClipboardCopy size={14} strokeWidth={2} /> 코드 복사</>}
+                  </span>
+                </button>
+                <button onClick={() => handleShowQR(groupCode)}
+                  className="px-4 py-3 rounded-xl font-medium text-sm bg-sky-50 text-sky-600 border border-sky-200 active:bg-sky-100 transition-colors">
+                  <span className="flex items-center justify-center gap-1">
+                    <QrCode size={16} strokeWidth={2} /> QR
+                  </span>
+                </button>
+              </div>
             </div>
 
             <div className="bg-white rounded-2xl p-4 shadow-sm">
@@ -461,6 +508,35 @@ export default function GroupPage() {
         )}
 
       </div>
+
+      {/* QR 코드 모달 (방장용) */}
+      {showQRCode && qrDataURL && (
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center px-6"
+          onClick={() => setShowQRCode(false)}>
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-xl"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-700 text-sm">그룹 초대 QR 코드</h3>
+              <button onClick={() => setShowQRCode(false)}
+                className="p-1.5 rounded-full bg-gray-100 active:bg-gray-200">
+                <X size={16} className="text-gray-500" strokeWidth={2} />
+              </button>
+            </div>
+            <img src={qrDataURL} alt="QR Code" className="w-56 h-56 mx-auto mb-3" />
+            <p className="text-2xl font-mono font-black text-sky-600 tracking-widest mb-1">{groupCode}</p>
+            <p className="text-xs text-gray-400">참여자가 이 QR을 스캔하면 코드가 자동 입력돼요</p>
+          </div>
+        </div>
+      )}
+
+      {/* QR 스캐너 (참여자용) */}
+      {showScanner && (
+        <QRScanner
+          onScan={handleQRScan}
+          onClose={() => setShowScanner(false)}
+          title="그룹 코드 QR 스캔"
+        />
+      )}
     </div>
   );
 }
