@@ -799,7 +799,7 @@ export default function HomePage() {
               <HeartHandshake className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
               <div className="text-right flex-1">
                 <p className="font-black text-sm leading-tight">1365 자원봉사</p>
-                <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">봉사현황 보기</p>
+                <p className="text-[11px] text-orange-100 mt-0.5 leading-relaxed">봉사활동 증명</p>
               </div>
             </Link>
           </div>
