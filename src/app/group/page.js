@@ -389,7 +389,7 @@ export default function GroupPage() {
                     </div>
                     <span className="text-sm text-gray-700">{member.name}</span>
                     {member.uid === groupData.hostUid && (
-                      <span className="text-[10px] bg-sky-100 text-sky-600 px-1.5 py-0.5 rounded">방장</span>
+                      <span className="text-xs bg-sky-100 text-sky-600 px-1.5 py-0.5 rounded">방장</span>
                     )}
                   </div>
                 ))}

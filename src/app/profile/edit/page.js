@@ -224,7 +224,7 @@ export default function ProfileEditPage() {
             {/* 실명 */}
             <div>
               <label className="text-xs font-bold text-gray-500 mb-1.5 block">
-                실명 <span className="text-orange-400 font-normal text-[10px]">탄소중립포인트 연계 시 필수</span>
+                실명 <span className="text-orange-400 font-normal text-xs">탄소중립포인트 연계 시 필수</span>
               </label>
               <input
                 value={form.realName}
@@ -427,7 +427,7 @@ export default function ProfileEditPage() {
             {/* 그린카드 번호 */}
             <div>
               <label className="text-xs font-bold text-gray-500 mb-1.5 block">
-                그린카드 번호 <span className="text-gray-400 font-normal text-[10px]">선택</span>
+                그린카드 번호 <span className="text-gray-400 font-normal text-xs">선택</span>
               </label>
               <input
                 value={form.greenCardNo}

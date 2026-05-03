@@ -1435,7 +1435,7 @@ export default function AdminPage() {
                   <div key={s.label} className={`${s.bg} rounded-2xl p-3 text-center`}>
                     <div className="text-lg mb-0.5">{s.icon}</div>
                     <p className={`text-sm font-black ${s.color}`}>{s.value}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{s.label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5 leading-tight">{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -1539,7 +1539,7 @@ export default function AdminPage() {
                             )}
                             <div className="min-w-0">
                               <p className="font-black text-gray-800 text-sm">{title}</p>
-                              <p className="text-[11px] text-gray-400 mt-0.5">
+                              <p className="text-xs text-gray-400 mt-0.5">
                                 {items.length}건 요청
                                 {executedCount > 0 && ` · 집행완료 ${executedCount}건`}
                               </p>
@@ -1551,12 +1551,12 @@ export default function AdminPage() {
                               {selectedInGroup.length > 0 ? (
                                 <>
                                   <p className="text-base font-black text-orange-500">{selectedPoints.toLocaleString()}P</p>
-                                  <p className="text-[10px] text-orange-300">{selectedInGroup.length}건 선택</p>
+                                  <p className="text-xs text-orange-300">{selectedInGroup.length}건 선택</p>
                                 </>
                               ) : (
                                 <>
                                   <p className="text-base font-black text-gray-300">—</p>
-                                  <p className="text-[10px] text-gray-300">선택 없음</p>
+                                  <p className="text-xs text-gray-300">선택 없음</p>
                                 </>
                               )}
                             </div>
@@ -1607,14 +1607,14 @@ export default function AdminPage() {
                                           </span>
                                         )}
                                       </div>
-                                      <p className="text-[11px] text-gray-300 mt-0.5 truncate">UID: {r.userId}</p>
+                                      <p className="text-xs text-gray-300 mt-0.5 truncate">UID: {r.userId}</p>
                                     </div>
                                     <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-                                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusStyle[r.status] || statusStyle.pending}`}>
+                                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[r.status] || statusStyle.pending}`}>
                                         {r.status === "pending" ? "대기" : r.status === "completed" ? "접수" : "반려"}
                                       </span>
                                       {r.executed && (
-                                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-purple-100 text-purple-700">
+                                        <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-purple-100 text-purple-700">
                                           집행{execDateStr}
                                         </span>
                                       )}
@@ -2512,7 +2512,7 @@ export default function AdminPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-gray-800 truncate">{p.title}</p>
                           <p className="text-xs text-gray-400">{p.category} · {p.price?.toLocaleString()}원 · +{p.bonusPoints}P</p>
-                          <p className="text-[10px] text-blue-400 truncate mt-0.5">{p.link}</p>
+                          <p className="text-xs text-blue-400 truncate mt-0.5">{p.link}</p>
                         </div>
                         <div className="flex flex-col gap-1 flex-shrink-0">
                           <button
@@ -2537,7 +2537,7 @@ export default function AdminPage() {
               {/* 상품 추가 방법 안내 */}
               <div className="bg-gray-100 rounded-2xl p-4 mt-3">
                 <p className="text-xs font-bold text-gray-500 mb-1">🛠️ 상품 추가 방법</p>
-                <p className="text-[11px] text-gray-400 leading-relaxed">
+                <p className="text-xs text-gray-400 leading-relaxed">
                   Firebase Firestore → <code className="bg-white px-1 rounded">products</code> 컬렉션에 상품을 추가하면 즉시 반영됩니다.
                   쿠팡 파트너스 링크를 <code className="bg-white px-1 rounded">link</code> 필드에 입력하세요.
                 </p>
@@ -2605,8 +2605,8 @@ export default function AdminPage() {
                               <p className="text-xs text-gray-500 mt-0.5">{p.userEmail || p.userId}</p>
                               <div className="flex items-center gap-2 mt-1">
                                 <span className="text-xs text-orange-600 font-bold">+{p.bonusPoints}P</span>
-                                <span className="text-[10px] text-gray-400">{date}</span>
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full
+                                <span className="text-xs text-gray-400">{date}</span>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full
                                   ${p.status === "pending"  ? "bg-orange-100 text-orange-600" :
                                     p.status === "approved" ? "bg-green-100 text-green-600"   :
                                                               "bg-red-100 text-red-500"}`}>
@@ -2743,7 +2743,7 @@ export default function AdminPage() {
                           value={newBanner.priority}
                           onChange={(e) => setNewBanner((f) => ({ ...f, priority: parseInt(e.target.value) || 12 }))}
                           className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:border-green-400" />
-                        <p className="text-[10px] text-gray-300 text-center mt-0.5">1=최우선</p>
+                        <p className="text-xs text-gray-300 text-center mt-0.5">1=최우선</p>
                       </div>
                     </div>
 
@@ -2843,7 +2843,7 @@ export default function AdminPage() {
                             {/* 지역 + 중요도 수정 */}
                             <div className="flex gap-2">
                               <div className="flex-1">
-                                <p className="text-[10px] text-gray-400 mb-1">📍 노출 지역</p>
+                                <p className="text-xs text-gray-400 mb-1">📍 노출 지역</p>
                                 <select value={editingBanner.region || "전국"}
                                   onChange={(e) => setEditingBanner((f) => ({ ...f, region: e.target.value }))}
                                   className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:border-green-400">
@@ -2854,7 +2854,7 @@ export default function AdminPage() {
                                 </select>
                               </div>
                               <div className="w-20">
-                                <p className="text-[10px] text-gray-400 mb-1">⭐ 중요도(1~99)</p>
+                                <p className="text-xs text-gray-400 mb-1">⭐ 중요도(1~99)</p>
                                 <input type="number" min="1" max="99"
                                   value={editingBanner.priority ?? 12}
                                   onChange={(e) => setEditingBanner((f) => ({ ...f, priority: parseInt(e.target.value) || 12 }))}
@@ -2889,7 +2889,7 @@ export default function AdminPage() {
                           <div className="px-3 py-2.5 flex items-center justify-between gap-2">
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-bold text-gray-700 truncate">{b.title || "(제목 없음)"}</p>
-                              {b.link && <p className="text-[10px] text-gray-400 truncate">{b.link}</p>}
+                              {b.link && <p className="text-xs text-gray-400 truncate">{b.link}</p>}
                             </div>
                             <div className="flex items-center gap-1.5 flex-shrink-0">
                               {/* 순서 이동 */}
@@ -2964,16 +2964,16 @@ export default function AdminPage() {
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-bold text-gray-800 truncate">{club.name}</p>
                               <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] text-gray-400 font-mono">{club.code}</span>
+                                <span className="text-xs text-gray-400 font-mono">{club.code}</span>
                                 {club.region && (
-                                  <span className="text-[10px] bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded font-medium">{club.region}</span>
+                                  <span className="text-xs bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded font-medium">{club.region}</span>
                                 )}
                               </div>
                             </div>
                             {/* 멤버 수 */}
                             <div className="text-right flex-shrink-0">
                               <p className="text-sm font-black text-gray-700">{memberCount}명</p>
-                              <p className="text-[10px] text-gray-400">{createdDate}</p>
+                              <p className="text-xs text-gray-400">{createdDate}</p>
                             </div>
                             {/* 삭제 버튼 */}
                             <button
@@ -2985,16 +2985,16 @@ export default function AdminPage() {
                           </div>
                           {/* 상세 정보 */}
                           <div className="px-4 pb-3 flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-medium">
+                            <span className="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-medium">
                               동아리장: {club.hostName || "알 수 없음"}
                             </span>
                             {club.description && (
-                              <span className="text-[10px] bg-gray-50 text-gray-500 px-2 py-0.5 rounded-full font-medium truncate max-w-[200px]">
+                              <span className="text-xs bg-gray-50 text-gray-500 px-2 py-0.5 rounded-full font-medium truncate max-w-[200px]">
                                 {club.description}
                               </span>
                             )}
                             {club.hasSchedule && club.scheduleDay && (
-                              <span className="text-[10px] bg-purple-50 text-purple-500 px-2 py-0.5 rounded-full font-medium">
+                              <span className="text-xs bg-purple-50 text-purple-500 px-2 py-0.5 rounded-full font-medium">
                                 {club.scheduleDay} {club.scheduleTime || ""}
                               </span>
                             )}
@@ -3017,7 +3017,7 @@ export default function AdminPage() {
                         </div>
                         <div>
                           <p className="text-base font-black text-gray-800">동아리 삭제</p>
-                          <p className="text-[11px] text-red-500 font-bold">이 작업은 되돌릴 수 없습니다!</p>
+                          <p className="text-xs text-red-500 font-bold">이 작업은 되돌릴 수 없습니다!</p>
                         </div>
                       </div>
                       <div className="bg-gray-50 rounded-xl p-3 mb-3">
@@ -3025,7 +3025,7 @@ export default function AdminPage() {
                           <span className="text-xl">{clubToDelete.emoji || "🌿"}</span>
                           <p className="text-sm font-bold text-gray-700">{clubToDelete.name}</p>
                         </div>
-                        <p className="text-[11px] text-gray-400">
+                        <p className="text-xs text-gray-400">
                           코드: {clubToDelete.code} · 멤버: {clubToDelete.memberUids?.length || 0}명 · 동아리장: {clubToDelete.hostName || "알 수 없음"}
                         </p>
                         <p className="text-xs text-red-500 font-bold mt-2">
@@ -3088,15 +3088,15 @@ export default function AdminPage() {
               <div className="grid grid-cols-3 gap-2 mb-4">
                 <div className="bg-green-50 rounded-xl p-3 text-center">
                   <p className="text-lg font-black text-green-700">{storeCoupons.filter(c => c.status === "active").length}</p>
-                  <p className="text-[10px] text-green-600">활성 쿠폰</p>
+                  <p className="text-xs text-green-600">활성 쿠폰</p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3 text-center">
                   <p className="text-lg font-black text-gray-600">{storeCoupons.filter(c => c.status === "used").length}</p>
-                  <p className="text-[10px] text-gray-500">사용완료</p>
+                  <p className="text-xs text-gray-500">사용완료</p>
                 </div>
                 <div className="bg-purple-50 rounded-xl p-3 text-center">
                   <p className="text-lg font-black text-purple-700">{storeCoupons.reduce((s, c) => s + (c.status === "used" ? (c.points || 0) : 0), 0).toLocaleString()}P</p>
-                  <p className="text-[10px] text-purple-600">총 사용 포인트</p>
+                  <p className="text-xs text-purple-600">총 사용 포인트</p>
                 </div>
               </div>
 
@@ -3330,19 +3330,19 @@ export default function AdminPage() {
                 <div className="grid grid-cols-3 gap-2 mb-4">
                   <div className="bg-green-50 rounded-xl p-3 text-center">
                     <p className="text-lg font-bold text-green-700">{volunteerStats.length}</p>
-                    <p className="text-[10px] text-green-600 font-medium">참여자 수</p>
+                    <p className="text-xs text-green-600 font-medium">참여자 수</p>
                   </div>
                   <div className="bg-blue-50 rounded-xl p-3 text-center">
                     <p className="text-lg font-bold text-blue-700">
                       {volunteerStats.reduce((s, v) => s + v.volunteerHours, 0)}h
                     </p>
-                    <p className="text-[10px] text-blue-600 font-medium">총 봉사시간</p>
+                    <p className="text-xs text-blue-600 font-medium">총 봉사시간</p>
                   </div>
                   <div className="bg-orange-50 rounded-xl p-3 text-center">
                     <p className="text-lg font-bold text-orange-700">
                       {volunteerStats.reduce((s, v) => s + v.count, 0)}
                     </p>
-                    <p className="text-[10px] text-orange-600 font-medium">총 플로깅</p>
+                    <p className="text-xs text-orange-600 font-medium">총 플로깅</p>
                   </div>
                 </div>
               )}
@@ -3383,12 +3383,12 @@ export default function AdminPage() {
                           </div>
                           <div>
                             <p className="font-bold text-gray-800 text-sm">{s.name}</p>
-                            <p className="text-[10px] text-gray-400">{s.email}</p>
+                            <p className="text-xs text-gray-400">{s.email}</p>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className="text-lg font-bold text-green-600">{s.volunteerHours}h</p>
-                          <p className="text-[10px] text-gray-400">봉사시간</p>
+                          <p className="text-xs text-gray-400">봉사시간</p>
                         </div>
                       </div>
 
@@ -3415,13 +3415,13 @@ export default function AdminPage() {
                       {/* 1365 회원번호 */}
                       {s.volunteerNo ? (
                         <div className="mt-2 pt-2 border-t border-gray-100">
-                          <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
+                          <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
                             1365 회원번호: {s.volunteerNo}
                           </span>
                         </div>
                       ) : (
                         <div className="mt-2 pt-2 border-t border-gray-100">
-                          <span className="text-[10px] bg-red-50 text-red-400 px-2 py-0.5 rounded-full font-medium">
+                          <span className="text-xs bg-red-50 text-red-400 px-2 py-0.5 rounded-full font-medium">
                             1365 미등록
                           </span>
                         </div>
@@ -3461,7 +3461,7 @@ export default function AdminPage() {
                         <span className="text-xl">{cat.icon}</span>
                         <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: cat.active ? cat.color : "#d1d5db" }} />
                         <h3 className="font-bold text-gray-800 text-sm">{cat.name}</h3>
-                        {!cat.active && <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">비활성</span>}
+                        {!cat.active && <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">비활성</span>}
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -3489,7 +3489,7 @@ export default function AdminPage() {
                         <span className="text-xs text-gray-300">키워드 없음</span>
                       )}
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-2">정렬 순서: {cat.order || 0}</p>
+                    <p className="text-xs text-gray-400 mt-2">정렬 순서: {cat.order || 0}</p>
                   </div>
                 ))}
                 {greenCategories.length === 0 && (
@@ -3623,7 +3623,7 @@ export default function AdminPage() {
                             </span>
                           ))}
                         </div>
-                        <p className="text-[10px] text-gray-400 mt-2">사용자가 이 카테고리를 선택하면, 등록된 모든 키워드로 카카오맵에서 주변 매장을 검색합니다.</p>
+                        <p className="text-xs text-gray-400 mt-2">사용자가 이 카테고리를 선택하면, 등록된 모든 키워드로 카카오맵에서 주변 매장을 검색합니다.</p>
                       </div>
 
                       {/* 활성 상태 */}

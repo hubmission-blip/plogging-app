@@ -207,14 +207,14 @@ export default function EcoHistoryPage() {
               <Award size={22} className="text-green-600" strokeWidth={2} />
             </div>
             <div className="flex-1 text-left">
-              <p className="text-[11px] text-gray-400 font-medium">내 녹색생활 포인트</p>
+              <p className="text-xs text-gray-400 font-medium">내 녹색생활 포인트</p>
               <p className="text-xl font-black text-gray-800">{stats.totalPoints.toLocaleString()}<span className="text-sm font-bold text-gray-400 ml-0.5">P</span></p>
               {stats.totalReward > 0 && (
-                <p className="text-[11px] text-amber-500 font-bold mt-0.5">예상 리워드 약 {stats.totalReward.toLocaleString()}원</p>
+                <p className="text-xs text-amber-500 font-bold mt-0.5">예상 리워드 약 {stats.totalReward.toLocaleString()}원</p>
               )}
             </div>
             <div className="text-right mr-1">
-              <p className="text-[11px] text-gray-400">총 인증</p>
+              <p className="text-xs text-gray-400">총 인증</p>
               <p className="text-base font-black text-green-600">{stats.totalCount}회</p>
             </div>
             {showStats ? <ChevronUp size={18} className="text-gray-300" /> : <ChevronDown size={18} className="text-gray-300" />}
@@ -232,9 +232,9 @@ export default function EcoHistoryPage() {
                     <div key={dbType} className="flex items-center gap-2.5 py-1.5">
                       <IconComp size={16} className={count > 0 ? meta.color : "text-gray-300"} strokeWidth={2} />
                       <span className={`text-xs flex-1 ${count > 0 ? "text-gray-700 font-medium" : "text-gray-300"}`}>{meta.title}</span>
-                      <span className={`text-[11px] w-10 text-center ${count > 0 ? "text-gray-500 font-bold" : "text-gray-300"}`}>{count}회</span>
-                      <span className={`text-[11px] w-14 text-right font-bold ${count > 0 ? "text-green-600" : "text-gray-300"}`}>{pts > 0 ? `+${pts}P` : "-"}</span>
-                      <span className={`text-[11px] w-16 text-right font-bold ${s?.reward > 0 ? "text-amber-500" : "text-gray-300"}`}>{s?.reward > 0 ? `${s.reward.toLocaleString()}원` : "-"}</span>
+                      <span className={`text-xs w-10 text-center ${count > 0 ? "text-gray-500 font-bold" : "text-gray-300"}`}>{count}회</span>
+                      <span className={`text-xs w-14 text-right font-bold ${count > 0 ? "text-green-600" : "text-gray-300"}`}>{pts > 0 ? `+${pts}P` : "-"}</span>
+                      <span className={`text-xs w-16 text-right font-bold ${s?.reward > 0 ? "text-amber-500" : "text-gray-300"}`}>{s?.reward > 0 ? `${s.reward.toLocaleString()}원` : "-"}</span>
                     </div>
                   );
                 })}
@@ -272,7 +272,7 @@ export default function EcoHistoryPage() {
                         style={{ height: `${height}%` }}
                       />
                     </div>
-                    <span className="text-[10px] text-gray-400 font-medium">{label}</span>
+                    <span className="text-xs text-gray-400 font-medium">{label}</span>
                     <span className="text-[9px] text-gray-300">{data.count}건</span>
                   </div>
                 );
@@ -291,7 +291,7 @@ export default function EcoHistoryPage() {
             <div className="flex flex-wrap gap-1.5">
               <button
                 onClick={() => setFilter("all")}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
                   filter === "all" ? "bg-green-500 text-white border-green-500" : "bg-white text-gray-500 border-gray-200"
                 }`}
               >전체 ({actions.length})</button>
@@ -301,7 +301,7 @@ export default function EcoHistoryPage() {
                 const count = stats.byType[t]?.count || 0;
                 return (
                   <button key={t} onClick={() => setFilter(t)}
-                    className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
                       filter === t ? "bg-green-500 text-white border-green-500" : "bg-white text-gray-500 border-gray-200"
                     }`}
                   >{meta.title.length > 6 ? meta.title.slice(0, 6) + "…" : meta.title} ({count})</button>
@@ -333,7 +333,7 @@ export default function EcoHistoryPage() {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-bold text-gray-700">{meta.title}</p>
-                      <p className="text-[10px] text-gray-400">{dateStr} {timeStr}</p>
+                      <p className="text-xs text-gray-400">{dateStr} {timeStr}</p>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-black text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
@@ -370,18 +370,18 @@ export default function EcoHistoryPage() {
                     )}
                     <div className="flex-1 flex items-center gap-1.5 flex-wrap pt-1">
                       {action.service && (
-                        <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">{action.service}</span>
+                        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">{action.service}</span>
                       )}
                       {action.cupCount > 0 && (
-                        <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">{action.cupCount}개 반환</span>
+                        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">{action.cupCount}개 반환</span>
                       )}
                       {action.aiVerified != null && (
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${action.aiVerified ? "bg-green-50 text-green-600" : "bg-yellow-50 text-yellow-600"}`}>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${action.aiVerified ? "bg-green-50 text-green-600" : "bg-yellow-50 text-yellow-600"}`}>
                           AI {action.aiVerified ? "검증완료" : "미검증"}
                         </span>
                       )}
                       {action.receiptInfo?.storeName && (
-                        <span className="text-[10px] bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full font-medium">{action.receiptInfo.storeName}</span>
+                        <span className="text-xs bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full font-medium">{action.receiptInfo.storeName}</span>
                       )}
                     </div>
                   </div>
@@ -434,14 +434,14 @@ export default function EcoHistoryPage() {
                 </div>
                 <div>
                   <p className="text-base font-black text-gray-800">인증 내역 삭제</p>
-                  <p className="text-[11px] text-gray-400">삭제하면 되돌릴 수 없습니다</p>
+                  <p className="text-xs text-gray-400">삭제하면 되돌릴 수 없습니다</p>
                 </div>
               </div>
               <div className="bg-gray-50 rounded-xl p-3 mb-1">
                 <p className="text-sm font-bold text-gray-700">
                   {ECO_META[deleteTarget.type]?.title || "녹색생활 실천"}
                 </p>
-                <p className="text-[11px] text-gray-400 mt-0.5">
+                <p className="text-xs text-gray-400 mt-0.5">
                   {deleteTarget.certifiedAt ? new Date(deleteTarget.certifiedAt).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" }) : ""}
                 </p>
                 <p className="text-xs text-red-500 font-bold mt-1">

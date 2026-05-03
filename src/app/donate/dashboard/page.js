@@ -324,15 +324,15 @@ export default function DonateDashboardPage() {
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white/15 rounded-2xl px-3 py-3 text-center">
             <p className="text-2xl font-black">{totalPoints.toLocaleString()}</p>
-            <p className="text-[10px] text-white/70">총 후원 포인트</p>
+            <p className="text-xs text-white/70">총 후원 포인트</p>
           </div>
           <div className="bg-white/15 rounded-2xl px-3 py-3 text-center">
             <p className="text-2xl font-black">{totalCount}</p>
-            <p className="text-[10px] text-white/70">총 후원 건수</p>
+            <p className="text-xs text-white/70">총 후원 건수</p>
           </div>
           <div className="bg-white/15 rounded-2xl px-3 py-3 text-center">
             <p className="text-2xl font-black">{uniqueDonors}</p>
-            <p className="text-[10px] text-white/70">참여 후원자</p>
+            <p className="text-xs text-white/70">참여 후원자</p>
           </div>
         </div>
       </div>
@@ -431,12 +431,12 @@ export default function DonateDashboardPage() {
               const h = Math.max((d.points / maxMonthPoints) * 100, 4);
               return (
                 <div key={m} className="flex-1 flex flex-col items-center gap-1">
-                  <p className="text-[10px] font-bold text-green-600">{d.points > 0 ? `${(d.points / 1000).toFixed(d.points >= 1000 ? 1 : 0)}k` : ""}</p>
+                  <p className="text-xs font-bold text-green-600">{d.points > 0 ? `${(d.points / 1000).toFixed(d.points >= 1000 ? 1 : 0)}k` : ""}</p>
                   <div
                     className="w-full rounded-t-lg bg-gradient-to-t from-green-500 to-emerald-400 transition-all duration-500"
                     style={{ height: `${h}%`, minHeight: d.points > 0 ? "8px" : "3px", opacity: d.points > 0 ? 1 : 0.2 }}
                   />
-                  <p className="text-[10px] text-gray-400">{m.split(".")[1]}월</p>
+                  <p className="text-xs text-gray-400">{m.split(".")[1]}월</p>
                 </div>
               );
             })}

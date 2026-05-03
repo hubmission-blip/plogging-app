@@ -217,12 +217,12 @@ export default function DonatePage() {
                 <b.Icon className="w-8 h-8 text-orange-500 flex-shrink-0" strokeWidth={1.6} />
                 <div className="flex-1 text-right">
                   <p className="text-xs font-bold text-gray-700">{b.title}</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed whitespace-pre-line">{b.desc}</p>
+                  <p className="text-xs text-gray-400 mt-0.5 leading-relaxed whitespace-pre-line">{b.desc}</p>
                 </div>
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-gray-400 mt-3 text-center">※ 모든 후원금은 환경 보호 활동에 사용됩니다</p>
+          <p className="text-xs text-gray-400 mt-3 text-center">※ 모든 후원금은 환경 보호 활동에 사용됩니다</p>
         </div>
 
         {/* ══════════════════════════════════════════════════════
@@ -317,11 +317,11 @@ export default function DonatePage() {
           {/* 안내 문구 */}
           <div className="mt-3 space-y-1">
             {isIOS && (
-              <p className="text-[10px] text-gray-400 text-center leading-relaxed">
+              <p className="text-xs text-gray-400 text-center leading-relaxed">
                 Apple 결제는 프리셋 금액(500원~50,000원)만 가능합니다.
               </p>
             )}
-            <p className="text-[10px] text-gray-400 text-center leading-relaxed">
+            <p className="text-xs text-gray-400 text-center leading-relaxed">
               카카오페이 버튼을 누르면 카카오페이 앱이 열립니다. 선택한 금액을 확인 후 송금해주세요.
             </p>
           </div>
@@ -333,7 +333,7 @@ export default function DonatePage() {
             <ShieldCheck className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
             <div>
               <p className="text-xs font-bold text-green-700 mb-1">비영리 사단법인 기부금</p>
-              <p className="text-[11px] text-green-600 leading-relaxed">
+              <p className="text-xs text-green-600 leading-relaxed">
                 모든 후원금은 사단법인 국제청년환경연합회(GYEA)에
                 100% 전액 기부되며, 환경 보호 활동에만 사용됩니다.
                 후원은 앱 내 기능과 무관한 순수 기부입니다.

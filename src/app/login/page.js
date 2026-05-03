@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   updateProfile,
   signInWithCredential,
   GoogleAuthProvider,
@@ -85,6 +86,9 @@ export default function LoginPage() {
   const [nickname, setNickname] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetMsg, setResetMsg] = useState("");
 
   // ✅ iOS 딥링크 수신: Safari에서 Google 인증 완료 후 앱으로 복귀
   const handleDeepLinkToken = useCallback(async (idToken) => {
@@ -203,6 +207,27 @@ export default function LoginPage() {
       `&scope=name email` +
       `&response_mode=form_post` +
       `&state=${STATE}`;
+  };
+
+  // 비밀번호 재설정
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (!resetEmail.trim()) { setResetMsg("이메일을 입력해주세요"); return; }
+    setLoading(true);
+    setResetMsg("");
+    try {
+      await sendPasswordResetEmail(auth, resetEmail.trim());
+      setResetMsg("✅ 비밀번호 재설정 메일을 보냈습니다. 메일함을 확인해주세요.");
+    } catch (err) {
+      const msg = {
+        "auth/user-not-found": "등록되지 않은 이메일입니다",
+        "auth/invalid-email": "올바른 이메일 형식이 아닙니다",
+        "auth/too-many-requests": "잠시 후 다시 시도해주세요",
+      };
+      setResetMsg(msg[err.code] || "오류: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 이메일 로그인/회원가입
@@ -358,8 +383,64 @@ export default function LoginPage() {
           >
             {loading ? "처리 중..." : isSignup ? "회원가입" : "로그인"}
           </button>
+
+          {!isSignup && (
+            <button
+              type="button"
+              onClick={() => { setShowResetPassword(true); setResetEmail(email); setResetMsg(""); }}
+              className="w-full text-center text-gray-400 text-xs mt-1 py-1"
+            >
+              비밀번호를 잊으셨나요?
+            </button>
+          )}
         </form>
       </div>
+
+      {/* ── 비밀번호 재설정 모달 ── */}
+      {showResetPassword && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowResetPassword(false)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+            onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-black text-gray-800 mb-1">비밀번호 재설정</h3>
+            <p className="text-gray-500 text-sm mb-4">
+              가입한 이메일을 입력하면 비밀번호 재설정 링크를 보내드립니다.
+            </p>
+            <form onSubmit={handleResetPassword} className="space-y-3">
+              <input
+                type="email"
+                placeholder="이메일 주소"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-400"
+                autoFocus
+                required
+              />
+              {resetMsg && (
+                <p className={`text-xs text-center py-2 rounded-lg ${
+                  resetMsg.startsWith("✅") ? "text-green-600 bg-green-50" : "text-red-500 bg-red-50"
+                }`}>
+                  {resetMsg}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-green-500 text-white py-3 rounded-xl font-bold text-sm disabled:opacity-50 active:scale-95 transition-transform"
+              >
+                {loading ? "전송 중..." : "재설정 메일 보내기"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowResetPassword(false)}
+                className="w-full text-gray-400 text-sm py-2"
+              >
+                돌아가기
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <p className="text-green-100 text-xs mt-6 text-center">
         사단법인 국제청년환경연합회 (GYEA)

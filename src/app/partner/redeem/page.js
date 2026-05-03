@@ -276,11 +276,11 @@ export default function PartnerRedeemPage() {
         </div>
         <div className="bg-white/15 rounded-2xl px-4 py-3 flex items-center justify-between">
           <div>
-            <p className="text-[10px] text-white/60">파트너 매장</p>
+            <p className="text-xs text-white/60">파트너 매장</p>
             <p className="text-sm font-bold">{storeInfo.name}</p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] text-white/60">누적 적립</p>
+            <p className="text-xs text-white/60">누적 적립</p>
             <p className="text-sm font-bold flex items-center gap-1">
               <Coins className="w-4 h-4" strokeWidth={2} />
               {(storeInfo.accumulatedPoints || 0).toLocaleString()} P
@@ -457,7 +457,7 @@ export default function PartnerRedeemPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-xl font-black text-emerald-600">{totalAll.toLocaleString()} P</p>
-                    <p className="text-[10px] text-emerald-500">{countAll}건 처리</p>
+                    <p className="text-xs text-emerald-500">{countAll}건 처리</p>
                   </div>
                 </div>
               </div>

@@ -177,7 +177,7 @@ function PurchaseSheet({ product, onConfirm, onClose }) {
             <div className="bg-orange-50 rounded-2xl p-3 mb-3 flex items-center justify-between">
               <div>
                 <p className="text-sm text-orange-700 font-bold">구매 완료 시 보너스 포인트</p>
-                <p className="text-[11px] text-orange-500 mt-0.5">관리자 검토 후 1~3일 내 지급</p>
+                <p className="text-xs text-orange-500 mt-0.5">관리자 검토 후 1~3일 내 지급</p>
               </div>
               <p className="text-base font-black text-orange-600">+{product.bonusPoints}P</p>
             </div>
@@ -185,7 +185,7 @@ function PurchaseSheet({ product, onConfirm, onClose }) {
             {/* 안내 문구 */}
             <div className="bg-blue-50 rounded-xl px-3 py-2 mb-4 flex items-start gap-2">
               <span className="text-base mt-0.5">ℹ️</span>
-              <p className="text-[11px] text-blue-600 leading-relaxed">
+              <p className="text-xs text-blue-600 leading-relaxed">
                 쿠팡에서 구매를 완료하셨나요? 아래 버튼을 누르면 구매 내역이 관리자에게 전달돼요.
                 쿠팡 파트너스 정산 확인 후 포인트가 지급됩니다.
               </p>
@@ -278,7 +278,7 @@ function ProductDetailSheet({ product, onBuy, onClose }) {
               </div>
               {/* 보너스 포인트 뱃지 */}
               <div className="rounded-xl px-3 py-1.5 flex flex-col items-center flex-shrink-0" style={{ backgroundColor: "#CD5C5C15" }}>
-                <span className="text-[10px]" style={{ color: "#CD5C5C" }}>🎁 구매 시 보너스</span>
+                <span className="text-xs" style={{ color: "#CD5C5C" }}>🎁 구매 시 보너스</span>
                 <span className="text-sm font-black" style={{ color: "#CD5C5C" }}>+{product.bonusPoints}P</span>
               </div>
             </div>
@@ -354,7 +354,7 @@ function ProductCard({ product, onBuy, onConfirm }) {
             🛒
           </div>
           {/* 플랫폼 뱃지 */}
-          <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white ${plt.color}`}>
+          <span className={`absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full text-white ${plt.color}`}>
             {plt.icon} {plt.label}
           </span>
           {/* 할인율 */}
@@ -367,7 +367,7 @@ function ProductCard({ product, onBuy, onConfirm }) {
 
         {/* 상품 정보 */}
         <div className="p-3 flex flex-col flex-1">
-          <p className="text-[10px] text-gray-400 font-medium mb-0.5">{product.brand}</p>
+          <p className="text-xs text-gray-400 font-medium mb-0.5">{product.brand}</p>
           <p className="text-sm font-bold text-gray-800 leading-tight mb-1 line-clamp-2">{product.title}</p>
           <p className="text-xs text-gray-500 leading-relaxed mb-2 line-clamp-2">{product.desc}</p>
 
@@ -382,7 +382,7 @@ function ProductCard({ product, onBuy, onConfirm }) {
           {/* 키워드 태그 */}
           {product.tag && (
             <div className="rounded-xl px-3 py-1.5 mb-2 text-center" style={{ backgroundColor: "#8dc63f18" }}>
-              <span className="text-[11px] font-bold" style={{ color: "#8dc63f" }}>{product.tag}</span>
+              <span className="text-xs font-bold" style={{ color: "#8dc63f" }}>{product.tag}</span>
             </div>
           )}
 
@@ -530,8 +530,8 @@ export default function ShopPage() {
             <p className="text-xs text-gray-400 mt-0.5">구매 시 포인트 보너스 · 외부 쇼핑몰 연동</p>
           </div>
           <div className="px-3 py-1.5 rounded-xl" style={{ backgroundColor: "#CD5C5C15" }}>
-            <p className="text-[10px] font-bold" style={{ color: "#CD5C5C" }}>제휴 링크</p>
-            <p className="text-[10px]" style={{ color: "#CD5C5Ccc" }}>수수료 수익 → 환경 기부</p>
+            <p className="text-xs font-bold" style={{ color: "#CD5C5C" }}>제휴 링크</p>
+            <p className="text-xs" style={{ color: "#CD5C5Ccc" }}>수수료 수익 → 환경 기부</p>
           </div>
         </div>
 
@@ -540,7 +540,7 @@ export default function ShopPage() {
           <span className="text-xl">💗</span>
           <div>
             <p className="text-xs font-bold text-white">쇼핑하면 지구도 살려요</p>
-            <p className="text-[10px] text-pink-100">제휴 수수료 일부 → 환경 단체 기부 · 구매 시 앱 포인트 지급</p>
+            <p className="text-xs text-pink-100">제휴 수수료 일부 → 환경 단체 기부 · 구매 시 앱 포인트 지급</p>
           </div>
         </div>
       </div>
@@ -598,7 +598,7 @@ export default function ShopPage() {
             "포인트는 관리자 검토 후 최종 확정될 수 있습니다",
             "이 포스팅은 쿠팡 파트너스 및 11번가 파트너스 활동의 일환으로 수수료를 제공받습니다",
           ].map((txt, i) => (
-            <p key={i} className="text-[11px] text-gray-400 leading-relaxed">• {txt}</p>
+            <p key={i} className="text-xs text-gray-400 leading-relaxed">• {txt}</p>
           ))}
         </div>
       </div>

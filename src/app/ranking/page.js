@@ -149,10 +149,10 @@ function RankingPageInner() {
           <div className="flex items-center gap-2">
             <span className="text-xl">🗺️</span>
             <div className="text-left">
-              <p className="text-[10px] text-green-100 leading-none mb-0.5">지역별 현황</p>
+              <p className="text-xs text-green-100 leading-none mb-0.5">지역별 현황</p>
               <p className="font-black text-sm text-white">행정구역별 랭킹지도</p>
             </div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/25 text-white ml-1">
+            <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-white/25 text-white ml-1">
               시·도별 확인
             </span>
           </div>

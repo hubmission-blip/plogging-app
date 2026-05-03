@@ -633,10 +633,10 @@ export default function CalendarPage() {
           <div className="flex items-center gap-2">
             {(() => { const g = REGION_COLOR_MAP[selectedRegion]; return g?.Icon ? <g.Icon size={20} className="text-white/80" strokeWidth={1.8} /> : <MapPin size={20} className="text-white/80" strokeWidth={1.8} />; })()}
             <div className="text-left">
-              <p className="text-[10px] text-green-100 leading-none mb-0.5">선택된 지역</p>
+              <p className="text-xs text-green-100 leading-none mb-0.5">선택된 지역</p>
               <p className="text-sm font-black text-white">{selectedRegion}</p>
             </div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/25 text-white ml-1">
+            <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-white/25 text-white ml-1">
               {REGION_COLOR_MAP[selectedRegion]?.name}
             </span>
           </div>
@@ -801,14 +801,14 @@ export default function CalendarPage() {
                       <div className={`w-1 self-stretch rounded-full ${typeStyle.color}`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${typeStyle.badge}`}>
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${typeStyle.badge}`}>
                             {typeStyle.label}
                           </span>
                           {isPast && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-gray-100 text-gray-400">완료</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded-full font-bold bg-gray-100 text-gray-400">완료</span>
                           )}
                           {isJoined && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-orange-100 text-orange-600">참여 중</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded-full font-bold bg-orange-100 text-orange-600">참여 중</span>
                           )}
                         </div>
                         <p className="text-sm font-bold text-gray-800 truncate">{ev.title}</p>
@@ -872,13 +872,13 @@ export default function CalendarPage() {
                       <div className={`w-1 self-stretch rounded-full ${typeStyle.color}`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-[10px] text-gray-400 font-bold">{ev.date.slice(5).replace("-", ".")}</span>
-                          {ev.time && <span className="text-[10px] text-gray-400">{ev.time}</span>}
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${typeStyle.badge}`}>
+                          <span className="text-xs text-gray-400 font-bold">{ev.date.slice(5).replace("-", ".")}</span>
+                          {ev.time && <span className="text-xs text-gray-400">{ev.time}</span>}
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${typeStyle.badge}`}>
                             {typeStyle.label}
                           </span>
                           {isJoined && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-orange-100 text-orange-600">참여 중</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded-full font-bold bg-orange-100 text-orange-600">참여 중</span>
                           )}
                         </div>
                         <p className="text-sm font-bold text-gray-800 truncate">{ev.title}</p>
@@ -891,7 +891,7 @@ export default function CalendarPage() {
                             {ev.maxParticipants > 0 ? `/${ev.maxParticipants}` : ""}명
                           </p>
                           {!isPast && !isJoined && (
-                            <p className="text-[10px] text-green-500 font-bold mt-0.5">참여 가능</p>
+                            <p className="text-xs text-green-500 font-bold mt-0.5">참여 가능</p>
                           )}
                         </div>
                       )}

@@ -380,7 +380,7 @@ export default function ProfilePage() {
                     setRefCopied(true);
                     setTimeout(() => setRefCopied(false), 2000);
                   }}
-                  className={`text-[10px] px-2 py-0.5 rounded-lg font-bold flex-shrink-0 transition-all
+                  className={`text-xs px-2 py-0.5 rounded-lg font-bold flex-shrink-0 transition-all
                     ${refCopied ? "bg-white text-green-600" : "bg-white/20 text-white active:bg-white/40"}`}
                 >
                   {refCopied ? <Check size={12} strokeWidth={2} /> : "복사"}
@@ -399,23 +399,23 @@ export default function ProfilePage() {
               const displayEmail = (realEmail && !isFake(realEmail)) ? realEmail : (!isFake(authEmail) ? authEmail : null);
               return displayEmail ? (
                 <div className="flex items-center gap-2">
-                  <p className="text-[11px] text-green-600 font-medium w-14 flex-shrink-0">이메일</p>
-                  <p className="text-[11px] text-gray-700 truncate flex-1">{displayEmail}</p>
+                  <p className="text-xs text-green-600 font-medium w-14 flex-shrink-0">이메일</p>
+                  <p className="text-xs text-gray-700 truncate flex-1">{displayEmail}</p>
                 </div>
               ) : null;
             })()}
             <div className="flex items-center gap-2">
-              <p className="text-[11px] text-green-600 font-medium w-14 flex-shrink-0">고유번호</p>
-              <p className="text-[11px] font-mono text-gray-700 truncate flex-1">{user?.uid}</p>
+              <p className="text-xs text-green-600 font-medium w-14 flex-shrink-0">고유번호</p>
+              <p className="text-xs font-mono text-gray-700 truncate flex-1">{user?.uid}</p>
               <button
                 onClick={handleCopyUid}
-                className={`flex-shrink-0 text-[10px] px-2 py-0.5 rounded-lg font-bold transition-all
+                className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-lg font-bold transition-all
                   ${uidCopied ? "bg-green-500 text-white" : "bg-green-100 text-green-600"}`}
               >
                 {uidCopied ? <Check size={12} strokeWidth={2} /> : "복사"}
               </button>
             </div>
-            <p className="text-[10px] text-gray-400">포인트·리워드 문의 시 고유번호를 알려주세요</p>
+            <p className="text-xs text-gray-400">포인트·리워드 문의 시 고유번호를 알려주세요</p>
           </div>
         </div>
       </div>

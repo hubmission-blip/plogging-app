@@ -212,7 +212,7 @@ export default function CouponPage() {
               {/* 쿠폰 코드 영역 (점선 구분) */}
               <div className="border-t-2 border-dashed border-gray-100 px-4 py-3 flex items-center justify-between bg-gray-50/50">
                 <div>
-                  <p className="text-[10px] text-gray-400">쿠폰 코드</p>
+                  <p className="text-xs text-gray-400">쿠폰 코드</p>
                   <p className="text-base font-black text-gray-700 tracking-wider">{coupon.code}</p>
                 </div>
                 {coupon.status === "active" && (
@@ -278,7 +278,7 @@ export default function CouponPage() {
                 {/* QR코드 + 교환코드 통합 영역 */}
                 {selectedCoupon.status === "active" && qrDataURL ? (
                   <div className="bg-white rounded-2xl p-5 mb-4 border-2 border-orange-200">
-                    <p className="text-[10px] text-orange-500 font-bold mb-3">매장 직원에게 이 화면을 보여주세요</p>
+                    <p className="text-xs text-orange-500 font-bold mb-3">매장 직원에게 이 화면을 보여주세요</p>
                     <img src={qrDataURL} alt="QR코드" className="w-52 h-52 mx-auto mb-4" />
                     <p className="text-2xl font-black text-gray-800 tracking-[0.15em]">{selectedCoupon.code}</p>
                     <button
@@ -296,12 +296,12 @@ export default function CouponPage() {
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
                       </span>
-                      <span className="text-[10px] font-medium">매장 스캔 대기 중...</span>
+                      <span className="text-xs font-medium">매장 스캔 대기 중...</span>
                     </div>
                   </div>
                 ) : (
                   <div className="bg-gray-50 rounded-2xl p-5 mb-4 border-2 border-dashed border-gray-300">
-                    <p className="text-[10px] text-gray-400 mb-2">쿠폰 코드</p>
+                    <p className="text-xs text-gray-400 mb-2">쿠폰 코드</p>
                     <p className="text-2xl font-black text-gray-800 tracking-[0.15em]">{selectedCoupon.code}</p>
                   </div>
                 )}

@@ -173,7 +173,7 @@ export default function VolunteerPage() {
                 ) : (
                   <>
                     <p className="text-xs font-bold text-orange-700">1365 회원번호 미등록</p>
-                    <p className="text-[11px] text-orange-500">프로필에서 등록하면 봉사시간을 인정받을 수 있어요</p>
+                    <p className="text-xs text-orange-500">프로필에서 등록하면 봉사시간을 인정받을 수 있어요</p>
                   </>
                 )}
               </div>
@@ -221,7 +221,7 @@ export default function VolunteerPage() {
             </button>
             <div className="text-center">
               <p className="text-lg font-bold text-gray-800">{year}년 {mon}월</p>
-              <p className="text-[10px] text-gray-400">월별 봉사활동 현황</p>
+              <p className="text-xs text-gray-400">월별 봉사활동 현황</p>
             </div>
             <button onClick={() => changeMonth(1)} className="p-1.5 rounded-full bg-gray-100 active:bg-gray-200">
               <ChevronRight className="w-5 h-5 text-gray-600" strokeWidth={2} />
@@ -275,7 +275,7 @@ export default function VolunteerPage() {
         {/* 안내 */}
         <div className="bg-gray-100 rounded-2xl p-4">
           <h3 className="font-bold text-gray-600 text-xs mb-2">1365 자원봉사 연계 안내</h3>
-          <div className="space-y-1.5 text-[11px] text-gray-500 leading-relaxed">
+          <div className="space-y-1.5 text-xs text-gray-500 leading-relaxed">
             <p>• 플로깅 활동은 "환경보호 &gt; 환경정화활동"으로 분류됩니다.</p>
             <p>• 봉사시간은 실제 플로깅 시간을 기준으로 산정됩니다.</p>
             <p>• 관리자가 월별 봉사실적을 CSV로 취합하여 1365 포털에 등록합니다.</p>

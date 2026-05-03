@@ -382,7 +382,7 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
                 <span className={`text-xs font-bold ${clr.text}`}>
                   인증 시 <span className="opacity-80">{action?.points}</span> 적립!
                 </span>
-                <p className="text-[10px] text-gray-400 mt-1">탄소중립포인트 녹색생활 실천 연계 항목</p>
+                <p className="text-xs text-gray-400 mt-1">탄소중립포인트 녹색생활 실천 연계 항목</p>
               </div>
               <div className="space-y-2">
                 <button onClick={() => setStep("cert")}
@@ -412,7 +412,7 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
                   ) : (
                     <button onClick={() => photoRef.current?.click()} className={`w-full h-32 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-1 ${clr.border} ${clr.bg}`}>
                       <span className="text-2xl">📸</span>
-                      <span className={`text-[10px] font-bold ${clr.text}`}>{cfg.photoLabel}</span>
+                      <span className={`text-xs font-bold ${clr.text}`}>{cfg.photoLabel}</span>
                     </button>
                   )}
                   <input ref={photoRef} type="file" accept="image/*" {...(cfg.allowGallery ? {} : { capture: "environment" })} onChange={handlePhoto} className="hidden" />
@@ -428,7 +428,7 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
                     ) : (
                       <button onClick={() => receiptRef.current?.click()} className="w-full h-32 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 bg-gray-50/30">
                         <span className="text-2xl">🧾</span>
-                        <span className="text-[10px] text-gray-500 font-bold">{cfg.receiptLabel}</span>
+                        <span className="text-xs text-gray-500 font-bold">{cfg.receiptLabel}</span>
                       </button>
                     )}
                     <input ref={receiptRef} type="file" accept="image/*" onChange={handleReceipt} className="hidden" />
@@ -456,7 +456,7 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
                         <p className={`text-xs font-bold ${aiResult.valid ? "text-green-700" : "text-red-700"}`}>
                           {aiResult.valid ? "사진 확인 완료" : "사진이 적합하지 않습니다"}
                         </p>
-                        <p className={`text-[10px] mt-0.5 ${aiResult.valid ? "text-green-500" : "text-red-500"}`}>
+                        <p className={`text-xs mt-0.5 ${aiResult.valid ? "text-green-500" : "text-red-500"}`}>
                           {aiResult.reason}
                         </p>
                       </div>
@@ -489,7 +489,7 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
                           {ocrResult.text ? "영수증 인식 완료" : "텍스트를 인식하지 못했어요"}
                         </span>
                         {ocrResult.confidence > 0 && (
-                          <span className="text-[10px] text-gray-400 font-medium">정확도 {ocrResult.confidence}%</span>
+                          <span className="text-xs text-gray-400 font-medium">정확도 {ocrResult.confidence}%</span>
                         )}
                         {showOcrDetail
                           ? <ChevronUp size={14} className="text-gray-400" />
@@ -500,25 +500,25 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
                         <div className="border-t border-gray-100 px-3 py-2.5 space-y-1.5">
                           {ocrResult.info?.storeName && (
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[10px] text-gray-400 w-10 flex-shrink-0">매장</span>
+                              <span className="text-xs text-gray-400 w-10 flex-shrink-0">매장</span>
                               <span className="text-xs text-gray-700 font-medium">{ocrResult.info.storeName}</span>
                             </div>
                           )}
                           {ocrResult.info?.amount && (
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[10px] text-gray-400 w-10 flex-shrink-0">금액</span>
+                              <span className="text-xs text-gray-400 w-10 flex-shrink-0">금액</span>
                               <span className="text-xs text-gray-700 font-medium">{ocrResult.info.amount.toLocaleString()}원</span>
                             </div>
                           )}
                           {ocrResult.info?.date && (
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[10px] text-gray-400 w-10 flex-shrink-0">날짜</span>
+                              <span className="text-xs text-gray-400 w-10 flex-shrink-0">날짜</span>
                               <span className="text-xs text-gray-700 font-medium">{ocrResult.info.date}</span>
                             </div>
                           )}
                           <div className="pt-1.5 border-t border-gray-100">
-                            <p className="text-[10px] text-gray-400 mb-1">원본 텍스트</p>
-                            <p className="text-[10px] text-gray-500 leading-relaxed whitespace-pre-wrap max-h-20 overflow-y-auto">{ocrResult.text.slice(0, 300)}{ocrResult.text.length > 300 ? "..." : ""}</p>
+                            <p className="text-xs text-gray-400 mb-1">원본 텍스트</p>
+                            <p className="text-xs text-gray-500 leading-relaxed whitespace-pre-wrap max-h-20 overflow-y-auto">{ocrResult.text.slice(0, 300)}{ocrResult.text.length > 300 ? "..." : ""}</p>
                           </div>
                         </div>
                       )}
@@ -793,7 +793,7 @@ export default function EcoLifePage() {
             </div>
             <div className="flex-1 text-left">
               <p className="text-sm font-black text-gray-800">내 녹색생활 실천내역</p>
-              <p className="text-[11px] text-gray-400 mt-0.5">포인트 현황 · 인증 사진 · 월별 통계</p>
+              <p className="text-xs text-gray-400 mt-0.5">포인트 현황 · 인증 사진 · 월별 통계</p>
             </div>
             <ArrowLeft size={18} className="text-gray-300 rotate-180" />
           </div>
@@ -812,10 +812,10 @@ export default function EcoLifePage() {
                 className={`${clr.bg} border-2 ${clr.border} rounded-2xl px-3 pt-4 pb-3 flex flex-col items-center text-center active:scale-[0.96] transition-all`}>
                 <IconComp size={32} className={clr.icon} strokeWidth={1.8} />
                 <h4 className="font-black text-[13px] text-gray-800 mt-2 leading-tight">{action.title}</h4>
-                <p className="text-[10px] text-gray-400 mt-1 leading-snug line-clamp-2">{action.desc}</p>
+                <p className="text-xs text-gray-400 mt-1 leading-snug line-clamp-2">{action.desc}</p>
                 <div className="flex items-center gap-1.5 mt-1.5">
-                  <span className={`text-[11px] font-bold ${clr.text}`}>{action.points}</span>
-                  {action.reward > 0 && <span className="text-[10px] font-bold text-amber-500">{action.reward.toLocaleString()}원</span>}
+                  <span className={`text-xs font-bold ${clr.text}`}>{action.points}</span>
+                  {action.reward > 0 && <span className="text-xs font-bold text-amber-500">{action.reward.toLocaleString()}원</span>}
                 </div>
               </button>
             );
@@ -848,7 +848,7 @@ export default function EcoLifePage() {
                       {TYPE_NAME[action.type] || "녹색생활 실천"}
                       {action.type === "cup_return" && action.cupCount ? ` (${action.cupCount}개)` : ""}
                     </p>
-                    <p className="text-[11px] text-gray-400">
+                    <p className="text-xs text-gray-400">
                       {action.certifiedAt ? new Date(action.certifiedAt).toLocaleDateString("ko-KR") : ""}
                     </p>
                   </div>

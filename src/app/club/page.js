@@ -140,7 +140,7 @@ function ClubCard({ club, isMember, isLeader, onClickDetail, onJoin, loading, hi
         <div className={`relative text-3xl w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${highlight ? "bg-cyan-100" : "bg-sky-50"}`}>
           {club.emoji}
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-black rounded-full flex items-center justify-center">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
@@ -636,7 +636,7 @@ export default function ClubPage() {
           {(() => {
             const total = Object.values(unreadCounts).reduce((s, n) => s + n, 0);
             return total > 0 ? (
-              <span className="w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
+              <span className="w-5 h-5 bg-red-500 text-white text-xs font-black rounded-full flex items-center justify-center">
                 {total > 9 ? "9+" : total}
               </span>
             ) : null;

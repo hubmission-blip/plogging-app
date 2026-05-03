@@ -517,7 +517,7 @@ export default function CertificatePage() {
             <Award className="w-5 h-5 text-blue-600 flex-shrink-0" strokeWidth={1.8} />
             <div>
               <p className="text-xs font-bold text-blue-700">1365 회원번호: {volunteerNo}</p>
-              <p className="text-[10px] text-blue-500">증명서에 자동 포함됩니다</p>
+              <p className="text-xs text-blue-500">증명서에 자동 포함됩니다</p>
             </div>
           </div>
         )}
@@ -549,15 +549,15 @@ export default function CertificatePage() {
               <div className="grid grid-cols-3 gap-3 mb-3">
                 <div className="bg-green-50 rounded-xl p-3 text-center">
                   <p className="text-xl font-black text-green-700">{summary.totalSessions}</p>
-                  <p className="text-[10px] text-green-600 font-medium mt-0.5">인정 횟수</p>
+                  <p className="text-xs text-green-600 font-medium mt-0.5">인정 횟수</p>
                 </div>
                 <div className="bg-blue-50 rounded-xl p-3 text-center">
                   <p className="text-lg font-black text-blue-700">{formatHoursMinutes(summary.totalHours)}</p>
-                  <p className="text-[10px] text-blue-600 font-medium mt-0.5">봉사시간</p>
+                  <p className="text-xs text-blue-600 font-medium mt-0.5">봉사시간</p>
                 </div>
                 <div className="bg-purple-50 rounded-xl p-3 text-center">
                   <p className="text-xl font-black text-purple-700">{summary.totalDistance.toFixed(1)}</p>
-                  <p className="text-[10px] text-purple-600 font-medium mt-0.5">이동거리(km)</p>
+                  <p className="text-xs text-purple-600 font-medium mt-0.5">이동거리(km)</p>
                 </div>
               </div>
 
@@ -641,7 +641,7 @@ export default function CertificatePage() {
                   </div>
                 </div>
 
-                <p className="text-[10px] text-gray-300 mt-3 leading-relaxed">
+                <p className="text-xs text-gray-300 mt-3 leading-relaxed">
                   ※ 입력하신 성명은 증명서에만 사용되며, 본인 신고에 의합니다.<br />
                   ※ 허위 기재 시 증명서의 효력이 인정되지 않을 수 있습니다.
                 </p>
@@ -912,7 +912,7 @@ export default function CertificatePage() {
                   <div key={cert.id} className="bg-gray-50 rounded-xl p-3">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-mono font-bold text-green-700">{cert.certNumber}</span>
-                      <span className="text-[10px] text-gray-400">발급일: {issuedStr}</span>
+                      <span className="text-xs text-gray-400">발급일: {issuedStr}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-gray-600">
                       <span>{cert.realName}</span>
@@ -920,14 +920,14 @@ export default function CertificatePage() {
                       <span>{periodStr}</span>
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <div className="flex items-center gap-3 text-[11px] text-gray-500">
+                      <div className="flex items-center gap-3 text-xs text-gray-500">
                         <span>{cert.totalSessions}회</span>
                         <span>{formatHoursMinutes(cert.totalHours)}</span>
                         <span>{cert.totalDistance}km</span>
                       </div>
                       <button
                         onClick={() => handleReprint(cert)}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-white shadow-sm"
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-white shadow-sm"
                         style={{ backgroundColor: "#2c5f2d" }}
                       >
                         <Printer className="w-3 h-3" /> 재출력

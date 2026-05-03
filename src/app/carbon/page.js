@@ -259,7 +259,7 @@ function SectionCard({ sec, greenItems }) {
                     <span className="text-xs text-gray-600 flex items-center gap-1.5">
                       <item.Icon size={14} className={item.iconColor} strokeWidth={1.8} />{item.name}
                       {item.tag === "신규" && (
-                        <span className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">NEW</span>
+                        <span className="bg-green-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">NEW</span>
                       )}
                     </span>
                     <span className="text-xs font-bold text-green-700">{item.point}</span>
@@ -366,7 +366,7 @@ export default function CarbonPage() {
             <div key={c.label} className={`${c.color} border rounded-2xl p-3 text-center`}>
               <c.Icon className={`w-6 h-6 mx-auto ${c.iconColor}`} strokeWidth={1.8} />
               <p className="text-xs font-bold text-gray-700 mt-1">{c.label}</p>
-              <p className="text-[10px] text-gray-500 mt-0.5 whitespace-pre-line leading-tight">{c.sub}</p>
+              <p className="text-xs text-gray-500 mt-0.5 whitespace-pre-line leading-tight">{c.sub}</p>
             </div>
           ))}
         </div>
@@ -385,7 +385,7 @@ export default function CarbonPage() {
             연간 최대 <strong className="text-white">30만원 이상</strong>의 인센티브를 받을 수 있어요.
           </p>
           <div className="mt-2 bg-white/20 rounded-xl px-3 py-2">
-            <p className="text-[11px] text-white/90 leading-relaxed">
+            <p className="text-xs text-white/90 leading-relaxed">
               💡 거주 지역별 에코마일리지 프로그램은 아래 <strong>지자체 에코마일리지 바로가기</strong>를 확인하세요.
             </p>
           </div>
@@ -422,7 +422,7 @@ export default function CarbonPage() {
                   <link.Icon className="w-4 h-4 text-gray-500 flex-shrink-0" strokeWidth={1.8} />
                   <div>
                     <p className="text-xs font-bold text-gray-700">{link.label}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{link.sub}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{link.sub}</p>
                   </div>
                 </div>
                 <ExternalLink className="w-3.5 h-3.5 text-gray-400" strokeWidth={2} />
@@ -446,7 +446,7 @@ export default function CarbonPage() {
 
           {/* 서울 (독자 운영) */}
           <div className="mb-3">
-            <p className="text-[10px] font-bold text-blue-500 mb-1.5 px-1">🔵 독자 운영</p>
+            <p className="text-xs font-bold text-blue-500 mb-1.5 px-1">🔵 독자 운영</p>
             <a
               href="https://ecomileage.seoul.go.kr"
               target="_blank" rel="noopener noreferrer"
@@ -458,7 +458,7 @@ export default function CarbonPage() {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-blue-700">서울특별시</p>
-                  <p className="text-[10px] text-blue-400">서울시 에코마일리지</p>
+                  <p className="text-xs text-blue-400">서울시 에코마일리지</p>
                 </div>
               </div>
               <span className="text-blue-400 text-sm">→</span>
@@ -467,7 +467,7 @@ export default function CarbonPage() {
 
           {/* 나머지 16개 시/도 (탄소중립포인트 연계) */}
           <div>
-            <p className="text-[10px] font-bold text-green-500 mb-1.5 px-1">🟢 탄소중립포인트 연계</p>
+            <p className="text-xs font-bold text-green-500 mb-1.5 px-1">🟢 탄소중립포인트 연계</p>
             <div className="grid grid-cols-2 gap-1.5">
               {[
                 "부산광역시", "대구광역시", "인천광역시", "광주광역시",
@@ -489,7 +489,7 @@ export default function CarbonPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-gray-700 truncate">{name}</p>
-                      <p className="text-[10px] text-gray-400">cpoint.or.kr</p>
+                      <p className="text-xs text-gray-400">cpoint.or.kr</p>
                     </div>
                   </a>
                 );

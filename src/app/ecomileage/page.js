@@ -273,10 +273,10 @@ function RegionCard({ region }) {
           <div className="text-left">
             <p className="font-bold text-sm text-gray-800">{region.name}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${region.typeBg}`}>
+              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${region.typeBg}`}>
                 {region.type}
               </span>
-              <span className="text-[10px] text-gray-400">{region.program}</span>
+              <span className="text-xs text-gray-400">{region.program}</span>
             </div>
           </div>
         </div>
@@ -290,7 +290,7 @@ function RegionCard({ region }) {
 
           {/* 인센티브 */}
           <div>
-            <p className="text-[11px] font-bold text-gray-500 mb-1.5">💰 인센티브</p>
+            <p className="text-xs font-bold text-gray-500 mb-1.5">💰 인센티브</p>
             <div className="space-y-1">
               {region.incentives.map((item, i) => (
                 <div key={i} className="flex items-start gap-1.5">
@@ -303,10 +303,10 @@ function RegionCard({ region }) {
 
           {/* 사용처 */}
           <div>
-            <p className="text-[11px] font-bold text-gray-500 mb-1.5">🎁 인센티브 사용처</p>
+            <p className="text-xs font-bold text-gray-500 mb-1.5">🎁 인센티브 사용처</p>
             <div className="flex flex-wrap gap-1">
               {region.usage.map((u) => (
-                <span key={u} className="bg-gray-100 text-gray-600 text-[10px] font-medium px-2 py-0.5 rounded-full">
+                <span key={u} className="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-full">
                   {u}
                 </span>
               ))}
@@ -315,7 +315,7 @@ function RegionCard({ region }) {
 
           {/* 비고 */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2">
-            <p className="text-[11px] text-yellow-700 leading-relaxed">💡 {region.note}</p>
+            <p className="text-xs text-yellow-700 leading-relaxed">💡 {region.note}</p>
           </div>
 
           {/* 바로가기 */}
@@ -379,11 +379,11 @@ export default function EcomileagePage() {
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3">
             <p className="text-xs font-black text-blue-700 mb-1">🗼 서울시 에코마일리지</p>
-            <p className="text-[10px] text-blue-600 leading-relaxed">서울 거주자 전용<br/>독자 시스템 운영<br/>ecomileage.seoul.go.kr</p>
+            <p className="text-xs text-blue-600 leading-relaxed">서울 거주자 전용<br/>독자 시스템 운영<br/>ecomileage.seoul.go.kr</p>
           </div>
           <div className="bg-green-50 border border-green-200 rounded-2xl p-3">
             <p className="text-xs font-black text-green-700 mb-1">🌍 탄소중립포인트 에너지</p>
-            <p className="text-[10px] text-green-600 leading-relaxed">서울 외 16개 시/도<br/>환경부·한국환경공단 운영<br/>cpoint.or.kr</p>
+            <p className="text-xs text-green-600 leading-relaxed">서울 외 16개 시/도<br/>환경부·한국환경공단 운영<br/>cpoint.or.kr</p>
           </div>
         </div>
 

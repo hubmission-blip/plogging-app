@@ -335,17 +335,17 @@ export default function RewardPage() {
           <div className="flex items-center gap-2">
             <Coins className="w-5 h-5 text-purple-200" strokeWidth={2} />
             <div className="text-left">
-              <p className="text-[10px] text-purple-200 leading-none mb-0.5">내 보유 포인트</p>
+              <p className="text-xs text-purple-200 leading-none mb-0.5">내 보유 포인트</p>
               <p className="text-sm font-black text-white">
                 {loading ? "···" : `${myPoints.toLocaleString()} P`}
               </p>
             </div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/25 text-white ml-1">
+            <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-white/25 text-white ml-1">
               리워드 교환 가능
             </span>
           </div>
           <div className="text-right">
-            <p className="text-[10px] text-purple-200 leading-none mb-0.5">교환 기준</p>
+            <p className="text-xs text-purple-200 leading-none mb-0.5">교환 기준</p>
             <p className="text-xs font-bold text-white">1,000P ~</p>
           </div>
         </div>
@@ -459,7 +459,7 @@ export default function RewardPage() {
         </button>
         {pointAccordion && (
           <div className="px-4 pb-4 space-y-2">
-            <p className="text-[10px] font-bold text-gray-400 mt-1">🏃 플로깅</p>
+            <p className="text-xs font-bold text-gray-400 mt-1">🏃 플로깅</p>
             {[
               { label: "거리 1km 달성",       point: "+50P" },
               { label: "2km 이상 완주 보너스",  point: "+100P" },
@@ -471,7 +471,7 @@ export default function RewardPage() {
               </div>
             ))}
 
-            <p className="text-[10px] font-bold text-gray-400 mt-2">👋 가입 & 추천</p>
+            <p className="text-xs font-bold text-gray-400 mt-2">👋 가입 & 추천</p>
             {[
               { label: "신규 가입 환영 포인트",         point: "+100P" },
               { label: "추천인 코드 입력 (신규 회원)",    point: "+50P" },
@@ -483,7 +483,7 @@ export default function RewardPage() {
               </div>
             ))}
 
-            <p className="text-[10px] font-bold text-gray-400 mt-2">🛒 친환경 쇼핑</p>
+            <p className="text-xs font-bold text-gray-400 mt-2">🛒 친환경 쇼핑</p>
             {[
               { label: "제휴 상품 구매 시 보너스",  point: "+20~100P" },
             ].map((item) => (
@@ -493,7 +493,7 @@ export default function RewardPage() {
               </div>
             ))}
 
-            <p className="text-[10px] font-bold text-gray-400 mt-2">🔗 연동 보너스</p>
+            <p className="text-xs font-bold text-gray-400 mt-2">🔗 연동 보너스</p>
             {[
               { label: "에코마일리지 / 탄소중립포인트 연동", point: "+20% 추가" },
             ].map((item) => (
@@ -556,7 +556,7 @@ export default function RewardPage() {
             <p className="text-sm text-gray-500 mb-4">{couponModal.title}</p>
 
             <div className="bg-gray-50 rounded-2xl p-4 mb-4 border-2 border-dashed border-gray-300">
-              <p className="text-[10px] text-gray-400 mb-1">쿠폰 코드</p>
+              <p className="text-xs text-gray-400 mb-1">쿠폰 코드</p>
               <p className="text-2xl font-black text-gray-800 tracking-widest">{couponModal.code}</p>
             </div>
 

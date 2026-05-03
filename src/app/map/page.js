@@ -800,7 +800,7 @@ function TumblerCertModal({ onConfirm, onClose, isPlogging }) {
                 <span className="text-xs font-bold text-amber-700">
                   ☕ 텀블러 사용 인증 시 <span className="text-amber-500">+30 포인트</span> 적립!
                 </span>
-                <p className="text-[10px] text-amber-500 mt-1">탄소중립포인트 녹색생활 실천 연계 항목</p>
+                <p className="text-xs text-amber-500 mt-1">탄소중립포인트 녹색생활 실천 연계 항목</p>
               </div>
 
               {/* 버튼 */}
@@ -840,8 +840,8 @@ function TumblerCertModal({ onConfirm, onClose, isPlogging }) {
                     <button onClick={() => tumblerRef.current?.click()}
                       className="w-full h-32 border-2 border-dashed border-amber-300 rounded-xl flex flex-col items-center justify-center gap-1 active:bg-amber-50 bg-amber-50/30">
                       <span className="text-2xl">🥤</span>
-                      <span className="text-[11px] text-amber-600 font-bold">텀블러 촬영</span>
-                      <span className="text-[10px] text-gray-400">음료가 담긴 모습</span>
+                      <span className="text-xs text-amber-600 font-bold">텀블러 촬영</span>
+                      <span className="text-xs text-gray-400">음료가 담긴 모습</span>
                     </button>
                   )}
                   <input ref={tumblerRef} type="file" accept="image/*" capture="environment"
@@ -861,8 +861,8 @@ function TumblerCertModal({ onConfirm, onClose, isPlogging }) {
                     <button onClick={() => receiptRef.current?.click()}
                       className="w-full h-32 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 active:bg-gray-50 bg-gray-50/30">
                       <span className="text-2xl">📱</span>
-                      <span className="text-[11px] text-gray-500 font-bold">주문내역 인증</span>
-                      <span className="text-[10px] text-gray-400">캡처 또는 화면촬영</span>
+                      <span className="text-xs text-gray-500 font-bold">주문내역 인증</span>
+                      <span className="text-xs text-gray-400">캡처 또는 화면촬영</span>
                     </button>
                   )}
                   <input ref={receiptRef} type="file" accept="image/*"
@@ -1965,7 +1965,7 @@ function MapPageInner() {
               {/* 브랜드 선택 */}
               {greenBrandPanel && greenBrandPanel.keywords && greenBrandPanel.keywords.length > 0 && (
                 <div className="pt-1.5 border-t border-gray-100 flex flex-col gap-1">
-                  <span className="text-[10px] text-gray-400 font-medium px-1">브랜드 선택</span>
+                  <span className="text-xs text-gray-400 font-medium px-1">브랜드 선택</span>
                   {greenBrandPanel.keywords.map((keyword) => {
                     const isSel = selectedBrand === keyword;
                     return (
@@ -1982,14 +1982,14 @@ function MapPageInner() {
                         {keyword}
                         {isSel && greenSearching && <span className="animate-spin ml-1">⏳</span>}
                         {isSel && !greenSearching && greenStoreMarkers.length > 0 && (
-                          <span className="text-[10px] ml-1 opacity-80">{greenStoreMarkers.length}</span>
+                          <span className="text-xs ml-1 opacity-80">{greenStoreMarkers.length}</span>
                         )}
                       </button>
                     );
                   })}
                   <button
                     onClick={() => { setGreenBrandPanel(null); setSelectedBrand(null); setActiveGreenCats([]); setGreenStoreMarkers([]); }}
-                    className="px-3 py-1 rounded-xl text-[10px] text-gray-400 bg-gray-50 border border-gray-200 mt-0.5"
+                    className="px-3 py-1 rounded-xl text-xs text-gray-400 bg-gray-50 border border-gray-200 mt-0.5"
                   >
                     초기화
                   </button>
@@ -2006,9 +2006,9 @@ function MapPageInner() {
               style={{ top: isTracking ? 108 : 60, left: 0 }}
             >
               <Leaf className="w-5 h-5 text-green-600" strokeWidth={2} />
-              <span className="text-[10px] font-bold text-green-700 leading-tight">녹색<br/>매장</span>
+              <span className="text-xs font-bold text-green-700 leading-tight">녹색<br/>매장</span>
               {activeGreenCats.length > 0 && (
-                <span className="w-5 h-5 rounded-full bg-green-500 text-white text-[10px] font-bold flex items-center justify-center">{activeGreenCats.length}</span>
+                <span className="w-5 h-5 rounded-full bg-green-500 text-white text-xs font-bold flex items-center justify-center">{activeGreenCats.length}</span>
               )}
               <span className="text-gray-400 text-xs mt-0.5">›</span>
             </button>
@@ -2107,7 +2107,7 @@ function MapPageInner() {
                 <Coffee className="w-5 h-5 text-amber-500" strokeWidth={2} />
                 <span className="text-[8px] font-bold text-amber-700 leading-none mt-0.5">텀블러</span>
                 {sessionTumblerCerts.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {sessionTumblerCerts.length}
                   </span>
                 )}

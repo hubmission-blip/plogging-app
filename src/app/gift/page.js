@@ -280,11 +280,11 @@ export default function GiftPage() {
             <div className="flex items-center gap-2">
               <Coins className="w-5 h-5 text-pink-200" strokeWidth={2} />
               <div>
-                <p className="text-[10px] text-pink-200 leading-none mb-0.5">내 보유 포인트</p>
+                <p className="text-xs text-pink-200 leading-none mb-0.5">내 보유 포인트</p>
                 <p className="text-lg font-black">{myPoints.toLocaleString()} P</p>
               </div>
             </div>
-            <div className="text-right text-[10px] text-pink-200">
+            <div className="text-right text-xs text-pink-200">
               <p>1회 선물: {MIN_GIFT}~{MAX_GIFT}P</p>
             </div>
           </div>
@@ -307,7 +307,7 @@ export default function GiftPage() {
               )}
               <div>
                 <p className="font-bold text-gray-800 text-sm">{recipient.displayName || recipient.realName || "사용자"}</p>
-                <p className="text-[10px] text-gray-400">
+                <p className="text-xs text-gray-400">
                   {recipient.realName ? `${recipient.realName} · ` : ""}{recipient.email ? recipient.email.replace(/(.{3}).*(@.*)/, "$1***$2") : ""}
                 </p>
               </div>
@@ -359,7 +359,7 @@ export default function GiftPage() {
                     )}
                     <div className="text-left flex-1 min-w-0">
                       <p className="text-sm font-bold text-gray-700">{u.displayName || "사용자"}</p>
-                      <p className="text-[10px] text-gray-400 truncate">
+                      <p className="text-xs text-gray-400 truncate">
                         {u.realName ? `${u.realName} · ` : ""}{u.email ? u.email.replace(/(.{3}).*(@.*)/, "$1***$2") : ""}
                       </p>
                     </div>
@@ -487,8 +487,8 @@ export default function GiftPage() {
                           ? `→ ${h.toName || "사용자"}`
                           : `← ${h.fromName || "사용자"}`}
                       </p>
-                      {h.message && <p className="text-[10px] text-gray-400 truncate max-w-[160px]">{h.message}</p>}
-                      <p className="text-[10px] text-gray-300">
+                      {h.message && <p className="text-xs text-gray-400 truncate max-w-[160px]">{h.message}</p>}
+                      <p className="text-xs text-gray-300">
                         {h.createdAt?.toDate?.()?.toLocaleDateString("ko-KR") || ""}
                       </p>
                     </div>
