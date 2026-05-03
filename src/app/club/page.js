@@ -664,17 +664,17 @@ export default function ClubPage() {
             {/* ── 코드 입력 (토글) ── */}
             {showCodeInput && (
               <div className="bg-white rounded-2xl p-4 shadow-sm">
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full min-w-0">
                   <input value={clubJoinCode} onChange={(e) => setClubJoinCode(e.target.value.toUpperCase())}
-                    placeholder="6자리 초대 코드" maxLength={6}
-                    className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-center text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-cyan-400" />
+                    placeholder="초대 코드" maxLength={6}
+                    className="min-w-0 flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-center text-base font-mono font-bold tracking-wider focus:outline-none focus:border-cyan-400" />
                   <button onClick={() => setShowScanner(true)}
-                    className="bg-gray-100 text-gray-600 px-3 rounded-xl active:scale-95 transition-transform"
+                    className="shrink-0 bg-gray-100 text-gray-600 w-10 flex items-center justify-center rounded-xl active:scale-95 transition-transform"
                     title="QR 스캔">
-                    <Camera size={20} strokeWidth={2} />
+                    <Camera size={18} strokeWidth={2} />
                   </button>
                   <button onClick={handleJoinByCode} disabled={loading || clubJoinCode.length < 6}
-                    className="bg-cyan-500 text-white px-5 rounded-xl font-bold whitespace-nowrap disabled:opacity-40 active:scale-95 transition-transform">
+                    className="shrink-0 bg-cyan-500 text-white px-4 rounded-xl font-bold whitespace-nowrap disabled:opacity-40 active:scale-95 transition-transform">
                     참여
                   </button>
                 </div>
