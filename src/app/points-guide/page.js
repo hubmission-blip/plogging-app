@@ -69,7 +69,7 @@ export default function PointsGuidePage() {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
+      <div className="max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
         {/* 상단 안내 */}
         <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
           <p className="text-2xl mb-1">🪙</p>

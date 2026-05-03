@@ -653,32 +653,6 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* ── 이용방법 & 포인트 기준 바로가기 ── */}
-          <div className="grid grid-cols-2 gap-2">
-            <Link href="/guide"
-              className="rounded-2xl p-4 shadow-sm flex items-center gap-3 active:scale-95 transition-transform"
-              style={{ backgroundColor: "#8dc63f15", border: "1px solid #8dc63f30" }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "#8dc63f25" }}>
-                <BookOpen className="w-5 h-5" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
-              </div>
-              <div>
-                <p className="font-bold text-sm text-gray-700">이용 방법</p>
-                <p className="text-xs text-gray-400">6단계 가이드</p>
-              </div>
-            </Link>
-            <Link href="/points-guide"
-              className="rounded-2xl p-4 shadow-sm flex items-center gap-3 active:scale-95 transition-transform"
-              style={{ backgroundColor: "#8dc63f15", border: "1px solid #8dc63f30" }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "#8dc63f25" }}>
-                <Coins className="w-5 h-5" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
-              </div>
-              <div>
-                <p className="font-bold text-sm text-gray-700">포인트 기준</p>
-                <p className="text-xs text-gray-400">적립 기준 안내</p>
-              </div>
-            </Link>
-          </div>
-
           {/* ── 앱평가/친구초대 + 봉사활동증명/1365자원봉사 (2×2) ── */}
           <div className="grid grid-cols-2 gap-2">
             {isCapacitorNative() ? (
@@ -749,6 +723,32 @@ export default function HomePage() {
               <div className="text-right flex-1">
                 <p className="font-black text-sm leading-tight">1365 자원봉사</p>
                 <p className="text-xs text-orange-100 mt-0.5 leading-relaxed">봉사활동 증명</p>
+              </div>
+            </Link>
+          </div>
+
+          {/* ── 이용방법 & 포인트 기준 바로가기 ── */}
+          <div className="grid grid-cols-2 gap-2">
+            <Link href="/guide"
+              className="rounded-2xl p-4 shadow-sm flex items-center gap-3 active:scale-95 transition-transform"
+              style={{ backgroundColor: "#8dc63f15", border: "1px solid #8dc63f30" }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "#8dc63f25" }}>
+                <BookOpen className="w-5 h-5" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
+              </div>
+              <div>
+                <p className="font-bold text-sm text-gray-700">이용 방법</p>
+                <p className="text-xs text-gray-400">6단계 가이드</p>
+              </div>
+            </Link>
+            <Link href="/points-guide"
+              className="rounded-2xl p-4 shadow-sm flex items-center gap-3 active:scale-95 transition-transform"
+              style={{ backgroundColor: "#8dc63f15", border: "1px solid #8dc63f30" }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "#8dc63f25" }}>
+                <Coins className="w-5 h-5" strokeWidth={1.8} style={{ color: "#8dc63f" }} />
+              </div>
+              <div>
+                <p className="font-bold text-sm text-gray-700">포인트 기준</p>
+                <p className="text-xs text-gray-400">적립 기준 안내</p>
               </div>
             </Link>
           </div>

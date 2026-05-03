@@ -48,7 +48,7 @@ export default function GuidePage() {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
+      <div className="max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
         {/* 상단 안내 */}
         <div className="text-center mb-2">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50">
