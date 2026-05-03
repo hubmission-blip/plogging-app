@@ -2003,7 +2003,7 @@ function MapPageInner() {
             <button
               onClick={() => setGreenDrawerOpen(true)}
               className="absolute z-[15] bg-white/95 backdrop-blur-sm rounded-r-2xl shadow-lg border-r border-t border-b border-gray-200 px-2 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform"
-              style={{ top: 16, left: 0, height: isTracking ? 60 : 40 }}
+              style={{ top: 16, left: 0, height: 60 }}
             >
               <Leaf className="w-4 h-4 text-green-600" strokeWidth={2} />
               <span className="text-xs font-bold text-green-700 leading-none">녹색</span>
