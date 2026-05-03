@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Map, CustomOverlayMap } from "react-kakao-maps-sdk";
 import { useKakaoLoader } from "react-kakao-maps-sdk";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
@@ -44,24 +45,56 @@ const PERIOD_TABS = [
   { id: "all",     label: "전체" },
 ];
 
-const PERIOD_LABEL = {
-  weekly:  "이번 주",
-  monthly: "이번 달",
-  all:     "전체 기간",
-};
-
-function getPeriodStart(period) {
+// ─── 기간 계산 유틸 ──────────────────────────────────────────
+function getWeekRange(offset = 0) {
   const now = new Date();
+  const day = now.getDay();
+  const start = new Date(now);
+  start.setDate(now.getDate() - day + offset * 7);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 7);
+  return { start, end };
+}
+
+function getMonthRange(offset = 0) {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + offset + 1, 1);
+  return { start, end };
+}
+
+function getPeriodRange(period, offset = 0) {
+  if (period === "weekly") return getWeekRange(offset);
+  if (period === "monthly") return getMonthRange(offset);
+  return { start: null, end: null };
+}
+
+function formatPeriodLabel(period, offset) {
+  if (period === "all") return "전체 기간";
+  const { start, end } = getPeriodRange(period, offset);
   if (period === "weekly") {
-    const start = new Date(now);
-    start.setDate(now.getDate() - now.getDay());
-    start.setHours(0, 0, 0, 0);
-    return start;
+    const endDay = new Date(end); endDay.setDate(endDay.getDate() - 1);
+    const s = `${start.getMonth() + 1}/${start.getDate()}`;
+    const e = `${endDay.getMonth() + 1}/${endDay.getDate()}`;
+    if (offset === 0) return `이번 주 (${s}~${e})`;
+    if (offset === -1) return `지난 주 (${s}~${e})`;
+    return `${s} ~ ${e}`;
   }
   if (period === "monthly") {
-    return new Date(now.getFullYear(), now.getMonth(), 1);
+    const y = start.getFullYear();
+    const m = start.getMonth() + 1;
+    if (offset === 0) return `이번 달 (${y}.${m})`;
+    if (offset === -1) return `지난 달 (${y}.${m})`;
+    return `${y}년 ${m}월`;
   }
-  return null; // 전체
+  return "";
+}
+
+function isFutureOffset(period, offset) {
+  if (period === "all") return true;
+  const { start } = getPeriodRange(period, offset + 1);
+  return start > new Date();
 }
 
 export default function RankingMap() {
@@ -70,22 +103,34 @@ export default function RankingMap() {
   });
 
   const [period, setPeriod]                 = useState("monthly");
+  const [offset, setOffset]                 = useState(0);
   const [regionStats, setRegionStats]       = useState({});
   const [loading, setLoading]               = useState(true);
   const [selectedRegion, setSelectedRegion] = useState(null);
 
+  // 기간 변경 시 offset 초기화
+  useEffect(() => { setOffset(0); }, [period]);
+
   // ── 지역별 플로깅 집계 ───────────────────────────────────
-  const fetchRegionStats = useCallback(async (selectedPeriod) => {
+  const fetchRegionStats = useCallback(async () => {
     setLoading(true);
     setSelectedRegion(null);
     try {
-      const sinceDate = getPeriodStart(selectedPeriod);
-      const snap = await getDocs(
-        sinceDate
-          ? query(collection(db, "routes"), where("createdAt", ">=", sinceDate))
-          : query(collection(db, "routes"))
-      );
+      const { start: sinceDate, end: untilDate } = getPeriodRange(period, offset);
+      let routesQ;
+      if (sinceDate && untilDate) {
+        routesQ = query(
+          collection(db, "routes"),
+          where("createdAt", ">=", sinceDate),
+          where("createdAt", "<", untilDate)
+        );
+      } else if (sinceDate) {
+        routesQ = query(collection(db, "routes"), where("createdAt", ">=", sinceDate));
+      } else {
+        routesQ = query(collection(db, "routes"));
+      }
 
+      const snap = await getDocs(routesQ);
       const stats = {};
       REGIONS.forEach((r) => { stats[r.code] = { distance: 0, count: 0 }; });
 
@@ -109,19 +154,16 @@ export default function RankingMap() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [period, offset]);
 
-  useEffect(() => { fetchRegionStats(period); }, [fetchRegionStats, period]);
+  useEffect(() => { fetchRegionStats(); }, [fetchRegionStats]);
 
-  const handlePeriodChange = (newPeriod) => {
-    setPeriod(newPeriod);
-  };
+  const periodLabel = formatPeriodLabel(period, offset);
 
   const ranked = REGIONS
     .map((r) => ({ ...r, distance: regionStats[r.code]?.distance || 0, count: regionStats[r.code]?.count || 0 }))
     .sort((a, b) => b.distance - a.distance);
 
-  // 순위 빠른 조회용 맵
   const rankMap = {};
   ranked.forEach((r, i) => { rankMap[r.code] = i + 1; });
 
@@ -133,7 +175,7 @@ export default function RankingMap() {
         {PERIOD_TABS.map((t) => (
           <button
             key={t.id}
-            onClick={() => handlePeriodChange(t.id)}
+            onClick={() => setPeriod(t.id)}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors
               ${period === t.id ? "bg-white text-green-600 shadow-sm font-bold" : "text-gray-500"}`}
           >
@@ -141,6 +183,26 @@ export default function RankingMap() {
           </button>
         ))}
       </div>
+
+      {/* ── 기간 네비게이션 (주간/월간) ──────────────────── */}
+      {period !== "all" && (
+        <div className="flex items-center justify-between bg-white rounded-xl px-3 py-2 shadow-sm">
+          <button
+            onClick={() => setOffset(offset - 1)}
+            className="p-1.5 rounded-lg bg-gray-50 active:bg-gray-100 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4 text-gray-500" strokeWidth={2} />
+          </button>
+          <span className="text-sm font-bold text-gray-700">{periodLabel}</span>
+          <button
+            onClick={() => setOffset(offset + 1)}
+            disabled={isFutureOffset(period, offset)}
+            className="p-1.5 rounded-lg bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-30"
+          >
+            <ChevronRight className="w-4 h-4 text-gray-500" strokeWidth={2} />
+          </button>
+        </div>
+      )}
 
       {/* ── 지도 ─────────────────────────────────────────── */}
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ height: "380px" }}>
@@ -191,15 +253,12 @@ export default function RankingMap() {
                       gap: "1px",
                     }}
                   >
-                    {/* 등급 + 이모지 */}
                     <div style={{ fontSize: "12px", fontWeight: 900, lineHeight: 1 }}>
                       {hasData ? color.emoji : "·"} {color.grade}
                     </div>
-                    {/* 지역명 */}
                     <div style={{ fontSize: "11px", fontWeight: 700, lineHeight: 1.2 }}>
                       {region.name}
                     </div>
-                    {/* 거리 (데이터 있을 때만) */}
                     {hasData && (
                       <div style={{ fontSize: "9px", opacity: 0.85, fontWeight: 600, lineHeight: 1 }}>
                         {stat.distance >= 1
@@ -207,7 +266,6 @@ export default function RankingMap() {
                           : `${(stat.distance * 1000).toFixed(0)}m`}
                       </div>
                     )}
-                    {/* 순위 뱃지 (데이터 있고 상위 3위) */}
                     {hasData && rank <= 3 && (
                       <div style={{
                         fontSize: "8px",
@@ -242,7 +300,7 @@ export default function RankingMap() {
                   {rankMap[selectedRegion.code]}위 · {selectedRegion.color.grade}등급
                 </span>
               </h3>
-              <p className="text-sm opacity-75 mt-0.5">{PERIOD_LABEL[period]} 플로깅 현황</p>
+              <p className="text-sm opacity-75 mt-0.5">{periodLabel} 플로깅 현황</p>
             </div>
             <button
               onClick={() => setSelectedRegion(null)}
@@ -279,7 +337,7 @@ export default function RankingMap() {
       {/* ── 등급 범례 ─────────────────────────────────────── */}
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <h3 className="font-bold text-gray-600 mb-2 text-xs uppercase tracking-wide">
-          등급 기준 · {PERIOD_LABEL[period]} 누적 거리
+          등급 기준 · {periodLabel} 누적 거리
         </h3>
         <div className="flex gap-1.5 flex-wrap">
           {[
@@ -305,7 +363,7 @@ export default function RankingMap() {
       {/* ── 지역 순위 리스트 ──────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b flex items-center justify-between">
-          <h3 className="font-bold text-gray-700">지역별 순위 ({PERIOD_LABEL[period]})</h3>
+          <h3 className="font-bold text-gray-700">지역별 순위 ({periodLabel})</h3>
           {loading && <span className="text-xs text-gray-400 animate-pulse">집계 중...</span>}
         </div>
         {loading ? (
@@ -323,7 +381,6 @@ export default function RankingMap() {
                   setSelectedRegion(selectedRegion?.code === r.code ? null : { ...r, color })
                 }
               >
-                {/* 순위 */}
                 <span className={`text-sm font-black w-6 text-center ${
                   idx === 0 ? "text-yellow-500" :
                   idx === 1 ? "text-gray-400" :
@@ -331,7 +388,6 @@ export default function RankingMap() {
                 }`}>
                   {idx + 1}
                 </span>
-                {/* 등급 원 */}
                 <div
                   style={{ background: color.bg, color: color.text }}
                   className="w-9 h-9 rounded-full flex flex-col items-center justify-center flex-shrink-0"
@@ -339,12 +395,10 @@ export default function RankingMap() {
                   <span className="text-[10px] leading-none">{color.emoji}</span>
                   <span className="text-[10px] font-black leading-none">{color.grade}</span>
                 </div>
-                {/* 지역명 + 횟수 */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-700">{r.name}</p>
                   <p className="text-xs text-gray-400">{r.count}회 플로깅</p>
                 </div>
-                {/* 거리 */}
                 <span className="text-sm font-bold text-green-600 flex-shrink-0">
                   {r.distance.toFixed(1)}km
                 </span>

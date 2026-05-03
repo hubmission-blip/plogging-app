@@ -503,27 +503,6 @@ function RankingPageInner() {
         {/* ─────── 유저 랭킹 뷰 ─────── */}
         {view === "list" && (
           <div className="space-y-3">
-            {/* 내 순위 카드 */}
-            {myRank && (
-              <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center overflow-hidden">
-                  {myRank.photoURL
-                    ? <img src={myRank.photoURL} alt="" className="w-full h-full object-cover" />
-                    : <User size={20} className="text-green-400" strokeWidth={1.8} />
-                  }
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-gray-400">내 순위</p>
-                  <p className="font-bold text-gray-800 flex items-center gap-1">
-                    {medalColor(myRank.rank)
-                      ? <><Medal size={16} className={medalColor(myRank.rank)} strokeWidth={2} /><span>{medalLabel(myRank.rank)}</span></>
-                      : `#${myRank.rank}`} {myRank.displayName}
-                  </p>
-                </div>
-                <span className="font-bold text-green-600 text-sm">{fmt(myRank)}</span>
-              </div>
-            )}
-
             {/* 기간 탭 */}
             <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
               {PERIOD_TABS.map((p) => (
@@ -570,6 +549,27 @@ function RankingPageInner() {
                 );
               })}
             </div>
+
+            {/* 내 순위 카드 */}
+            {myRank && (
+              <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center overflow-hidden">
+                  {myRank.photoURL
+                    ? <img src={myRank.photoURL} alt="" className="w-full h-full object-cover" />
+                    : <User size={20} className="text-green-400" strokeWidth={1.8} />
+                  }
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-400">내 순위</p>
+                  <p className="font-bold text-gray-800 flex items-center gap-1">
+                    {medalColor(myRank.rank)
+                      ? <><Medal size={16} className={medalColor(myRank.rank)} strokeWidth={2} /><span>{medalLabel(myRank.rank)}</span></>
+                      : `#${myRank.rank}`} {myRank.displayName}
+                  </p>
+                </div>
+                <span className="font-bold text-green-600 text-sm">{fmt(myRank)}</span>
+              </div>
+            )}
 
             {/* TOP 3 시상대 */}
             {!loading && rankList.length >= 3 && (
