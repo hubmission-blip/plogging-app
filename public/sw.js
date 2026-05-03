@@ -1,4 +1,4 @@
-const CACHE_VERSION = "1777816311963";
+const CACHE_VERSION = "1777818157321";
 const CACHE_NAME = `plogging-${CACHE_VERSION}`;
 
 const urlsToCache = ["/", "/manifest.json"];

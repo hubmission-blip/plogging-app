@@ -1761,25 +1761,25 @@ function MapPageInner() {
 
       {/* ── 상단 정보바 ─────────────────────────────────── */}
       <div className="absolute top-4 right-3 z-10" style={{ left: greenCategories.length > 0 ? 56 : 12 }}>
-        <div className="bg-white rounded-2xl px-3 py-2 shadow-lg flex items-center gap-2 flex-wrap justify-center">
-          <span className="text-sm font-bold text-green-700 flex items-center gap-1"><MapPinIcon className="w-3.5 h-3.5 inline" strokeWidth={2} /> {distance.toFixed(2)} km</span>
+        <div className="rounded-2xl px-3 py-2 shadow-lg flex items-center gap-2 flex-wrap justify-center" style={{ backgroundColor: "rgba(34,120,50,0.85)", backdropFilter: "blur(8px)" }}>
+          <span className="text-sm font-bold text-white flex items-center gap-1"><MapPinIcon className="w-3.5 h-3.5 inline" strokeWidth={2} /> {distance.toFixed(2)} km</span>
           {isTracking && (
             <>
-              <span className="text-gray-300">|</span>
-              <span className={`text-sm font-bold flex items-center gap-1 ${duration >= MIN_DURATION_SEC ? "text-green-500" : "text-gray-600"}`}>
+              <span className="text-green-300/50">|</span>
+              <span className={`text-sm font-bold flex items-center gap-1 ${duration >= MIN_DURATION_SEC ? "text-yellow-300" : "text-green-100"}`}>
                 <Timer className="w-3.5 h-3.5 inline" strokeWidth={2} /> {formatDuration(duration)}
               </span>
-              <span className="text-gray-300">|</span>
-              <span className={`text-sm font-bold flex items-center gap-1 ${isSpeedWarning ? "text-red-500" : "text-blue-500"}`}>
+              <span className="text-green-300/50">|</span>
+              <span className={`text-sm font-bold flex items-center gap-1 ${isSpeedWarning ? "text-red-300" : "text-cyan-200"}`}>
                 <Gauge className="w-3.5 h-3.5 inline" strokeWidth={2} /> {currentSpeed} km/h
               </span>
               {/* GPS 상태 표시 */}
               {!gpsReady ? (
-                <span className="text-xs text-orange-500 animate-pulse basis-full text-center flex items-center justify-center gap-1">
+                <span className="text-xs text-yellow-200 animate-pulse basis-full text-center flex items-center justify-center gap-1">
                   <Radio className="w-3 h-3 inline" strokeWidth={2} /> GPS 신호 확인 중… {gpsAccuracy ? `(오차 ${gpsAccuracy}m)` : ""}
                 </span>
               ) : (
-                <span className="text-xs text-red-500 animate-pulse basis-full text-center">
+                <span className="text-xs text-green-200 animate-pulse basis-full text-center">
                   ● 기록 중 {gpsAccuracy ? `· GPS ${gpsAccuracy}m` : ""}
                 </span>
               )}
@@ -1791,14 +1791,14 @@ function MapPageInner() {
       {/* ── 인증 조건 진행 상황 ─────────────────────────── */}
       {isTracking && (
         <div className="absolute top-20 right-3 z-10" style={{ left: greenCategories.length > 0 ? 56 : 12 }}>
-          <div className="bg-white/90 rounded-2xl px-3 py-2 shadow flex items-center justify-around text-xs">
+          <div className="rounded-2xl px-3 py-2 shadow flex items-center justify-around text-xs" style={{ backgroundColor: "rgba(34,120,50,0.8)", backdropFilter: "blur(8px)" }}>
             {[
               { label: "500m 이상", ok: distance >= MIN_DISTANCE_KM, val: `${(distance*1000).toFixed(0)}m` },
               { label: "10분 이상", ok: duration >= MIN_DURATION_SEC, val: formatDuration(duration) },
               { label: "3회 이상 줍기", ok: stopCount >= MIN_STOPS, val: `${stopCount}회` },
             ].map((item, i) => (
-              <div key={i} className={`flex flex-col items-center ${item.ok ? "text-green-600" : "text-gray-400"}`}>
-                <span>{item.ok ? <CheckCircle className="w-4 h-4 text-green-600" strokeWidth={2} /> : <Square className="w-4 h-4 text-gray-300" strokeWidth={1.5} />}</span>
+              <div key={i} className={`flex flex-col items-center ${item.ok ? "text-yellow-300" : "text-green-200/60"}`}>
+                <span>{item.ok ? <CheckCircle className="w-4 h-4 text-yellow-300" strokeWidth={2} /> : <Square className="w-4 h-4 text-green-200/40" strokeWidth={1.5} />}</span>
                 <span>{item.label}</span>
                 <span className="font-bold">{item.val}</span>
               </div>
@@ -1932,11 +1932,11 @@ function MapPageInner() {
               transform: greenDrawerOpen ? "translateX(0)" : "translateX(-100%)",
             }}
           >
-            <div className="bg-white/95 backdrop-blur-sm rounded-r-2xl shadow-lg border-r border-t border-b border-gray-200 px-3 py-3 flex flex-col gap-2" style={{ width: 150, maxHeight: "60vh", overflowY: "auto" }}>
+            <div className="rounded-r-2xl shadow-lg px-3 py-3 flex flex-col gap-2" style={{ width: 150, maxHeight: "60vh", overflowY: "auto", backgroundColor: "rgba(34,120,50,0.9)", backdropFilter: "blur(8px)" }}>
               {/* 드로어 헤더 */}
-              <div className="flex items-center justify-between pb-1.5 border-b border-gray-100">
-                <span className="text-xs font-bold text-green-700 flex items-center gap-1">🌿 녹색매장</span>
-                <button onClick={() => setGreenDrawerOpen(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">‹</button>
+              <div className="flex items-center justify-between pb-1.5 border-b border-white/20">
+                <span className="text-xs font-bold text-white flex items-center gap-1">🌿 녹색매장</span>
+                <button onClick={() => setGreenDrawerOpen(false)} className="text-white/60 hover:text-white text-lg leading-none">‹</button>
               </div>
 
               {/* 카테고리 칩 */}
@@ -1950,7 +1950,7 @@ function MapPageInner() {
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap
                         ${isActive
                           ? "text-white shadow-md"
-                          : "bg-gray-50 text-gray-600 border border-gray-200"
+                          : "bg-white/20 text-white/90 border border-white/20"
                         }`}
                       style={isActive ? { backgroundColor: cat.color } : {}}
                     >
@@ -1964,8 +1964,8 @@ function MapPageInner() {
 
               {/* 브랜드 선택 */}
               {greenBrandPanel && greenBrandPanel.keywords && greenBrandPanel.keywords.length > 0 && (
-                <div className="pt-1.5 border-t border-gray-100 flex flex-col gap-1">
-                  <span className="text-xs text-gray-400 font-medium px-1">브랜드 선택</span>
+                <div className="pt-1.5 border-t border-white/20 flex flex-col gap-1">
+                  <span className="text-xs text-white/60 font-medium px-1">브랜드 선택</span>
                   {greenBrandPanel.keywords.map((keyword) => {
                     const isSel = selectedBrand === keyword;
                     return (
@@ -1975,7 +1975,7 @@ function MapPageInner() {
                         className={`text-left px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap
                           ${isSel
                             ? "text-white shadow-md"
-                            : "bg-gray-50 text-gray-600 border border-gray-200"
+                            : "bg-white/20 text-white/90 border border-white/20"
                           }`}
                         style={isSel ? { backgroundColor: greenBrandPanel.color } : {}}
                       >
@@ -1989,7 +1989,7 @@ function MapPageInner() {
                   })}
                   <button
                     onClick={() => { setGreenBrandPanel(null); setSelectedBrand(null); setActiveGreenCats([]); setGreenStoreMarkers([]); }}
-                    className="px-3 py-1 rounded-xl text-xs text-gray-400 bg-gray-50 border border-gray-200 mt-0.5"
+                    className="px-3 py-1 rounded-xl text-xs text-white/60 bg-white/15 border border-white/20 mt-0.5"
                   >
                     초기화
                   </button>
@@ -2002,12 +2002,12 @@ function MapPageInner() {
           {!greenDrawerOpen && (
             <button
               onClick={() => setGreenDrawerOpen(true)}
-              className="absolute z-[15] bg-white/95 backdrop-blur-sm rounded-r-2xl shadow-lg border-r border-t border-b border-gray-200 px-2 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform"
-              style={{ top: 16, left: 0, height: 116 }}
+              className="absolute z-[15] rounded-r-2xl shadow-lg px-2 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform"
+              style={{ top: 16, left: 0, height: 116, backgroundColor: "rgba(34,120,50,0.85)", backdropFilter: "blur(8px)" }}
             >
-              <Leaf className="w-4 h-4 text-green-600" strokeWidth={2} />
-              <span className="text-xs font-bold text-green-700 leading-tight">녹색<br/>매장</span>
-              <span className="text-gray-400 text-xs">›</span>
+              <Leaf className="w-4 h-4 text-white" strokeWidth={2} />
+              <span className="text-xs font-bold text-white leading-tight">녹색<br/>매장</span>
+              <span className="text-green-200/70 text-xs">›</span>
             </button>
           )}
         </>
