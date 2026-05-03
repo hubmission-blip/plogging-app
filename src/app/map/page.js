@@ -1998,19 +1998,18 @@ function MapPageInner() {
             </div>
           </div>
 
-          {/* 탭 버튼 (닫혀있을 때 왼쪽 가장자리에 표시 — 상단 정보바와 나란히) */}
+          {/* 탭 버튼 (닫혀있을 때 왼쪽 가장자리에 표시 — 상단 정보바와 높이 동일) */}
           {!greenDrawerOpen && (
             <button
               onClick={() => setGreenDrawerOpen(true)}
-              className="absolute z-[15] bg-white/95 backdrop-blur-sm rounded-r-2xl shadow-lg border-r border-t border-b border-gray-200 px-2 py-2.5 flex flex-col items-center gap-0.5 active:scale-95 transition-transform"
-              style={{ top: 16, left: 0 }}
+              className="absolute z-[15] bg-white/95 backdrop-blur-sm rounded-r-2xl shadow-lg border-r border-t border-b border-gray-200 px-2 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform"
+              style={{ top: 16, left: 0, height: isTracking ? 60 : 40 }}
             >
-              <Leaf className="w-4.5 h-4.5 text-green-600" strokeWidth={2} />
-              <span className="text-xs font-bold text-green-700 leading-tight">녹색<br/>매장</span>
+              <Leaf className="w-4 h-4 text-green-600" strokeWidth={2} />
+              <span className="text-xs font-bold text-green-700 leading-none">녹색</span>
               {activeGreenCats.length > 0 && (
-                <span className="w-4.5 h-4.5 rounded-full bg-green-500 text-white text-xs font-bold flex items-center justify-center" style={{ fontSize: 10 }}>{activeGreenCats.length}</span>
+                <span className="w-4 h-4 rounded-full bg-green-500 text-white flex items-center justify-center" style={{ fontSize: 9 }}>{activeGreenCats.length}</span>
               )}
-              <span className="text-gray-400 text-xs">›</span>
             </button>
           )}
         </>

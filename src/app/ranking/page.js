@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { Trophy, Users, Map, Coins, MapPin, Footprints, Medal, User, Loader } from "lucide-react";
+import { Trophy, Users, Map, Coins, MapPin, Footprints, Medal, User, ChevronLeft, ChevronRight, BarChart3, TrendingUp, Activity, Calendar } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { useSearchParams } from "next/navigation";
 import RankingMap from "@/components/RankingMap";
 
-const TABS      = [
+// ─── 상수 ───────────────────────────────────────────────────
+const TABS = [
   { id: "points",   label: "포인트", Icon: Coins },
   { id: "distance", label: "거리",   Icon: MapPin },
   { id: "count",    label: "횟수",   Icon: Footprints },
@@ -20,52 +21,370 @@ const PERIOD_TABS = [
   { id: "all",     label: "전체" },
 ];
 const VIEW_TABS = [
-  { id: "list", label: "유저 랭킹",  iconId: "users" },
-  { id: "map",  label: "지역 랭킹", iconId: "map" },
+  { id: "list",     label: "유저 랭킹",  Icon: Users },
+  { id: "map",      label: "지역 랭킹",  Icon: Map },
+  { id: "analysis", label: "분석",        Icon: BarChart3 },
 ];
 
-function getPeriodStart(period) {
+// ─── 기간 계산 유틸 ──────────────────────────────────────────
+function getWeekRange(offset = 0) {
   const now = new Date();
-  if (period === "weekly") {
-    const start = new Date(now);
-    start.setDate(now.getDate() - now.getDay());
-    start.setHours(0, 0, 0, 0);
-    return start;
-  }
-  if (period === "monthly") {
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  }
-  return null;
+  const day = now.getDay(); // 0=일요일
+  const start = new Date(now);
+  start.setDate(now.getDate() - day + offset * 7);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 7);
+  return { start, end };
 }
 
+function getMonthRange(offset = 0) {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + offset + 1, 1);
+  return { start, end };
+}
+
+function getPeriodRange(period, offset = 0) {
+  if (period === "weekly") return getWeekRange(offset);
+  if (period === "monthly") return getMonthRange(offset);
+  return { start: null, end: null }; // 전체
+}
+
+function formatPeriodLabel(period, offset) {
+  if (period === "all") return "전체 기간";
+  const { start, end } = getPeriodRange(period, offset);
+  if (period === "weekly") {
+    const endDay = new Date(end); endDay.setDate(endDay.getDate() - 1);
+    const s = `${start.getMonth() + 1}/${start.getDate()}`;
+    const e = `${endDay.getMonth() + 1}/${endDay.getDate()}`;
+    if (offset === 0) return `이번 주 (${s}~${e})`;
+    if (offset === -1) return `지난 주 (${s}~${e})`;
+    return `${s} ~ ${e}`;
+  }
+  if (period === "monthly") {
+    const y = start.getFullYear();
+    const m = start.getMonth() + 1;
+    if (offset === 0) return `이번 달 (${y}.${m})`;
+    if (offset === -1) return `지난 달 (${y}.${m})`;
+    return `${y}년 ${m}월`;
+  }
+  return "";
+}
+
+function isFutureOffset(period, offset) {
+  if (period === "all") return true;
+  const { start } = getPeriodRange(period, offset + 1);
+  return start > new Date();
+}
+
+// ─── 간단 바 차트 컴포넌트 ──────────────────────────────────
+function BarChart({ data, color = "#8dc63f", unit = "", height = 160 }) {
+  if (!data || data.length === 0) return <p className="text-center py-6 text-gray-400 text-sm">데이터가 없습니다</p>;
+  const max = Math.max(...data.map(d => d.value), 1);
+  const barW = Math.max(16, Math.min(40, Math.floor((300 - data.length * 4) / data.length)));
+
+  return (
+    <div className="flex items-end justify-center gap-1 overflow-x-auto" style={{ height, paddingTop: 24 }}>
+      {data.map((d, i) => {
+        const h = Math.max(4, (d.value / max) * (height - 40));
+        return (
+          <div key={i} className="flex flex-col items-center" style={{ minWidth: barW }}>
+            <span className="text-xs font-bold text-gray-600 mb-1" style={{ fontSize: 10 }}>
+              {d.value > 0 ? (Number.isInteger(d.value) ? d.value : d.value.toFixed(1)) : ""}
+            </span>
+            <div
+              className="rounded-t-lg transition-all duration-500"
+              style={{ width: barW - 4, height: h, backgroundColor: color, opacity: 0.85 }}
+            />
+            <span className="text-xs text-gray-400 mt-1 whitespace-nowrap" style={{ fontSize: 10 }}>{d.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── 분석 뷰 컴포넌트 ───────────────────────────────────────
+function AnalysisView({ user }) {
+  const [analysisLoading, setAnalysisLoading] = useState(true);
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [weeklyData, setWeeklyData] = useState([]);
+  const [myMonthly, setMyMonthly] = useState([]);
+  const [summary, setSummary] = useState({ totalUsers: 0, totalRoutes: 0, totalDistance: 0, totalPoints: 0, avgPerUser: 0 });
+
+  useEffect(() => {
+    (async () => {
+      setAnalysisLoading(true);
+      try {
+        // 최근 6개월 데이터 로드
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+        sixMonthsAgo.setDate(1);
+        sixMonthsAgo.setHours(0, 0, 0, 0);
+
+        const snap = await getDocs(
+          query(collection(db, "routes"), where("createdAt", ">=", sixMonthsAgo))
+        );
+
+        const byMonth = {};
+        const byWeek = {};
+        const myByMonth = {};
+        const userSet = new Set();
+        let totalDist = 0, totalPts = 0, totalRoutes = 0;
+
+        snap.forEach((d) => {
+          const data = d.data();
+          const { userId, points = 0, distance = 0, createdAt } = data;
+          if (!userId || !createdAt) return;
+
+          const date = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+          const mKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          const wKey = `${weekStart.getMonth() + 1}/${weekStart.getDate()}`;
+
+          if (!byMonth[mKey]) byMonth[mKey] = { count: 0, distance: 0, points: 0, users: new Set() };
+          byMonth[mKey].count++;
+          byMonth[mKey].distance += distance;
+          byMonth[mKey].points += points;
+          byMonth[mKey].users.add(userId);
+
+          if (!byWeek[wKey]) byWeek[wKey] = { count: 0, distance: 0, date: weekStart };
+          byWeek[wKey].count++;
+          byWeek[wKey].distance += distance;
+
+          if (user && userId === user.uid) {
+            if (!myByMonth[mKey]) myByMonth[mKey] = { count: 0, distance: 0, points: 0 };
+            myByMonth[mKey].count++;
+            myByMonth[mKey].distance += distance;
+            myByMonth[mKey].points += points;
+          }
+
+          userSet.add(userId);
+          totalDist += distance;
+          totalPts += points;
+          totalRoutes++;
+        });
+
+        // 월별 데이터 정렬
+        const months = Object.keys(byMonth).sort();
+        setMonthlyData(months.map(m => ({
+          label: m.split("-")[1] + "월",
+          month: m,
+          count: byMonth[m].count,
+          distance: Math.round(byMonth[m].distance * 10) / 10,
+          points: byMonth[m].points,
+          users: byMonth[m].users.size,
+        })));
+
+        // 주간 데이터 (최근 8주)
+        const weeksSorted = Object.entries(byWeek)
+          .sort((a, b) => a[1].date - b[1].date)
+          .slice(-8);
+        setWeeklyData(weeksSorted.map(([k, v]) => ({
+          label: k,
+          value: v.count,
+        })));
+
+        // 내 월별 데이터
+        if (user) {
+          setMyMonthly(months.map(m => ({
+            label: m.split("-")[1] + "월",
+            count: myByMonth[m]?.count || 0,
+            distance: Math.round((myByMonth[m]?.distance || 0) * 10) / 10,
+            points: myByMonth[m]?.points || 0,
+          })));
+        }
+
+        setSummary({
+          totalUsers: userSet.size,
+          totalRoutes,
+          totalDistance: Math.round(totalDist * 10) / 10,
+          totalPoints: totalPts,
+          avgPerUser: userSet.size > 0 ? Math.round(totalRoutes / userSet.size * 10) / 10 : 0,
+        });
+      } catch (e) {
+        console.error("분석 데이터 로드 실패:", e);
+      } finally {
+        setAnalysisLoading(false);
+      }
+    })();
+  }, [user]);
+
+  if (analysisLoading) {
+    return <p className="text-center py-16 text-gray-400 animate-pulse">📊 데이터 분석 중...</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* 요약 카드 */}
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          { label: "총 참여자", value: `${summary.totalUsers}명`, icon: "👥", color: "#8dc63f" },
+          { label: "총 플로깅", value: `${summary.totalRoutes}회`, icon: "🏃", color: "#3b82f6" },
+          { label: "총 거리", value: `${summary.totalDistance.toLocaleString()}km`, icon: "📍", color: "#f59e0b" },
+          { label: "총 포인트", value: `${summary.totalPoints.toLocaleString()}P`, icon: "🪙", color: "#8b5cf6" },
+        ].map((s) => (
+          <div key={s.label} className="bg-white rounded-2xl p-3.5 shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg">{s.icon}</span>
+              <span className="text-xs text-gray-400 font-medium">{s.label}</span>
+            </div>
+            <p className="text-lg font-black" style={{ color: s.color }}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* 월간 참여 횟수 추이 */}
+      <div className="bg-white rounded-2xl shadow-sm p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <TrendingUp className="w-4 h-4 text-green-500" strokeWidth={2} />
+          <h3 className="font-bold text-sm text-gray-700">월간 플로깅 횟수 추이</h3>
+        </div>
+        <BarChart
+          data={monthlyData.map(d => ({ label: d.label, value: d.count }))}
+          color="#8dc63f"
+        />
+      </div>
+
+      {/* 월간 거리 추이 */}
+      <div className="bg-white rounded-2xl shadow-sm p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Activity className="w-4 h-4 text-blue-500" strokeWidth={2} />
+          <h3 className="font-bold text-sm text-gray-700">월간 총 거리 추이 (km)</h3>
+        </div>
+        <BarChart
+          data={monthlyData.map(d => ({ label: d.label, value: d.distance }))}
+          color="#3b82f6"
+        />
+      </div>
+
+      {/* 주간 참여 추이 (최근 8주) */}
+      <div className="bg-white rounded-2xl shadow-sm p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Calendar className="w-4 h-4 text-amber-500" strokeWidth={2} />
+          <h3 className="font-bold text-sm text-gray-700">주간 플로깅 횟수 (최근 8주)</h3>
+        </div>
+        <BarChart data={weeklyData} color="#f59e0b" />
+      </div>
+
+      {/* 월간 참여자 수 추이 */}
+      <div className="bg-white rounded-2xl shadow-sm p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Users className="w-4 h-4 text-purple-500" strokeWidth={2} />
+          <h3 className="font-bold text-sm text-gray-700">월간 참여자 수</h3>
+        </div>
+        <BarChart
+          data={monthlyData.map(d => ({ label: d.label, value: d.users }))}
+          color="#8b5cf6"
+        />
+      </div>
+
+      {/* 내 월간 플로깅 (로그인 시) */}
+      {user && myMonthly.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Trophy className="w-4 h-4 text-yellow-500" strokeWidth={2} />
+            <h3 className="font-bold text-sm text-gray-700">내 월간 플로깅 횟수</h3>
+          </div>
+          <BarChart
+            data={myMonthly.map(d => ({ label: d.label, value: d.count }))}
+            color="#10b981"
+          />
+        </div>
+      )}
+
+      {user && myMonthly.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Coins className="w-4 h-4 text-yellow-500" strokeWidth={2} />
+            <h3 className="font-bold text-sm text-gray-700">내 월간 포인트 적립</h3>
+          </div>
+          <BarChart
+            data={myMonthly.map(d => ({ label: d.label, value: d.points }))}
+            color="#f59e0b"
+          />
+        </div>
+      )}
+
+      {/* 월별 상세 테이블 */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100">
+          <h3 className="font-bold text-sm text-gray-700">월별 상세</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-gray-50 text-gray-500">
+                <th className="px-3 py-2 text-left font-medium">월</th>
+                <th className="px-3 py-2 text-right font-medium">횟수</th>
+                <th className="px-3 py-2 text-right font-medium">거리</th>
+                <th className="px-3 py-2 text-right font-medium">포인트</th>
+                <th className="px-3 py-2 text-right font-medium">참여자</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...monthlyData].reverse().map((d) => (
+                <tr key={d.month} className="border-b border-gray-50">
+                  <td className="px-3 py-2.5 font-bold text-gray-700">{d.label}</td>
+                  <td className="px-3 py-2.5 text-right text-gray-600">{d.count}회</td>
+                  <td className="px-3 py-2.5 text-right text-gray-600">{d.distance}km</td>
+                  <td className="px-3 py-2.5 text-right text-green-600 font-bold">{d.points.toLocaleString()}P</td>
+                  <td className="px-3 py-2.5 text-right text-gray-600">{d.users}명</td>
+                </tr>
+              ))}
+              {monthlyData.length === 0 && (
+                <tr><td colSpan={5} className="px-3 py-6 text-center text-gray-400">데이터가 없습니다</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── 메인 랭킹 페이지 ───────────────────────────────────────
 function RankingPageInner() {
   const { user }     = useAuth();
   const searchParams = useSearchParams();
 
-  // ── 핵심 수정: useState 초기값 + useEffect 동기화 ──────────────
-  // useState 단독으로는 URL 파라미터를 못 받는 경우가 있음 (SSR/Hydration 타이밍)
   const [view, setView]       = useState("list");
   const [tab, setTab]         = useState("points");
   const [period, setPeriod]   = useState("weekly");
+  const [offset, setOffset]   = useState(0); // 0=이번주/달, -1=지난주/달, ...
   const [rankList, setRankList] = useState([]);
   const [myRank, setMyRank]   = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // searchParams 변화 감지 → view 강제 동기화
+  // searchParams → view 동기화
   useEffect(() => {
     const v = searchParams.get("view");
     if (v === "map") setView("map");
     else if (v === "list") setView("list");
-    // 파라미터 없으면 현재 view 유지 (탭 클릭 시 보존)
+    else if (v === "analysis") setView("analysis");
   }, [searchParams]);
+
+  // 기간 변경 시 offset 초기화
+  useEffect(() => { setOffset(0); }, [period]);
 
   const fetchRanking = useCallback(async () => {
     setLoading(true);
     try {
-      const sinceDate = getPeriodStart(period);
-      const routesQ   = sinceDate
-        ? query(collection(db, "routes"), where("createdAt", ">=", sinceDate))
-        : query(collection(db, "routes"));
+      const { start: sinceDate, end: untilDate } = getPeriodRange(period, offset);
+      let routesQ;
+      if (sinceDate && untilDate) {
+        routesQ = query(
+          collection(db, "routes"),
+          where("createdAt", ">=", sinceDate),
+          where("createdAt", "<", untilDate)
+        );
+      } else if (sinceDate) {
+        routesQ = query(collection(db, "routes"), where("createdAt", ">=", sinceDate));
+      } else {
+        routesQ = query(collection(db, "routes"));
+      }
 
       const snap = await getDocs(routesQ);
       const agg  = {};
@@ -109,7 +428,7 @@ function RankingPageInner() {
     } finally {
       setLoading(false);
     }
-  }, [tab, period, user]);
+  }, [tab, period, offset, user]);
 
   useEffect(() => { fetchRanking(); }, [fetchRanking]);
 
@@ -139,43 +458,44 @@ function RankingPageInner() {
       </div>
 
       {/* ── 행정구역 랭킹지도 바로가기 카드 ── */}
-      <div className="px-4 pt-3 pb-1">
-        <button
-          onClick={() => setView("map")}
-          className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl shadow-sm transition-all active:opacity-90
-            `}
-          style={{ backgroundImage: "linear-gradient(to right, #8dc63f, #4cb748)" }}
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🗺️</span>
-            <div className="text-left">
-              <p className="text-xs text-green-100 leading-none mb-0.5">지역별 현황</p>
-              <p className="font-black text-sm text-white">행정구역별 랭킹지도</p>
-            </div>
-            <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-white/25 text-white ml-1">
-              시·도별 확인
-            </span>
-          </div>
-          <div className="flex items-center gap-1 text-white/80">
-            <span className="text-xs">{view === "map" ? "보는 중" : "바로가기"}</span>
-            <span className="text-base">{view === "map" ? "✅" : "›"}</span>
-          </div>
-        </button>
-      </div>
-
-      {/* ── 뷰 전환 탭 (유저 / 지역) ── */}
-      <div className="flex bg-white border-b sticky top-0 z-10 shadow-sm">
-        {VIEW_TABS.map((v) => (
+      {view !== "map" && (
+        <div className="px-4 pt-3 pb-1">
           <button
-            key={v.id}
-            onClick={() => setView(v.id)}
-            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-1
-              ${view === v.id ? "border-green-500 text-green-600" : "border-transparent text-gray-400"}`}
+            onClick={() => setView("map")}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-2xl shadow-sm transition-all active:opacity-90"
+            style={{ backgroundImage: "linear-gradient(to right, #8dc63f, #4cb748)" }}
           >
-            {v.iconId === "users" ? <Users className="w-4 h-4" strokeWidth={1.8} /> : <Map className="w-4 h-4" strokeWidth={1.8} />}
-            {v.label}
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🗺️</span>
+              <div className="text-left">
+                <p className="text-xs text-green-100 leading-none mb-0.5">지역별 현황</p>
+                <p className="font-black text-sm text-white">행정구역별 랭킹지도</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-white/80">
+              <span className="text-xs">바로가기</span>
+              <span className="text-base">›</span>
+            </div>
           </button>
-        ))}
+        </div>
+      )}
+
+      {/* ── 뷰 전환 탭 (유저 / 지역 / 분석) ── */}
+      <div className="flex bg-white border-b sticky top-0 z-10 shadow-sm">
+        {VIEW_TABS.map((v) => {
+          const TabIcon = v.Icon;
+          return (
+            <button
+              key={v.id}
+              onClick={() => setView(v.id)}
+              className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-1
+                ${view === v.id ? "border-green-500 text-green-600" : "border-transparent text-gray-400"}`}
+            >
+              <TabIcon className="w-4 h-4" strokeWidth={1.8} />
+              {v.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="px-4 mt-4">
@@ -214,6 +534,28 @@ function RankingPageInner() {
                 </button>
               ))}
             </div>
+
+            {/* 기간 네비게이션 (주간/월간) */}
+            {period !== "all" && (
+              <div className="flex items-center justify-between bg-white rounded-xl px-3 py-2 shadow-sm">
+                <button
+                  onClick={() => setOffset(offset - 1)}
+                  className="p-1.5 rounded-lg bg-gray-50 active:bg-gray-100 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4 text-gray-500" strokeWidth={2} />
+                </button>
+                <span className="text-sm font-bold text-gray-700">
+                  {formatPeriodLabel(period, offset)}
+                </span>
+                <button
+                  onClick={() => setOffset(offset + 1)}
+                  disabled={isFutureOffset(period, offset)}
+                  className="p-1.5 rounded-lg bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-30"
+                >
+                  <ChevronRight className="w-4 h-4 text-gray-500" strokeWidth={2} />
+                </button>
+              </div>
+            )}
 
             {/* 항목 탭 */}
             <div className="flex gap-2">
@@ -262,7 +604,12 @@ function RankingPageInner() {
               ) : rankList.length === 0 ? (
                 <div className="text-center py-10">
                   <p className="text-3xl mb-2">🌱</p>
-                  <p className="text-gray-500 text-sm">아직 참여자가 없어요!</p>
+                  <p className="text-gray-500 text-sm">이 기간에는 참여자가 없어요!</p>
+                  {offset !== 0 && (
+                    <button onClick={() => setOffset(0)} className="mt-2 text-green-500 text-sm font-bold">
+                      이번 {period === "weekly" ? "주" : "달"}로 돌아가기
+                    </button>
+                  )}
                 </div>
               ) : (
                 rankList.slice(0, 20).map((item, idx) => {
@@ -301,6 +648,9 @@ function RankingPageInner() {
 
         {/* ─────── 지역 랭킹 뷰 ─────── */}
         {view === "map" && <RankingMap />}
+
+        {/* ─────── 분석 뷰 ─────── */}
+        {view === "analysis" && <AnalysisView user={user} />}
       </div>
     </div>
   );
