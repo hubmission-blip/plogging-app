@@ -1761,25 +1761,25 @@ function MapPageInner() {
 
       {/* ── 상단 정보바 ─────────────────────────────────── */}
       <div className="absolute top-4 right-3 z-10" style={{ left: greenCategories.length > 0 ? 56 : 12 }}>
-        <div className="rounded-2xl px-3 py-2 shadow-lg flex items-center gap-2 flex-wrap justify-center" style={{ backgroundColor: "rgba(34,120,50,0.85)", backdropFilter: "blur(8px)" }}>
-          <span className="text-sm font-bold text-white flex items-center gap-1"><MapPinIcon className="w-3.5 h-3.5 inline" strokeWidth={2} /> {distance.toFixed(2)} km</span>
+        <div className="bg-white rounded-2xl px-3 py-2 shadow-lg flex items-center gap-2 flex-wrap justify-center">
+          <span className="text-sm font-bold text-green-700 flex items-center gap-1"><MapPinIcon className="w-3.5 h-3.5 inline" strokeWidth={2} /> {distance.toFixed(2)} km</span>
           {isTracking && (
             <>
-              <span className="text-green-300/50">|</span>
-              <span className={`text-sm font-bold flex items-center gap-1 ${duration >= MIN_DURATION_SEC ? "text-yellow-300" : "text-green-100"}`}>
+              <span className="text-gray-300">|</span>
+              <span className={`text-sm font-bold flex items-center gap-1 ${duration >= MIN_DURATION_SEC ? "text-green-500" : "text-gray-600"}`}>
                 <Timer className="w-3.5 h-3.5 inline" strokeWidth={2} /> {formatDuration(duration)}
               </span>
-              <span className="text-green-300/50">|</span>
-              <span className={`text-sm font-bold flex items-center gap-1 ${isSpeedWarning ? "text-red-300" : "text-cyan-200"}`}>
+              <span className="text-gray-300">|</span>
+              <span className={`text-sm font-bold flex items-center gap-1 ${isSpeedWarning ? "text-red-500" : "text-blue-500"}`}>
                 <Gauge className="w-3.5 h-3.5 inline" strokeWidth={2} /> {currentSpeed} km/h
               </span>
               {/* GPS 상태 표시 */}
               {!gpsReady ? (
-                <span className="text-xs text-yellow-200 animate-pulse basis-full text-center flex items-center justify-center gap-1">
+                <span className="text-xs text-orange-500 animate-pulse basis-full text-center flex items-center justify-center gap-1">
                   <Radio className="w-3 h-3 inline" strokeWidth={2} /> GPS 신호 확인 중… {gpsAccuracy ? `(오차 ${gpsAccuracy}m)` : ""}
                 </span>
               ) : (
-                <span className="text-xs text-green-200 animate-pulse basis-full text-center">
+                <span className="text-xs text-red-500 animate-pulse basis-full text-center">
                   ● 기록 중 {gpsAccuracy ? `· GPS ${gpsAccuracy}m` : ""}
                 </span>
               )}
@@ -1791,14 +1791,14 @@ function MapPageInner() {
       {/* ── 인증 조건 진행 상황 ─────────────────────────── */}
       {isTracking && (
         <div className="absolute top-20 right-3 z-10" style={{ left: greenCategories.length > 0 ? 56 : 12 }}>
-          <div className="rounded-2xl px-3 py-2 shadow flex items-center justify-around text-xs" style={{ backgroundColor: "rgba(34,120,50,0.8)", backdropFilter: "blur(8px)" }}>
+          <div className="bg-white/90 rounded-2xl px-3 py-2 shadow flex items-center justify-around text-xs">
             {[
               { label: "500m 이상", ok: distance >= MIN_DISTANCE_KM, val: `${(distance*1000).toFixed(0)}m` },
               { label: "10분 이상", ok: duration >= MIN_DURATION_SEC, val: formatDuration(duration) },
               { label: "3회 이상 줍기", ok: stopCount >= MIN_STOPS, val: `${stopCount}회` },
             ].map((item, i) => (
-              <div key={i} className={`flex flex-col items-center ${item.ok ? "text-yellow-300" : "text-green-200/60"}`}>
-                <span>{item.ok ? <CheckCircle className="w-4 h-4 text-yellow-300" strokeWidth={2} /> : <Square className="w-4 h-4 text-green-200/40" strokeWidth={1.5} />}</span>
+              <div key={i} className={`flex flex-col items-center ${item.ok ? "text-green-600" : "text-gray-400"}`}>
+                <span>{item.ok ? <CheckCircle className="w-4 h-4 text-green-600" strokeWidth={2} /> : <Square className="w-4 h-4 text-gray-300" strokeWidth={1.5} />}</span>
                 <span>{item.label}</span>
                 <span className="font-bold">{item.val}</span>
               </div>
