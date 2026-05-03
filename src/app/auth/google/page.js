@@ -60,7 +60,7 @@ export default function GoogleCallbackPage() {
         const result = await signInWithCredential(auth, credential);
         const user = result.user;
 
-        console.log("[GoogleCallback] Firebase 로그인 성공:", user.uid);
+        // Firebase 로그인 성공
 
         setStatus("사용자 정보 확인 중...");
         try {
@@ -112,6 +112,7 @@ export default function GoogleCallbackPage() {
         localStorage.removeItem("google_auth_nonce");
 
         setStatus("완료! 이동 중...");
+        await new Promise((r) => setTimeout(r, 300));
         router.push("/");
 
       } catch (e) {

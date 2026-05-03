@@ -67,7 +67,7 @@ function TimeRestrictionModal({ onClose }) {
           플로깅 가능 시간은
         </p>
         <p className="text-green-600 font-black text-lg mb-3">
-          오전 6:00 ~ 오후 8:00
+          오전 6:00 ~ 오후 10:00
         </p>
         <p className="text-gray-400 text-xs mb-5">
           {isTooEarly
@@ -368,6 +368,7 @@ function PhotoRequiredModal({ onConfirm, onSkip, uploading, aiEnabled = true }) 
       return;
     }
 
+    if (preview) URL.revokeObjectURL(preview);
     setFile(f);
     setPreview(URL.createObjectURL(f));
     setStep("capture");
@@ -692,6 +693,7 @@ function TumblerCertModal({ onConfirm, onClose, isPlogging }) {
         return;
       }
     }
+    if (preview) URL.revokeObjectURL(preview);
     setFile(f);
     setPreview(URL.createObjectURL(f));
   };

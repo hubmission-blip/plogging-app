@@ -391,7 +391,7 @@ export default function AdminPage() {
     finally { setLoading(false); }
   }, []);
 
-  // ── Fetch: 동아리 목록 ─��────────────────────────────
+  // ── Fetch: 동아리 목록 ──────────────────────────────
   const fetchClubs = useCallback(async () => {
     setLoading(true);
     try {
@@ -403,7 +403,7 @@ export default function AdminPage() {
     finally { setLoading(false); }
   }, []);
 
-  // ��─ 동아리 삭제 (하위 컬렉션 포함) ─────────────────────
+  // ── 동아리 삭제 (하위 컬렉션 포함) ─────────────────────
   const handleDeleteClub = async (club) => {
     if (clubDeleteConfirm !== club.name) return;
     setClubDeleting(true);
@@ -3069,7 +3069,7 @@ export default function AdminPage() {
             </>
           )}
 
-          {/* ═════════════��════════════════════════
+          {/* ══════════════════════════════════════
               🏪 파트너 매장 탭
           ══════════════════════════════════════ */}
           {activeTab === "partners" && (
@@ -3096,7 +3096,7 @@ export default function AdminPage() {
                 </div>
                 <div className="bg-purple-50 rounded-xl p-3 text-center">
                   <p className="text-lg font-black text-purple-700">{storeCoupons.reduce((s, c) => s + (c.status === "used" ? (c.points || 0) : 0), 0).toLocaleString()}P</p>
-                  <p className="text-[10px] text-purple-600">총 사용 ��인트</p>
+                  <p className="text-[10px] text-purple-600">총 사용 포인트</p>
                 </div>
               </div>
 
@@ -3461,7 +3461,7 @@ export default function AdminPage() {
                         <span className="text-xl">{cat.icon}</span>
                         <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: cat.active ? cat.color : "#d1d5db" }} />
                         <h3 className="font-bold text-gray-800 text-sm">{cat.name}</h3>
-                        {!cat.active && <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">비���성</span>}
+                        {!cat.active && <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">비활성</span>}
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -3493,7 +3493,7 @@ export default function AdminPage() {
                   </div>
                 ))}
                 {greenCategories.length === 0 && (
-                  <p className="text-center py-8 text-gray-400 text-sm">등록��� 녹색매장 카테고리가 없습니다</p>
+                  <p className="text-center py-8 text-gray-400 text-sm">등록된 녹색매장 카테고리가 없습니다</p>
                 )}
               </div>
 
@@ -3502,13 +3502,13 @@ export default function AdminPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-end z-[200]" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
                   <div className="bg-white w-full rounded-t-3xl p-6 shadow-2xl max-h-[80vh] overflow-y-auto">
                     <h2 className="text-lg font-bold text-gray-800 mb-4">
-                      {editingGreenCat ? "카테고리 수정" : "새 카테고리 등��"}
+                      {editingGreenCat ? "카테고리 수정" : "새 카테고리 등록"}
                     </h2>
 
                     <div className="space-y-4">
                       {/* 카테고리명 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-500 mb-1 block">카테고리 이���</label>
+                        <label className="text-xs font-medium text-gray-500 mb-1 block">카테고리 이름</label>
                         <input
                           value={editingGreenCat?.name ?? newGreenCat.name}
                           onChange={(e) => editingGreenCat

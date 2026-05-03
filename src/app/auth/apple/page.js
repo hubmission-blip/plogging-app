@@ -46,7 +46,7 @@ export default function AppleCallbackPage() {
         });
 
         const text = await res.text();
-        console.log("📌 Apple API 응답:", text);
+        // Apple API 응답 파싱
 
         let appleUser;
         try {
@@ -60,7 +60,7 @@ export default function AppleCallbackPage() {
         }
 
         const appleUid = String(appleUser.uid);
-        console.log("📌 Apple UID:", appleUid.slice(0, 10) + "...");
+        // Apple 인증 완료
 
         // ─── 2단계: Firebase Auth 로그인 (이메일/비번 브릿지) ──────
         setStatus("Firebase 인증 중...");
@@ -75,7 +75,7 @@ export default function AppleCallbackPage() {
         try {
           const cred = await signInWithEmailAndPassword(auth, fakeEmail, fakePassword);
           firebaseUser = cred.user;
-          console.log("📌 Firebase 기존 로그인 성공:", firebaseUser.uid);
+          // Firebase 기존 로그인 성공
         } catch (loginErr) {
           if (
             loginErr.code === "auth/user-not-found" ||
@@ -86,7 +86,7 @@ export default function AppleCallbackPage() {
             await updateProfile(cred.user, { displayName });
             await cred.user.getIdToken(true);
             firebaseUser = cred.user;
-            console.log("📌 Firebase 신규 계정 생성:", firebaseUser.uid);
+            // Firebase 신규 계정 생성
           } else {
             throw loginErr;
           }
@@ -123,13 +123,14 @@ export default function AppleCallbackPage() {
               createdAt:     serverTimestamp(),
               refCode:       firebaseUser.uid.slice(0, 8).toUpperCase(),
             });
-            console.log("📌 users 컬렉션 문서 생성 완료");
+            // users 컬렉션 문서 생성 완료
           }
         } catch (fsErr) {
           console.warn("⚠️ Firestore 저장 실패 (로그인은 유지됨):", fsErr.code, fsErr.message);
         }
 
         setStatus("완료! 이동 중...");
+        await new Promise((r) => setTimeout(r, 300));
         router.push("/");
 
       } catch (e) {

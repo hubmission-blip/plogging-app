@@ -24,7 +24,7 @@ export async function POST(request) {
     });
 
     const tokenData = await tokenRes.json();
-    console.log("토큰 응답:", tokenData);
+    console.log("카카오 토큰 응답:", tokenData.error ? tokenData.error : "OK");
 
     if (tokenData.error) {
       return Response.json(

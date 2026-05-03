@@ -8,7 +8,7 @@ import { ArrowLeft, Leaf, Receipt, Coffee, CupSoda, Pipette, Package, Car, Shiel
 import { useState, useEffect, useRef } from "react";
 import { auth, db } from "@/lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { collection, query, where, orderBy, getDocs, limit, addDoc, doc, getDoc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, orderBy, getDocs, limit, addDoc, doc, getDoc, updateDoc, increment, serverTimestamp, runTransaction } from "firebase/firestore";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { extractText, parseReceiptInfo } from "@/lib/ocr";
 import { TUMBLER_BONUS, CUP_RETURN_PER_CUP, REUSABLE_CONTAINER_BONUS, EV_RENTAL_BONUS, SHARED_BIKE_BONUS, E_RECEIPT_BONUS, FUTURE_GEN_BONUS, ZERO_WASTE_BONUS, ECO_BAG_BONUS, OWN_CONTAINER_BONUS, RECYCLED_PRODUCT_BONUS, ECO_PRODUCT_BONUS, QUALITY_RECYCLE_BONUS } from "@/lib/pointCalc";
@@ -287,6 +287,7 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
     const maxMin = cfg.allowGallery ? 120 : 10;
     const msg = cfg.allowGallery ? "2시간 이내의 캡처만 인증이 가능합니다." : "방금 찍은 사진만 인증이 가능합니다.\n갤러리 사진은 사용할 수 없어요.";
     if ((Date.now() - f.lastModified) / 60000 > maxMin) { e.target.value = ""; alert(msg); return; }
+    if (preview) URL.revokeObjectURL(preview);
     setPhoto(f); setPreview(URL.createObjectURL(f));
     // AI 사진 검증 실행
     verifyPhotoWithAI(f);
@@ -296,6 +297,7 @@ function EcoCertModal({ ecoId, onConfirm, onClose }) {
   const handleReceipt = (e) => {
     const f = e.target.files?.[0]; if (!f) return;
     if ((Date.now() - f.lastModified) / 60000 > 120) { e.target.value = ""; alert("2시간 이내의 이미지만 인증이 가능합니다."); return; }
+    if (receiptPrev) URL.revokeObjectURL(receiptPrev);
     setReceipt(f); setReceiptPrev(URL.createObjectURL(f));
     // 영수증 OCR
     if (needsOcrOnReceipt) runOcr(f);
@@ -706,7 +708,11 @@ export default function EcoLifePage() {
     await addDoc(collection(db, "ecoActions"), docData);
     if (user) {
       const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, { totalPoints: increment(certData.points) }).catch(() => {});
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(userRef);
+        if (!snap.exists()) return;
+        tx.update(userRef, { totalPoints: (snap.data().totalPoints || 0) + certData.points });
+      }).catch(() => {});
     }
     setActiveModal(null);
     // 최근 내역 갱신

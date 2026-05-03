@@ -59,7 +59,7 @@ export async function POST(request) {
     });
 
     const tokenData = await tokenRes.json();
-    console.log("Apple 토큰 응답:", JSON.stringify(tokenData).slice(0, 200));
+    console.log("Apple 토큰 응답:", tokenData.error ? tokenData.error : "OK");
 
     if (tokenData.error) {
       return Response.json(

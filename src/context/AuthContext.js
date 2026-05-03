@@ -57,24 +57,20 @@ export function AuthProvider({ children }) {
   const [authReady, setAuthReady] = useState(false); // Firebase 확인 완료 여부
 
   useEffect(() => {
-    let resolved = false;
+    let initialResolved = false; // 최초 로딩 완료 여부 (타임아웃 전용)
     const isNative = isCapacitorNative();
-    // 타임아웃: 웹 1.5초, 네이티브 5초 (캐시가 있으면 백그라운드 처리)
     const timeoutMs = isNative ? 5000 : 1500;
 
     if (isNative) {
       console.log("[AuthContext] Capacitor 네이티브(iOS) 환경 감지");
     }
 
-    // 안전장치: 타임아웃 시 강제 진입
+    // 안전장치: 타임아웃 시 강제 진입 (최초 1회만)
     const timeout = setTimeout(() => {
-      if (resolved) return;
-      resolved = true;
+      if (initialResolved) return;
+      initialResolved = true;
       console.warn(`[AuthContext] Firebase auth timeout (${timeoutMs}ms) — 앱 진입 허용`);
-      if (!user) {
-        const socialUser = restoreSocialUser();
-        setUser(socialUser);
-      }
+      setUser((prev) => prev || restoreSocialUser());
       setLoading(false);
       setAuthReady(true);
     }, timeoutMs);
@@ -85,34 +81,39 @@ export function AuthProvider({ children }) {
       unsubscribe = onAuthStateChanged(
         auth,
         (firebaseUser) => {
-          if (resolved) return;
-          resolved = true;
-          clearTimeout(timeout);
+          // 최초 호출: 타임아웃 해제 + 로딩 완료
+          if (!initialResolved) {
+            initialResolved = true;
+            clearTimeout(timeout);
+            setLoading(false);
+            setAuthReady(true);
+          }
+
+          // ★ 핵심 수정: 이후 호출(로그인/로그아웃)에도 항상 user 상태 갱신
           if (firebaseUser) {
+            console.log("[AuthContext] 인증 상태 변경: 로그인", firebaseUser.uid);
             setUser(firebaseUser);
           } else {
+            // Firebase 인증 없음 → localStorage 소셜 유저 확인
             const socialUser = restoreSocialUser();
+            console.log("[AuthContext] 인증 상태 변경: 로그아웃", socialUser ? "(소셜 복구)" : "(완전 로그아웃)");
             setUser(socialUser);
           }
-          setLoading(false);
-          setAuthReady(true);
         },
         (error) => {
-          if (resolved) return;
-          resolved = true;
-          clearTimeout(timeout);
           console.error("[AuthContext] onAuthStateChanged error:", error.code, error.message);
-          if (!user) {
-            const socialUser = restoreSocialUser();
-            setUser(socialUser);
+          if (!initialResolved) {
+            initialResolved = true;
+            clearTimeout(timeout);
+            setUser((prev) => prev || restoreSocialUser());
+            setLoading(false);
+            setAuthReady(true);
           }
-          setLoading(false);
-          setAuthReady(true);
         }
       );
     } catch (initError) {
-      if (!resolved) {
-        resolved = true;
+      if (!initialResolved) {
+        initialResolved = true;
         clearTimeout(timeout);
         console.error("[AuthContext] Firebase 초기화 실패:", initError);
         setLoading(false);

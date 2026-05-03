@@ -504,7 +504,7 @@ export default function CertificatePage() {
           <div className="bg-blue-50 rounded-2xl p-4 border border-blue-200">
             <h2 className="font-bold text-blue-700 text-sm mb-1 flex items-center gap-1"><Award className="w-4 h-4" strokeWidth={1.8} /> 1365 자원봉사 연계</h2>
             <p className="text-xs text-blue-600 leading-relaxed">
-              프로필에서 1365 자원봉사 회원번호를 등록하면 증명서에 자동으��� 표기됩니다.
+              프로필에서 1365 자원봉사 회원번호를 등록하면 증명서에 자동으로 표기됩니다.
               관리자가 CSV로 일괄 등록하여 1365 포털에 봉사시간을 반영할 수 있습니다.
             </p>
             <Link href="/profile/edit" className="inline-block mt-2 text-xs font-bold text-blue-700 underline underline-offset-2">

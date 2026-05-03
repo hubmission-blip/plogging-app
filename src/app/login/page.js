@@ -94,6 +94,7 @@ export default function LoginPage() {
       const credential = GoogleAuthProvider.credential(idToken);
       const result = await signInWithCredential(auth, credential);
       await ensureGoogleUserDoc(result.user);
+      await new Promise((r) => setTimeout(r, 300));
       router.push("/");
     } catch (err) {
       setError("구글 로그인 실패: " + err.message);
@@ -233,6 +234,7 @@ export default function LoginPage() {
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
+      await new Promise((r) => setTimeout(r, 300));
       router.push("/");
     } catch (err) {
       const msg = {

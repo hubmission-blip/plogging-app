@@ -28,8 +28,6 @@ export default function KakaoCallbackPage() {
         setStatus("카카오 인증 중...");
 
         const redirectUri = `${window.location.origin}/auth/kakao`;
-        console.log("📌 redirectUri:", redirectUri);
-        console.log("📌 code:", code.substring(0, 10) + "...");
 
         // ─── 1단계: 카카오 토큰 → 사용자 정보 받기 ───────────────
         const res = await fetch("/api/kakao-token", {
@@ -39,7 +37,7 @@ export default function KakaoCallbackPage() {
         });
 
         const text = await res.text();
-        console.log("📌 API 응답:", text);
+        // API 응답 파싱
 
         let kakaoUser;
         try {
@@ -53,7 +51,6 @@ export default function KakaoCallbackPage() {
         }
 
         const kakaoUid = String(kakaoUser.uid);
-        console.log("📌 카카오 UID:", kakaoUid);
 
         // ─── 2단계: Firebase Auth 로그인 (이메일/비번 브릿지) ──────
         // 카카오 UID로 Firebase Auth 전용 계정 생성/로그인
@@ -70,7 +67,7 @@ export default function KakaoCallbackPage() {
           // 기존 계정이면 로그인
           const cred = await signInWithEmailAndPassword(auth, fakeEmail, fakePassword);
           firebaseUser = cred.user;
-          console.log("📌 Firebase 기존 로그인 성공:", firebaseUser.uid);
+          // Firebase 기존 로그인 성공
         } catch (loginErr) {
           if (
             loginErr.code === "auth/user-not-found" ||
@@ -84,7 +81,7 @@ export default function KakaoCallbackPage() {
             await cred.user.getIdToken(true);
             firebaseUser = cred.user;
             isNewUser = true;
-            console.log("📌 Firebase 신규 계정 생성:", firebaseUser.uid);
+            // Firebase 신규 계정 생성
           } else {
             throw loginErr;
           }
@@ -121,7 +118,7 @@ export default function KakaoCallbackPage() {
               createdAt:     serverTimestamp(),
               refCode:       firebaseUser.uid.slice(0, 8).toUpperCase(),
             });
-            console.log("📌 users 컬렉션 문서 생성 완료");
+            // users 컬렉션 문서 생성 완료
           } else {
             // 기존 사용자: 이메일/닉네임 갱신
             const existingData = userSnap.data();
@@ -146,7 +143,7 @@ export default function KakaoCallbackPage() {
 
             if (Object.keys(updates).length > 0) {
               await updateDoc(userRef, updates);
-              console.log("📌 사용자 정보 갱신:", updates);
+              // 사용자 정보 갱신 완료
             }
           }
         } catch (fsErr) {
@@ -156,6 +153,8 @@ export default function KakaoCallbackPage() {
         }
 
         setStatus("완료! 이동 중...");
+        // Firebase onAuthStateChanged가 user 상태를 갱신할 시간 확보
+        await new Promise((r) => setTimeout(r, 300));
         router.push("/");
 
       } catch (e) {

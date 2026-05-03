@@ -181,10 +181,21 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     if (!confirm("로그아웃 하시겠어요?")) return;
     try {
+      // 1) 소셜 로그인 캐시 완전 제거
       localStorage.removeItem("kakaoUser");
       localStorage.removeItem("appleUser");
+      // Firebase 로컬 캐시도 제거 (즉시 로그아웃 반영)
+      Object.keys(localStorage).forEach((k) => {
+        if (k.startsWith("firebase:authUser:")) localStorage.removeItem(k);
+      });
     } catch {}
-    try { await signOut(auth); } catch (e) { console.warn("로그아웃 처리:", e); }
+    try {
+      // 2) Firebase signOut
+      await signOut(auth);
+    } catch (e) {
+      console.warn("로그아웃 처리:", e);
+    }
+    // 3) 로그인 페이지로 이동
     router.push("/login");
   };
 
