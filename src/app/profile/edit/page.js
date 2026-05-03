@@ -6,6 +6,8 @@ import { useAuth } from "@/context/AuthContext";
 import { db, auth } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, increment } from "firebase/firestore";
 import { updateProfile } from "firebase/auth";
+import { generateQRDataURL } from "@/lib/qrcode";
+import QRScanner from "@/components/QRScanner";
 
 // ─── 추천인 코드로 추천인 UID 조회 ───────────────────────────
 async function resolveReferrer(refCode) {
@@ -51,6 +53,9 @@ export default function ProfileEditPage() {
   // 추천인 관련 상태
   const [alreadyReferred, setAlreadyReferred] = useState(false); // 이미 추천인 등록됨
   const [myRefCode, setMyRefCode] = useState(""); // 내 추천 코드
+  const [showMyQR, setShowMyQR] = useState(false); // 내 추천코드 QR 표시
+  const [myQRDataURL, setMyQRDataURL] = useState(""); // QR 이미지
+  const [showQRScanner, setShowQRScanner] = useState(false); // QR 스캐너
 
   // ── 기존 데이터 불러오기 ─────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -75,6 +80,8 @@ export default function ProfileEditPage() {
         setAlreadyReferred(!!d.referredBy);
         const computedRefCode = user.uid.slice(0, 8).toUpperCase();
         setMyRefCode(computedRefCode);
+        // QR 코드 이미지 생성
+        generateQRDataURL(`PLOGGING_REF:${computedRefCode}`, 200).then(setMyQRDataURL).catch(() => {});
         // refCode 필드 없는 구버전 유저면 Firestore에 저장 (추천 검색 가능하도록)
         if (!d.refCode) {
           try {
@@ -486,13 +493,27 @@ export default function ProfileEditPage() {
           </div>
           <div className="px-4 py-4 space-y-3">
 
-            {/* 내 추천 코드 표시 */}
-            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center justify-between">
-              <div>
-                <p className="text-green-700 text-xs font-bold mb-0.5">내 추천 코드</p>
-                <p className="text-green-800 font-mono font-black text-base tracking-widest">{myRefCode}</p>
+            {/* 내 추천 코드 표시 + QR */}
+            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-green-700 text-xs font-bold mb-0.5">내 추천 코드</p>
+                  <p className="text-green-800 font-mono font-black text-base tracking-widest">{myRefCode}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowMyQR(!showMyQR)}
+                  className="px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg active:scale-95 transition-transform"
+                >
+                  {showMyQR ? "QR 닫기" : "QR 보기"}
+                </button>
               </div>
-              <span className="text-green-400 text-xs">친구에게 공유하세요</span>
+              {showMyQR && myQRDataURL && (
+                <div className="mt-3 flex flex-col items-center border-t border-green-200 pt-3">
+                  <img src={myQRDataURL} alt="내 추천코드 QR" className="w-40 h-40 rounded-xl" />
+                  <p className="text-green-600 text-xs mt-2">친구가 이 QR을 스캔하면 추천 등록돼요</p>
+                </div>
+              )}
             </div>
 
             {/* 추천인 코드 입력 (미등록 시 1회만) */}
@@ -509,14 +530,30 @@ export default function ProfileEditPage() {
                 <label className="text-xs font-bold text-gray-500 mb-1.5 block">
                   추천인 코드 입력 <span className="text-gray-400 font-normal">(1회만 가능)</span>
                 </label>
-                <input
-                  value={form.refInput}
-                  onChange={(e) => set("refInput", e.target.value.toUpperCase())}
-                  placeholder="8자리 추천 코드"
-                  maxLength={8}
-                  className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-400 tracking-widest font-mono
-                    ${errors.refInput ? "border-red-300 bg-red-50" : "border-gray-200"}`}
-                />
+                <div className="flex gap-2">
+                  <input
+                    value={form.refInput}
+                    onChange={(e) => set("refInput", e.target.value.toUpperCase())}
+                    placeholder="8자리 추천 코드"
+                    maxLength={8}
+                    className={`flex-1 min-w-0 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-400 tracking-widest font-mono
+                      ${errors.refInput ? "border-red-300 bg-red-50" : "border-gray-200"}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowQRScanner(true)}
+                    className="shrink-0 w-12 h-12 flex items-center justify-center bg-green-50 border border-green-300 rounded-xl active:scale-95 transition-transform"
+                  >
+                    <svg className="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="7" height="7" rx="1" />
+                      <rect x="14" y="3" width="7" height="7" rx="1" />
+                      <rect x="3" y="14" width="7" height="7" rx="1" />
+                      <rect x="14" y="14" width="3" height="3" />
+                      <path d="M21 14h-3v3" />
+                      <path d="M21 21h-3v-3" />
+                    </svg>
+                  </button>
+                </div>
                 {errors.refInput && (
                   <p className="text-red-400 text-xs mt-1">{errors.refInput}</p>
                 )}
@@ -543,6 +580,30 @@ export default function ProfileEditPage() {
         </Link>
 
       </div>
+
+      {/* ── QR 스캐너 (추천인 코드 스캔) ── */}
+      {showQRScanner && (
+        <QRScanner
+          title="추천인 QR 스캔"
+          onClose={() => setShowQRScanner(false)}
+          onScan={(code) => {
+            setShowQRScanner(false);
+            // PLOGGING_REF:XXXXXXXX 형식 파싱
+            const match = code.match(/PLOGGING_REF:([A-Z0-9]{6,8})/i);
+            if (match) {
+              set("refInput", match[1].toUpperCase());
+            } else {
+              // QR 내용이 코드 자체일 수도 있음
+              const cleaned = code.trim().toUpperCase().slice(0, 8);
+              if (/^[A-Z0-9]{6,8}$/.test(cleaned)) {
+                set("refInput", cleaned);
+              } else {
+                alert("유효한 추천인 QR코드가 아닙니다.");
+              }
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

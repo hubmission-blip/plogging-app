@@ -688,7 +688,7 @@ export default function HomePage() {
               <UserPlus className="w-10 h-10 text-white/90 flex-shrink-0" strokeWidth={1.8} />
               <div className="text-right flex-1">
                 <p className="font-black text-sm leading-tight">친구 초대</p>
-                <p className="text-xs text-sky-100 mt-0.5 leading-relaxed">보너스 포인트 지급!</p>
+                <p className="text-xs text-sky-100 mt-0.5 leading-relaxed">보너스 포인트</p>
               </div>
             </button>
             {isStoreOwner ? (

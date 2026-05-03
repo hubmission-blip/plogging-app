@@ -1760,8 +1760,8 @@ function MapPageInner() {
       />
 
       {/* ── 상단 정보바 ─────────────────────────────────── */}
-      <div className="absolute top-4 left-0 right-0 flex justify-center z-10 px-4">
-        <div className="bg-white rounded-2xl px-4 py-2.5 shadow-lg flex items-center gap-2.5 flex-wrap justify-center">
+      <div className="absolute top-4 right-3 z-10" style={{ left: greenCategories.length > 0 ? 56 : 12 }}>
+        <div className="bg-white rounded-2xl px-3 py-2 shadow-lg flex items-center gap-2 flex-wrap justify-center">
           <span className="text-sm font-bold text-green-700 flex items-center gap-1"><MapPinIcon className="w-3.5 h-3.5 inline" strokeWidth={2} /> {distance.toFixed(2)} km</span>
           {isTracking && (
             <>
@@ -1790,7 +1790,7 @@ function MapPageInner() {
 
       {/* ── 인증 조건 진행 상황 ─────────────────────────── */}
       {isTracking && (
-        <div className="absolute top-20 left-4 right-4 z-10">
+        <div className="absolute top-20 right-3 z-10" style={{ left: greenCategories.length > 0 ? 56 : 12 }}>
           <div className="bg-white/90 rounded-2xl px-3 py-2 shadow flex items-center justify-around text-xs">
             {[
               { label: "500m 이상", ok: distance >= MIN_DISTANCE_KM, val: `${(distance*1000).toFixed(0)}m` },
@@ -1927,7 +1927,7 @@ function MapPageInner() {
           <div
             className="absolute z-[15] transition-transform duration-300 ease-in-out"
             style={{
-              top: isTracking ? 108 : 60,
+              top: 16,
               left: 0,
               transform: greenDrawerOpen ? "translateX(0)" : "translateX(-100%)",
             }}
@@ -1998,19 +1998,19 @@ function MapPageInner() {
             </div>
           </div>
 
-          {/* 탭 버튼 (닫혀있을 때 왼쪽 가장자리에 표시) */}
+          {/* 탭 버튼 (닫혀있을 때 왼쪽 가장자리에 표시 — 상단 정보바와 나란히) */}
           {!greenDrawerOpen && (
             <button
               onClick={() => setGreenDrawerOpen(true)}
-              className="absolute z-[15] bg-white/95 backdrop-blur-sm rounded-r-2xl shadow-lg border-r border-t border-b border-gray-200 px-2.5 py-4 flex flex-col items-center gap-1 active:scale-95 transition-transform"
-              style={{ top: isTracking ? 108 : 60, left: 0 }}
+              className="absolute z-[15] bg-white/95 backdrop-blur-sm rounded-r-2xl shadow-lg border-r border-t border-b border-gray-200 px-2 py-2.5 flex flex-col items-center gap-0.5 active:scale-95 transition-transform"
+              style={{ top: 16, left: 0 }}
             >
-              <Leaf className="w-5 h-5 text-green-600" strokeWidth={2} />
+              <Leaf className="w-4.5 h-4.5 text-green-600" strokeWidth={2} />
               <span className="text-xs font-bold text-green-700 leading-tight">녹색<br/>매장</span>
               {activeGreenCats.length > 0 && (
-                <span className="w-5 h-5 rounded-full bg-green-500 text-white text-xs font-bold flex items-center justify-center">{activeGreenCats.length}</span>
+                <span className="w-4.5 h-4.5 rounded-full bg-green-500 text-white text-xs font-bold flex items-center justify-center" style={{ fontSize: 10 }}>{activeGreenCats.length}</span>
               )}
-              <span className="text-gray-400 text-xs mt-0.5">›</span>
+              <span className="text-gray-400 text-xs">›</span>
             </button>
           )}
         </>
