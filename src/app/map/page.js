@@ -2006,10 +2006,8 @@ function MapPageInner() {
               style={{ top: 16, left: 0, height: 116 }}
             >
               <Leaf className="w-4 h-4 text-green-600" strokeWidth={2} />
-              <span className="text-xs font-bold text-green-700 leading-none">녹색</span>
-              {activeGreenCats.length > 0 && (
-                <span className="w-4 h-4 rounded-full bg-green-500 text-white flex items-center justify-center" style={{ fontSize: 9 }}>{activeGreenCats.length}</span>
-              )}
+              <span className="text-xs font-bold text-green-700 leading-tight">녹색<br/>매장</span>
+              <span className="text-gray-400 text-xs">›</span>
             </button>
           )}
         </>
